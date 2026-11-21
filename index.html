@@ -675,6 +675,16 @@
       </div>
 
       <div class="form-group">
+        <label class="form-label">Địa điểm làm việc thực tế (khi công tác / lịch nội dung)</label>
+        <select class="form-control" id="regWorkLocSelect">
+          <option value="">Mặc định theo nhân sự / lịch trực</option>
+          <option value="Điểm chính">Điểm chính</option>
+          <option value="Điểm Y tế 2">Điểm Y tế 2</option>
+          <option value="Không có mặt tại đơn vị">Không có mặt tại đơn vị</option>
+        </select>
+      </div>
+
+      <div class="form-group">
         <label class="form-label">Ghi chú (nội dung tập huấn, hỗ trợ khác, lý do...)</label>
         <input type="text" class="form-control" id="regNoteInput" placeholder="tập huấn nội dung gì, tại đâu …" />
       </div>
@@ -1748,7 +1758,8 @@
           const st = getStaffById(t.staffId);
           const nm = st ? st.name : "Nhân sự";
           const noteStr = t.note ? ` (${escapeHtml(t.note)})` : "";
-          return `<div><span class="chip chip-amber">${escapeHtml(nm)}</span> <b>${escapeHtml(t.session)}</b>: ${escapeHtml(t.type)}${noteStr}</div>`;
+          const locStr = t.workLocation ? ` <i>[${escapeHtml(t.workLocation)}]</i>` : "";
+          return `<div><span class="chip chip-amber">${escapeHtml(nm)}</span> <b>${escapeHtml(t.session)}</b>: ${escapeHtml(t.type)}${locStr}${noteStr}</div>`;
         }).join("");
       } else {
         tasksHtml = dowInfo.isWeekend ? "" : `<span style="color:#64748b;">Hành chính</span>`;
@@ -1819,7 +1830,7 @@
             ${statusChip}
           </div>
           <div style="font-size:12.5px;color:#334155;margin-top:4px;">
-            Ngày: <b>${formatVNDate(r.date)}</b> • Buổi: <b>${escapeHtml(r.session)}</b> • Nội dung: <b>${escapeHtml(r.type)}</b>
+            Ngày: <b>${formatVNDate(r.date)}</b> • Buổi: <b>${escapeHtml(r.session)}</b> • Nội dung: <b>${escapeHtml(r.type)}</b>${r.workLocation ? ` • Địa điểm: <b>${escapeHtml(r.workLocation)}</b>` : ""}
           </div>
           ${r.note ? `<div style="font-size:12px;color:#64748b;margin-top:3px;">Ghi chú: ${escapeHtml(r.note)}</div>` : ""}
           ${adminActions}
@@ -1938,18 +1949,24 @@
 
     state.staff.forEach(st => {
       if (mainSeen.has(st.id) || dyt2Seen.has(st.id) || offAllDayIds.has(st.id)) return;
+      const matchedTasks = tasks.filter(t => t.staffId === st.id);
+      const hasAbsentTask = matchedTasks.some(t => t.workLocation === "Không có mặt tại đơn vị");
+      if (hasAbsentTask) return;
+
       const isDutyAny = mainDutyIds.has(st.id) || dyt2DutyIds.has(st.id);
       const actualLoc = getActualWorkLoc(st);
-      const hasTaskDay = tasks.some(t => t.staffId === st.id);
+      const hasTaskDay = matchedTasks.length > 0;
       const isRaTruc = prevDutyIds.has(st.id);
 
+      const taskLocOverride = matchedTasks.map(t => t.workLocation).find(loc => loc === "Điểm chính" || loc === "Điểm Y tế 2");
+
       let targetBranch = actualLoc;
+      if (taskLocOverride) targetBranch = taskLocOverride;
       if (mainDutyIds.has(st.id)) targetBranch = "Điểm chính";
       else if (dyt2DutyIds.has(st.id)) targetBranch = "Điểm Y tế 2";
 
       let label = "";
       if (hasTaskDay) {
-        const matchedTasks = tasks.filter(t => t.staffId === st.id);
         label = matchedTasks.map(t => `${t.type} (${t.session})`).join(", ");
       } else if (isWeekdayMonToFri && !st.isAdminOnly && !isDutyAny && !isRaTruc) {
         label = "Hành chính";
@@ -2127,7 +2144,7 @@
             const st = getStaffById(t.staffId);
             const isDutyConflict = st && [curM1, curM2, curD2].includes(st.id) && !["Trực điểm chính", "Trực ĐYT 2"].includes(t.type);
             return `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:7px 9px;background:${isDutyConflict ? "#fff1f2" : "#f8fafc"};border:1px solid ${isDutyConflict ? "#fecdd3" : "#e2e8f0"};border-radius:8px;margin-bottom:6px;">
-              <span style="font-size:12.5px;"><b>${escapeHtml(st ? st.name : "Nhân sự")}</b> (${escapeHtml(t.session)}): ${escapeHtml(t.type)}${t.note ? " - " + escapeHtml(t.note) : ""}${isDutyConflict ? ' <b style="color:#9f1239;">[Đang giữ ca trực cùng ngày]</b>' : ""}</span>
+              <span style="font-size:12.5px;"><b>${escapeHtml(st ? st.name : "Nhân sự")}</b> (${escapeHtml(t.session)}): ${escapeHtml(t.type)}${t.workLocation ? ` [${escapeHtml(t.workLocation)}]` : ""}${t.note ? " - " + escapeHtml(t.note) : ""}${isDutyConflict ? ' <b style="color:#9f1239;">[Đang giữ ca trực cùng ngày]</b>' : ""}</span>
               <button type="button" class="btn btn-danger btn-sm" onclick="window.__removeDayTask('${iso}', ${i})">Xoá</button>
             </div>`;
           }).join("")
@@ -2203,7 +2220,16 @@
               </div>
             </div>
             <div class="form-group" style="margin-bottom:8px;">
-              <label class="form-label">Nội dung / Địa điểm / Ghi chú</label>
+              <label class="form-label">Địa điểm làm việc thực tế</label>
+              <select class="form-control" id="addTaskWorkLoc">
+                <option value="">Mặc định theo nhân sự / lịch trực</option>
+                <option value="Điểm chính">Điểm chính</option>
+                <option value="Điểm Y tế 2">Điểm Y tế 2</option>
+                <option value="Không có mặt tại đơn vị">Không có mặt tại đơn vị</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin-bottom:8px;">
+              <label class="form-label">Nội dung / Ghi chú</label>
               <input type="text" class="form-control" id="addTaskNote" placeholder="VD: Tiêm ngừa mở rộng, Tập huấn..." />
             </div>
             <button type="button" class="btn btn-secondary btn-sm btn-block" id="btnAddDayTask">+ Áp dụng cho nhân sự đã chọn</button>
@@ -2284,6 +2310,7 @@
         }
         const session = document.getElementById("addTaskSession").value;
         const type = document.getElementById("addTaskType").value;
+        const workLocation = document.getElementById("addTaskWorkLoc") ? document.getElementById("addTaskWorkLoc").value : "";
         const note = document.getElementById("addTaskNote").value.trim();
 
         if (!state.schedule[iso]) {
@@ -2317,6 +2344,7 @@
             staffId,
             session,
             type,
+            workLocation,
             note
           });
         });
@@ -2541,6 +2569,7 @@
           staffId: reg.staffId,
           session: reg.session,
           type: reg.type,
+          workLocation: reg.workLocation || "",
           note: reg.note
         });
       }
@@ -3595,12 +3624,14 @@
         return;
       }
 
+      const workLocation = document.getElementById("regWorkLocSelect") ? document.getElementById("regWorkLocSelect").value : "";
       state.registrations.push({
         id: "reg_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6),
         staffId,
         date,
         session,
         type,
+        workLocation,
         note,
         status: "pending",
         createdAt: Date.now()
