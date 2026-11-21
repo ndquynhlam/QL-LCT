@@ -494,31 +494,6 @@
     Hợp lệ: Không phát hiện trùng tua trực, vi phạm ra trực 24/24 hay thiếu Bác sĩ hành chính tại Điểm chính.
   </div>
 
-  <!-- Email Notification Subscription & Change Log Card -->
-  <section class="card no-print" id="emailNotifyCard">
-    <div class="card-title">
-      <span>Đăng Ký Nhận Thông Báo Thay Đổi Qua Email</span>
-      <span class="chip chip-teal" id="emailSubCountBadge">0 email</span>
-    </div>
-    <p class="card-desc">Đăng ký email để nhận thông báo khi có thay đổi trên mọi hạng mục (lịch trực, lịch công tác/nghỉ, đăng ký/duyệt, danh sách nhân sự, cảnh báo xung đột).</p>
-    <div class="row-2" style="margin-bottom:8px;">
-      <div class="form-group" style="margin-bottom:0;">
-        <label class="form-label">Địa chỉ email nhận thông báo *</label>
-        <input type="email" class="form-control" id="inputNotifyEmail" placeholder="vd: tramyte@example.com" />
-      </div>
-      <div class="form-group" style="margin-bottom:0;">
-        <label class="form-label">Nhân sự liên kết (tuỳ chọn)</label>
-        <select class="form-control" id="selectNotifyStaff"></select>
-      </div>
-    </div>
-    <div class="btn-toolbar" style="margin-bottom:8px;">
-      <button type="button" class="btn btn-primary btn-sm" id="btnSubscribeEmail">Đăng ký nhận thông báo</button>
-      <button type="button" class="btn btn-secondary btn-sm admin-col hidden" id="btnToggleEmailLog">Xem nhật ký gửi email (<span id="emailLogCount">0</span>)</button>
-    </div>
-    <div id="emailSubscribersList" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
-    <div id="emailNotificationsLogBox" class="hidden" style="margin-top:10px;border-top:1px solid var(--slate-200);padding-top:8px;"></div>
-  </section>
-
   <!-- SHEET 1: BẢNG LỊCH -->
   <section id="sheet-1" class="sheet-section">
     <div class="card">
@@ -638,6 +613,31 @@
       <p class="card-desc">Xếp theo thứ tự gửi trước – ưu tiên trước. Admin bấm Duyệt để tự động đưa vào Bảng lịch.</p>
       <div id="regListContainer"></div>
     </div>
+
+  <!-- Email Notification Subscription & Change Log Card -->
+  <section class="card no-print" id="emailNotifyCard">
+    <div class="card-title">
+      <span>Đăng Ký Nhận Thông Báo Thay Đổi Qua Email</span>
+      <span class="chip chip-teal" id="emailSubCountBadge">0 email</span>
+    </div>
+    <p class="card-desc">Đăng ký email để nhận thông báo khi có thay đổi trên mọi hạng mục (lịch trực, lịch công tác/nghỉ, đăng ký/duyệt, danh sách nhân sự, cảnh báo xung đột).</p>
+    <div class="row-2" style="margin-bottom:8px;">
+      <div class="form-group" style="margin-bottom:0;">
+        <label class="form-label">Địa chỉ email nhận thông báo *</label>
+        <input type="email" class="form-control" id="inputNotifyEmail" placeholder="vd: tramyte@example.com" />
+      </div>
+      <div class="form-group" style="margin-bottom:0;">
+        <label class="form-label">Nhân sự liên kết (tuỳ chọn)</label>
+        <select class="form-control" id="selectNotifyStaff"></select>
+      </div>
+    </div>
+    <div class="btn-toolbar" style="margin-bottom:8px;">
+      <button type="button" class="btn btn-primary btn-sm" id="btnSubscribeEmail">Đăng ký nhận thông báo</button>
+      <button type="button" class="btn btn-secondary btn-sm admin-col hidden" id="btnToggleEmailLog">Xem nhật ký gửi email (<span id="emailLogCount">0</span>)</button>
+    </div>
+    <div id="emailSubscribersList" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+    <div id="emailNotificationsLogBox" class="hidden" style="margin-top:10px;border-top:1px solid var(--slate-200);padding-top:8px;"></div>
+  </section>
   </section>
 
   <!-- SHEET 4: NHÂN SỰ -->
@@ -730,6 +730,15 @@
 
   <!-- SHEET 5: THỐNG KÊ -->
   <section id="sheet-5" class="sheet-section hidden">
+    <div class="card" id="todayPresenceCard">
+      <div class="card-title">
+        <span>Nhân Sự Hiện Có Mặt Hôm Nay Tại 2 Trụ Sở</span>
+        <span class="chip chip-teal" id="todayPresenceDateBadge">Hôm nay</span>
+      </div>
+      <p class="card-desc">Tự động đồng bộ từ Bảng lịch, Lịch công tác/nghỉ và Danh sách nhân sự cho Điểm chính &amp; Điểm Y tế 2.</p>
+      <div id="todayPresenceContent"></div>
+    </div>
+
     <div class="card">
       <div class="card-title">Thống Kê Tua Trực & Công Tác Trong Tháng</div>
       <p class="card-desc">Tổng hợp số tua trực Điểm chính, ĐYT 2, trực cuối tuần và lượt công tác đột xuất của từng nhân sự.</p>
@@ -1744,6 +1753,115 @@
     tbody.innerHTML = html;
   }
 
+  function renderTodayPresence() {
+    const badge = document.getElementById("todayPresenceDateBadge");
+    const box = document.getElementById("todayPresenceContent");
+    if (!box) return;
+
+    const todayIso = getTodayISO();
+    const dow = getDayOfWeekInfo(todayIso);
+    if (badge) badge.textContent = `${formatVNDate(todayIso)} (${dow.shortLabel})`;
+
+    const entry = state.schedule[todayIso] || {};
+    const prevEntry = state.schedule[addDaysISO(todayIso, -1)] || {};
+    const tasks = Array.isArray(entry.tasks) ? entry.tasks : [];
+
+    const sMain1 = getStaffById(entry.main1);
+    const sMain2 = getStaffById(entry.main2);
+    const sDyt2 = getStaffById(entry.dyt2);
+
+    // Xác định những nhân sự có lịch nghỉ/vắng mặt cả ngày hôm nay
+    const offAllDayIds = new Set();
+    tasks.forEach(t => {
+      if (!t || !t.staffId) return;
+      const tp = String(t.type || "").toLowerCase();
+      const isLeave = tp.includes("nghỉ") || tp.includes("vắng");
+      if (isLeave && (!t.session || t.session === "Cả ngày")) {
+        offAllDayIds.add(t.staffId);
+      }
+    });
+
+    const dutyIds = new Set([entry.main1, entry.main2, entry.dyt2].filter(Boolean));
+    const prevDutyIds = new Set([prevEntry.main1, prevEntry.main2, prevEntry.dyt2].filter(Boolean));
+
+    // Điểm chính: Trực 24/24 Điểm chính + nhân sự thuộc Điểm chính (trừ nhóm Điểm Y tế 2) đang làm việc/hành chính hôm nay
+    const mainPresent = [];
+    const mainSeen = new Set();
+    [sMain1, sMain2].filter(Boolean).forEach(st => {
+      if (!mainSeen.has(st.id) && !offAllDayIds.has(st.id)) {
+        mainSeen.add(st.id);
+        mainPresent.push({ staff: st, roleLabel: "Trực 24/24 Điểm chính", isDuty: true });
+      }
+    });
+
+    state.staff.forEach(st => {
+      if (mainSeen.has(st.id) || offAllDayIds.has(st.id)) return;
+      if (st.dept === "Điểm Y tế 2") return;
+      const hasTaskToday = tasks.some(t => t.staffId === st.id);
+      const isRaTruc = prevDutyIds.has(st.id);
+      // Ngày thường (T2-T6): nhân sự điểm chính có mặt trừ khi đang ra trực 24/24 hoặc đi công tác/nghỉ ngoài; Cuối tuần: hiện trực & công tác
+      if (!dow.isWeekend && !isRaTruc && !hasTaskToday) {
+        mainSeen.add(st.id);
+        mainPresent.push({ staff: st, roleLabel: st.isAdminOnly ? "Hành chính" : "Có mặt tại Điểm chính", isDuty: false });
+      } else if (hasTaskToday) {
+        const matchedTasks = tasks.filter(t => t.staffId === st.id);
+        const desc = matchedTasks.map(t => `${t.type} (${t.session})`).join(", ");
+        mainSeen.add(st.id);
+        mainPresent.push({ staff: st, roleLabel: desc, isDuty: false });
+      }
+    });
+
+    // Điểm Y tế 2: Trực 24/24 ĐYT 2 + nhân sự thuộc đơn vị "Điểm Y tế 2" đang có mặt hôm nay
+    const dyt2Present = [];
+    const dyt2Seen = new Set();
+    if (sDyt2 && !offAllDayIds.has(sDyt2.id)) {
+      dyt2Seen.add(sDyt2.id);
+      dyt2Present.push({ staff: sDyt2, roleLabel: "Trực 24/24 ĐYT 2", isDuty: true });
+    }
+    state.staff.forEach(st => {
+      if (dyt2Seen.has(st.id) || offAllDayIds.has(st.id)) return;
+      if (st.dept !== "Điểm Y tế 2") return;
+      const hasTaskToday = tasks.some(t => t.staffId === st.id);
+      const isRaTruc = prevDutyIds.has(st.id);
+      if (!dow.isWeekend && !isRaTruc && !hasTaskToday) {
+        dyt2Seen.add(st.id);
+        dyt2Present.push({ staff: st, roleLabel: st.isAdminOnly ? "Hành chính ĐYT 2" : "Có mặt tại ĐYT 2", isDuty: false });
+      } else if (hasTaskToday) {
+        const matchedTasks = tasks.filter(t => t.staffId === st.id);
+        const desc = matchedTasks.map(t => `${t.type} (${t.session})`).join(", ");
+        dyt2Seen.add(st.id);
+        dyt2Present.push({ staff: st, roleLabel: desc, isDuty: false });
+      }
+    });
+
+    const renderChips = (items, emptyText) => {
+      if (!items.length) return `<span style="font-size:12px;color:#64748b;">${emptyText}</span>`;
+      return items.map(it => {
+        const cls = it.isDuty ? "chip chip-teal" : "chip chip-emerald";
+        return `<span class="${cls}" style="margin-bottom:4px;">${escapeHtml(it.staff.name)} <span style="opacity:0.85;">(${escapeHtml(it.roleLabel)})</span></span>`;
+      }).join(" ");
+    };
+
+    box.innerHTML = `
+      <div class="row-2" style="gap:10px;">
+        <div style="border:1px solid var(--slate-200);border-radius:10px;padding:10px;background:#f8fafc;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <b style="color:#0f3d3e;font-size:13.5px;">Trụ sở Điểm Chính</b>
+            <span class="chip chip-teal">${mainPresent.length} người</span>
+          </div>
+          <div>${renderChips(mainPresent, "Chưa ghi nhận nhân sự có mặt hôm nay.")}</div>
+        </div>
+        <div style="border:1px solid var(--slate-200);border-radius:10px;padding:10px;background:#f8fafc;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <b style="color:#075985;font-size:13.5px;">Điểm Y Tế 2</b>
+            <span class="chip chip-sky">${dyt2Present.length} người</span>
+          </div>
+          <div>${renderChips(dyt2Present, "Chưa ghi nhận nhân sự có mặt hôm nay.")}</div>
+        </div>
+      </div>
+    `;
+  }
+
   function renderStatsTable() {
     const tbody = document.getElementById("statsTableBody");
     const dates = getMonthDates(state.selectedMonth);
@@ -1785,6 +1903,7 @@
     renderScheduleTable();
     renderRegistrations();
     renderStaffTable();
+    renderTodayPresence();
     renderStatsTable();
     renderEmailSubscribersUI();
   }
