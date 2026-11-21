@@ -414,6 +414,82 @@
     font-weight: 700;
     font-size: 12.5px;
   }
+  .toolbar-panel {
+    background: var(--slate-50);
+    border: 1px solid var(--slate-200);
+    border-radius: 12px;
+    padding: 10px;
+    margin-bottom: 10px;
+  }
+  .toolbar-section-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--slate-500);
+    letter-spacing: 0.3px;
+    margin-bottom: 6px;
+  }
+  .admin-toolbar-box {
+    background: var(--teal-50);
+    border: 1px solid #99f6e4;
+    border-radius: 12px;
+    padding: 10px;
+    margin-bottom: 10px;
+  }
+  .presence-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  @media (min-width: 640px) {
+    .presence-grid { grid-template-columns: 1fr 1fr; }
+  }
+  .presence-branch-card {
+    border: 1px solid var(--slate-200);
+    border-radius: 12px;
+    padding: 10px 12px;
+    background: var(--slate-50);
+  }
+  .presence-branch-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px dashed var(--slate-200);
+  }
+  .presence-list {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .presence-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    background: #fff;
+    border: 1px solid var(--slate-200);
+    border-radius: 8px;
+    padding: 6px 9px;
+    font-size: 12.5px;
+  }
+  .presence-role {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--teal-800);
+    background: var(--teal-50);
+    border: 1px solid #99f6e4;
+    border-radius: 6px;
+    padding: 2px 6px;
+    white-space: nowrap;
+  }
+  @media (max-width: 600px) {
+    .row-2 { grid-template-columns: 1fr; }
+    .form-control { font-size: 13.5px; padding: 8px 10px; }
+    .btn-sm { padding: 6px 9px; font-size: 11.5px; }
+  }
   @media print {
     .app-header, .bottom-nav, .no-print { display: none !important; }
     body { background: #fff; padding: 0; }
@@ -502,35 +578,40 @@
       </div>
       <p class="card-desc">Ưu tiên hiển thị Hôm nay lên đầu • Cột Ngày cố định bên trái • Mặc định ngày thường (Thứ 2 – Thứ 6) là Hành chính</p>
 
-      <div class="row-2 no-print" style="margin-bottom:8px;">
-        <div class="form-group" style="margin-bottom:0;">
-          <label class="form-label">Tháng / Năm</label>
-          <input type="month" class="form-control" id="monthPicker" />
+      <div class="toolbar-panel no-print">
+        <div class="toolbar-section-label">Bộ lọc &amp; Xuất / In biểu mẫu</div>
+        <div class="row-2" style="margin-bottom:8px;">
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">Tháng / Năm</label>
+            <input type="month" class="form-control" id="monthPicker" />
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">Lọc theo nhân sự</label>
+            <select class="form-control" id="filterStaffSelect"></select>
+          </div>
         </div>
-        <div class="form-group" style="margin-bottom:0;">
-          <label class="form-label">Lọc theo nhân sự</label>
-          <select class="form-control" id="filterStaffSelect"></select>
+        <div class="btn-toolbar" style="margin-bottom:0;">
+          <label style="display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;padding:6px 10px;border:1px solid var(--slate-300);border-radius:8px;background:#fff;cursor:pointer;">
+            <input type="checkbox" id="chkOnlyWarnings" /> Chỉ ngày có cảnh báo
+          </label>
+          <button type="button" class="btn btn-primary btn-sm" id="btnExportExcel">Xuất Excel (.xlsx)</button>
+          <button type="button" class="btn btn-secondary btn-sm" id="btnImportExcelTrigger">Nhập Excel (.xlsx)</button>
+          <button type="button" class="btn btn-secondary btn-sm" id="btnPrint">In / Lưu PDF</button>
+          <input type="file" id="inputExcelFile" accept=".xlsx,.xls" class="hidden" />
         </div>
-      </div>
-
-      <div class="btn-toolbar no-print">
-        <label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;padding:6px 10px;border:1px solid var(--slate-300);border-radius:8px;background:#fff;">
-          <input type="checkbox" id="chkOnlyWarnings" /> Chỉ ngày có cảnh báo
-        </label>
-        <button type="button" class="btn btn-primary btn-sm" id="btnExportExcel">Xuất Excel chuẩn (.xlsx)</button>
-        <button type="button" class="btn btn-secondary btn-sm" id="btnImportExcelTrigger">Nhập Excel (.xlsx)</button>
-        <button type="button" class="btn btn-secondary btn-sm" id="btnPrint">In / Lưu PDF</button>
-        <input type="file" id="inputExcelFile" accept=".xlsx,.xls" class="hidden" />
       </div>
 
       <!-- Admin Quick Schedule Tools -->
-      <div class="btn-toolbar no-print hidden" id="adminScheduleTools">
-        <button type="button" class="btn btn-primary btn-sm" id="btnAutoSchedule">Tự động xếp lịch tháng</button>
-        <button type="button" class="btn btn-amber btn-sm" id="btnFillEmpty">Điền ô trống</button>
-        <button type="button" class="btn btn-secondary btn-sm" id="btnExportJson">Xuất dữ liệu (.JSON)</button>
-        <button type="button" class="btn btn-secondary btn-sm" id="btnImportJsonTrigger">Nhập dữ liệu (.JSON)</button>
-        <button type="button" class="btn btn-danger btn-sm" id="btnClearMonth">Xoá lịch tháng</button>
-        <input type="file" id="inputJsonFile" accept=".json,application/json" class="hidden" />
+      <div class="admin-toolbar-box no-print hidden" id="adminScheduleTools">
+        <div class="toolbar-section-label" style="color:#0f3d3e;">Tác vụ quản trị lịch tháng</div>
+        <div class="btn-toolbar" style="margin-bottom:0;">
+          <button type="button" class="btn btn-primary btn-sm" id="btnAutoSchedule">Tự động xếp lịch tháng</button>
+          <button type="button" class="btn btn-amber btn-sm" id="btnFillEmpty">Điền ô trống</button>
+          <button type="button" class="btn btn-secondary btn-sm" id="btnExportJson">Xuất (.JSON)</button>
+          <button type="button" class="btn btn-secondary btn-sm" id="btnImportJsonTrigger">Nhập (.JSON)</button>
+          <button type="button" class="btn btn-danger btn-sm" id="btnClearMonth">Xoá lịch tháng</button>
+          <input type="file" id="inputJsonFile" accept=".json,application/json" class="hidden" />
+        </div>
       </div>
 
       <div class="table-wrap">
@@ -731,11 +812,20 @@
   <!-- SHEET 5: THỐNG KÊ -->
   <section id="sheet-5" class="sheet-section hidden">
     <div class="card" id="todayPresenceCard">
-      <div class="card-title">
-        <span>Nhân Sự Hiện Có Mặt Hôm Nay Tại 2 Trụ Sở</span>
+      <div class="card-title" style="flex-wrap:wrap;">
+        <span>Nhân Sự Có Mặt Tại 2 Trụ Sở Theo Ngày</span>
         <span class="chip chip-teal" id="todayPresenceDateBadge">Hôm nay</span>
       </div>
-      <p class="card-desc">Tự động đồng bộ từ Bảng lịch, Lịch công tác/nghỉ và Danh sách nhân sự cho Điểm chính &amp; Điểm Y tế 2.</p>
+      <p class="card-desc">Chọn ngày bất kỳ từ lịch để xem nhân sự có mặt tại Điểm chính &amp; Điểm Y tế 2 (tự động đồng bộ Bảng lịch, Công tác/Nghỉ và Danh sách nhân sự).</p>
+      <div class="row-2 no-print" style="margin-bottom:10px;align-items:end;">
+        <div class="form-group" style="margin-bottom:0;">
+          <label class="form-label">Chọn ngày cần xem từ lịch</label>
+          <input type="date" class="form-control" id="presenceDatePicker" />
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <button type="button" class="btn btn-secondary btn-sm btn-block" id="btnPresenceToday">Về ngày Hôm nay</button>
+        </div>
+      </div>
       <div id="todayPresenceContent"></div>
     </div>
 
@@ -864,6 +954,7 @@
     adminPin: DEFAULT_PIN,
     activeSheet: "1",
     selectedMonth: getTodayISO().slice(0, 7),
+    presenceDateISO: getTodayISO(),
     filterStaffId: "ALL",
     onlyWarnings: false,
     staff: JSON.parse(JSON.stringify(DEFAULT_STAFF)),
@@ -1756,21 +1847,27 @@
   function renderTodayPresence() {
     const badge = document.getElementById("todayPresenceDateBadge");
     const box = document.getElementById("todayPresenceContent");
+    const picker = document.getElementById("presenceDatePicker");
     if (!box) return;
 
     const todayIso = getTodayISO();
-    const dow = getDayOfWeekInfo(todayIso);
-    if (badge) badge.textContent = `${formatVNDate(todayIso)} (${dow.shortLabel})`;
+    const targetIso = /^\d{4}-\d{2}-\d{2}$/.test(state.presenceDateISO || "") ? state.presenceDateISO : todayIso;
+    if (picker && picker.value !== targetIso) {
+      picker.value = targetIso;
+    }
 
-    const entry = state.schedule[todayIso] || {};
-    const prevEntry = state.schedule[addDaysISO(todayIso, -1)] || {};
+    const dow = getDayOfWeekInfo(targetIso);
+    const dayTag = targetIso === todayIso ? " • Hôm nay" : "";
+    if (badge) badge.textContent = `${formatVNDate(targetIso)} (${dow.shortLabel})${dayTag}`;
+
+    const entry = state.schedule[targetIso] || {};
+    const prevEntry = state.schedule[addDaysISO(targetIso, -1)] || {};
     const tasks = Array.isArray(entry.tasks) ? entry.tasks : [];
 
     const sMain1 = getStaffById(entry.main1);
     const sMain2 = getStaffById(entry.main2);
     const sDyt2 = getStaffById(entry.dyt2);
 
-    // Xác định những nhân sự có lịch nghỉ/vắng mặt cả ngày hôm nay
     const offAllDayIds = new Set();
     tasks.forEach(t => {
       if (!t || !t.staffId) return;
@@ -1781,10 +1878,8 @@
       }
     });
 
-    const dutyIds = new Set([entry.main1, entry.main2, entry.dyt2].filter(Boolean));
     const prevDutyIds = new Set([prevEntry.main1, prevEntry.main2, prevEntry.dyt2].filter(Boolean));
 
-    // Điểm chính: Trực 24/24 Điểm chính + nhân sự thuộc Điểm chính (trừ nhóm Điểm Y tế 2) đang làm việc/hành chính hôm nay
     const mainPresent = [];
     const mainSeen = new Set();
     [sMain1, sMain2].filter(Boolean).forEach(st => {
@@ -1797,13 +1892,12 @@
     state.staff.forEach(st => {
       if (mainSeen.has(st.id) || offAllDayIds.has(st.id)) return;
       if (st.dept === "Điểm Y tế 2") return;
-      const hasTaskToday = tasks.some(t => t.staffId === st.id);
+      const hasTaskDay = tasks.some(t => t.staffId === st.id);
       const isRaTruc = prevDutyIds.has(st.id);
-      // Ngày thường (T2-T6): nhân sự điểm chính có mặt trừ khi đang ra trực 24/24 hoặc đi công tác/nghỉ ngoài; Cuối tuần: hiện trực & công tác
-      if (!dow.isWeekend && !isRaTruc && !hasTaskToday) {
+      if (!dow.isWeekend && !isRaTruc && !hasTaskDay) {
         mainSeen.add(st.id);
         mainPresent.push({ staff: st, roleLabel: st.isAdminOnly ? "Hành chính" : "Có mặt tại Điểm chính", isDuty: false });
-      } else if (hasTaskToday) {
+      } else if (hasTaskDay) {
         const matchedTasks = tasks.filter(t => t.staffId === st.id);
         const desc = matchedTasks.map(t => `${t.type} (${t.session})`).join(", ");
         mainSeen.add(st.id);
@@ -1811,7 +1905,6 @@
       }
     });
 
-    // Điểm Y tế 2: Trực 24/24 ĐYT 2 + nhân sự thuộc đơn vị "Điểm Y tế 2" đang có mặt hôm nay
     const dyt2Present = [];
     const dyt2Seen = new Set();
     if (sDyt2 && !offAllDayIds.has(sDyt2.id)) {
@@ -1821,12 +1914,12 @@
     state.staff.forEach(st => {
       if (dyt2Seen.has(st.id) || offAllDayIds.has(st.id)) return;
       if (st.dept !== "Điểm Y tế 2") return;
-      const hasTaskToday = tasks.some(t => t.staffId === st.id);
+      const hasTaskDay = tasks.some(t => t.staffId === st.id);
       const isRaTruc = prevDutyIds.has(st.id);
-      if (!dow.isWeekend && !isRaTruc && !hasTaskToday) {
+      if (!dow.isWeekend && !isRaTruc && !hasTaskDay) {
         dyt2Seen.add(st.id);
         dyt2Present.push({ staff: st, roleLabel: st.isAdminOnly ? "Hành chính ĐYT 2" : "Có mặt tại ĐYT 2", isDuty: false });
-      } else if (hasTaskToday) {
+      } else if (hasTaskDay) {
         const matchedTasks = tasks.filter(t => t.staffId === st.id);
         const desc = matchedTasks.map(t => `${t.type} (${t.session})`).join(", ");
         dyt2Seen.add(st.id);
@@ -1834,29 +1927,41 @@
       }
     });
 
-    const renderChips = (items, emptyText) => {
-      if (!items.length) return `<span style="font-size:12px;color:#64748b;">${emptyText}</span>`;
+    const dateLabelVN = formatVNDate(targetIso);
+    const renderList = (items, emptyText) => {
+      if (!items.length) return `<div style="font-size:12px;color:#64748b;padding:4px 2px;">${emptyText}</div>`;
       return items.map(it => {
-        const cls = it.isDuty ? "chip chip-teal" : "chip chip-emerald";
-        return `<span class="${cls}" style="margin-bottom:4px;">${escapeHtml(it.staff.name)} <span style="opacity:0.85;">(${escapeHtml(it.roleLabel)})</span></span>`;
-      }).join(" ");
+        const dutyDot = it.isDuty ? `<span class="chip chip-amber" style="margin:0;padding:1px 6px;font-size:10.5px;">Trực 24/24</span>` : "";
+        return `
+          <div class="presence-item">
+            <div style="min-width:0;">
+              <div style="font-weight:700;color:#0f172a;line-height:1.25;">${escapeHtml(it.staff.name)}</div>
+              <div style="font-size:11px;color:#64748b;">${escapeHtml(it.staff.title)} • ${escapeHtml(it.staff.dept)}</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">
+              ${dutyDot}
+              <span class="presence-role">${escapeHtml(it.roleLabel)}</span>
+            </div>
+          </div>
+        `;
+      }).join("");
     };
 
     box.innerHTML = `
-      <div class="row-2" style="gap:10px;">
-        <div style="border:1px solid var(--slate-200);border-radius:10px;padding:10px;background:#f8fafc;">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+      <div class="presence-grid">
+        <div class="presence-branch-card">
+          <div class="presence-branch-head">
             <b style="color:#0f3d3e;font-size:13.5px;">Trụ sở Điểm Chính</b>
-            <span class="chip chip-teal">${mainPresent.length} người</span>
+            <span class="chip chip-teal" style="margin:0;">${mainPresent.length} người</span>
           </div>
-          <div>${renderChips(mainPresent, "Chưa ghi nhận nhân sự có mặt hôm nay.")}</div>
+          <div class="presence-list">${renderList(mainPresent, `Chưa ghi nhận nhân sự có mặt ngày ${dateLabelVN}.`)}</div>
         </div>
-        <div style="border:1px solid var(--slate-200);border-radius:10px;padding:10px;background:#f8fafc;">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <div class="presence-branch-card">
+          <div class="presence-branch-head">
             <b style="color:#075985;font-size:13.5px;">Điểm Y Tế 2</b>
-            <span class="chip chip-sky">${dyt2Present.length} người</span>
+            <span class="chip chip-sky" style="margin:0;">${dyt2Present.length} người</span>
           </div>
-          <div>${renderChips(dyt2Present, "Chưa ghi nhận nhân sự có mặt hôm nay.")}</div>
+          <div class="presence-list">${renderList(dyt2Present, `Chưa ghi nhận nhân sự có mặt ngày ${dateLabelVN}.`)}</div>
         </div>
       </div>
     `;
@@ -2005,20 +2110,23 @@
         </div>
 
         <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:10px;margin-bottom:10px;">
-          <div style="font-size:12.5px;font-weight:700;color:#92400e;margin-bottom:6px;">Đổi trực nhanh giữa 2 vị trí trong ngày</div>
+          <div style="font-size:12.5px;font-weight:700;color:#92400e;margin-bottom:4px;">Đổi tua trực giữa những người rảnh trong ngày (khi có xung đột / lỗi)</div>
+          <div style="font-size:11.5px;color:#78350f;margin-bottom:7px;">Chỉ gợi ý nhân sự không vướng lịch công tác/nghỉ cùng ngày và không vi phạm ra trực 24/24 liền kề.</div>
           <div class="row-2" style="margin-bottom:8px;">
-            <select class="form-control" id="swapSlotA">
-              <option value="main1">Điểm chính 1</option>
-              <option value="main2">Điểm chính 2</option>
-              <option value="dyt2" selected>Điểm Y tế 2</option>
-            </select>
-            <select class="form-control" id="swapSlotB">
-              <option value="main1">Điểm chính 1</option>
-              <option value="main2" selected>Điểm chính 2</option>
-              <option value="dyt2">Điểm Y tế 2</option>
-            </select>
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label" style="font-size:11.5px;">Vị trí trực cần đổi</label>
+              <select class="form-control" id="swapTargetSlot">
+                <option value="main1">Điểm chính 1 (BS/YS)</option>
+                <option value="main2">Điểm chính 2 (ĐD/HS)</option>
+                <option value="dyt2">Điểm Y tế 2 (ĐD/HS)</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label" style="font-size:11.5px;">Người rảnh thay thế trong ngày</label>
+              <select class="form-control" id="swapFreeStaffSelect"></select>
+            </div>
           </div>
-          <button type="button" class="btn btn-amber btn-sm btn-block" id="btnQuickSwapSlots">Đổi trực nhanh 2 vị trí đã chọn</button>
+          <button type="button" class="btn btn-amber btn-sm btn-block" id="btnApplyFreeStaffSwap">Áp dụng người rảnh thay thế vào vị trí đã chọn</button>
         </div>
 
         <div style="border-top:1px solid #e2e8f0;padding-top:10px;margin-top:10px;">
@@ -2064,34 +2172,47 @@
         <button type="button" class="btn btn-primary btn-block" style="margin-top:12px;" id="btnSaveDayEdit">Lưu thay đổi ngày ${formatVNDate(iso)}</button>
       `);
 
-      document.getElementById("btnQuickSwapSlots").onclick = () => safeRun(() => {
-        const slotA = document.getElementById("swapSlotA").value;
-        const slotB = document.getElementById("swapSlotB").value;
-        if (slotA === slotB) {
-          showModal("Chưa chọn 2 vị trí khác nhau", "<p style='margin:0;'>Vui lòng chọn 2 vị trí trực khác nhau để đổi trực nhanh.</p>");
+      const refreshFreeSwapCandidates = () => {
+        const slotEl = document.getElementById("swapTargetSlot");
+        const candEl = document.getElementById("swapFreeStaffSelect");
+        if (!slotEl || !candEl) return;
+        const slot = slotEl.value;
+        const m1Val = document.getElementById("editMain1")?.value || "";
+        const m2Val = document.getElementById("editMain2")?.value || "";
+        const d2Val = document.getElementById("editDyt2")?.value || "";
+
+        const roleKind = slot === "main1" ? "lead" : "nurse";
+        const excludeIds = [m1Val, m2Val, d2Val].filter(Boolean);
+        const candidates = getSuggestedReplacements(iso, roleKind, excludeIds).filter(it => it.isFree);
+
+        if (!candidates.length) {
+          candEl.innerHTML = `<option value="">-- Không còn nhân sự rảnh phù hợp --</option>`;
           return;
         }
-        const cur = state.schedule[iso] || { main1: "", main2: "", dyt2: "", tasks: [] };
-        const valA = cur[slotA] || "";
-        const valB = cur[slotB] || "";
-        state.schedule[iso] = {
-          main1: cur.main1 || "",
-          main2: cur.main2 || "",
-          dyt2: cur.dyt2 || "",
-          tasks: Array.isArray(cur.tasks) ? cur.tasks : []
-        };
-        state.schedule[iso][slotA] = valB;
-        state.schedule[iso][slotB] = valA;
-        const namesList = checkedIds.map(id => getStaffById(id)?.name || "Nhân sự").join(", ");
-        dispatchEmailChangeNotification(
-          "Lịch công tác / nghỉ đột xuất",
-          `Thêm ${type} (${session}) ngày ${formatVNDate(iso)}`,
-          `Áp dụng cho: ${namesList}${note ? " • Ghi chú: " + note : ""}`,
-          [iso]
-        );
-        saveState();
-        window.__openDayEditor(iso);
-        renderAll();
+        candEl.innerHTML = candidates.map(it =>
+          `<option value="${it.staff.id}">${escapeHtml(it.staff.name)} (${escapeHtml(it.staff.title)}) • ${it.monthCount} tua • Rảnh</option>`
+        ).join("");
+      };
+
+      document.getElementById("swapTargetSlot").onchange = refreshFreeSwapCandidates;
+      document.getElementById("editMain1").onchange = refreshFreeSwapCandidates;
+      document.getElementById("editMain2").onchange = refreshFreeSwapCandidates;
+      document.getElementById("editDyt2").onchange = refreshFreeSwapCandidates;
+      refreshFreeSwapCandidates();
+
+      document.getElementById("btnApplyFreeStaffSwap").onclick = () => safeRun(() => {
+        const slot = document.getElementById("swapTargetSlot").value;
+        const pickedId = document.getElementById("swapFreeStaffSelect").value;
+        if (!pickedId) {
+          showModal("Chưa có nhân sự rảnh phù hợp", "<p style='margin:0;'>Hiện không có nhân sự rảnh (không vướng công tác/nghỉ hay ra trực liền kề) cho vị trí này trong ngày.</p>");
+          return;
+        }
+        const targetSelectId = slot === "main1" ? "editMain1" : (slot === "main2" ? "editMain2" : "editDyt2");
+        const targetSel = document.getElementById(targetSelectId);
+        if (targetSel) {
+          targetSel.value = pickedId;
+          refreshFreeSwapCandidates();
+        }
       });
 
       const updateBulkCount = () => {
@@ -3233,6 +3354,24 @@
       if (!file) return;
       importFromExcelFile(file);
       e.target.value = "";
+    });
+
+    const presencePicker = document.getElementById("presenceDatePicker");
+    if (presencePicker) {
+      presencePicker.value = state.presenceDateISO || getTodayISO();
+      presencePicker.onchange = (e) => safeRun(() => {
+        const picked = e.target.value;
+        if (/^\d{4}-\d{2}-\d{2}$/.test(picked)) {
+          state.presenceDateISO = picked;
+          renderTodayPresence();
+        }
+      });
+    }
+    document.getElementById("btnPresenceToday").onclick = () => safeRun(() => {
+      const tIso = getTodayISO();
+      state.presenceDateISO = tIso;
+      if (presencePicker) presencePicker.value = tIso;
+      renderTodayPresence();
     });
 
     document.getElementById("btnPrint").onclick = () => safeRun(() => window.print());
