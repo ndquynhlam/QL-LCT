@@ -1,0 +1,1884 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Quản Lý Lịch Trực 24/24 & Lịch Công Tác Trạm Y Tế</title>
+<style>
+  :root {
+    --teal-900: #0f3d3e;
+    --teal-800: #115e59;
+    --teal-700: #0f766e;
+    --teal-600: #0d9488;
+    --teal-100: #ccfbf1;
+    --teal-50: #f0fdfa;
+    --slate-900: #0f172a;
+    --slate-800: #1e293b;
+    --slate-700: #334155;
+    --slate-600: #475569;
+    --slate-500: #64748b;
+    --slate-300: #cbd5e1;
+    --slate-200: #e2e8f0;
+    --slate-100: #f1f5f9;
+    --slate-50: #f8fafc;
+    --amber-600: #d97706;
+    --amber-100: #fef3c7;
+    --amber-50: #fffbeb;
+    --rose-600: #e11d48;
+    --rose-100: #ffe4e6;
+    --rose-50: #fff1f2;
+    --emerald-600: #059669;
+    --emerald-100: #d1fae5;
+    --emerald-50: #ecfdf5;
+    --sky-600: #0284c7;
+    --sky-100: #e0f2fe;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--slate-100);
+    color: var(--slate-800);
+    padding-bottom: 84px;
+    font-size: 14px;
+    line-height: 1.45;
+  }
+  /* Header */
+  .app-header {
+    background: linear-gradient(135deg, var(--teal-900), var(--teal-700));
+    color: #fff;
+    padding: 12px 14px;
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    box-shadow: 0 2px 8px rgba(15, 61, 62, 0.25);
+  }
+  .header-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .app-title {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    text-transform: uppercase;
+  }
+  .app-subtitle {
+    margin: 3px 0 0;
+    font-size: 11.5px;
+    color: #ccfbf1;
+    opacity: 0.95;
+  }
+  .header-badges {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+  }
+  .badge-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    background: rgba(255,255,255,0.16);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.22);
+  }
+  .badge-pill.admin-active {
+    background: #fef3c7;
+    color: #92400e;
+    border-color: #f59e0b;
+  }
+  .badge-pill.cloud-on {
+    background: #d1fae5;
+    color: #065f46;
+    border-color: #10b981;
+  }
+  .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+  .btn-header {
+    background: #fff;
+    color: var(--teal-800);
+    border: none;
+    border-radius: 999px;
+    padding: 5px 12px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+  }
+  .btn-header:active { transform: scale(0.98); }
+
+  /* Main Container */
+  .container {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 12px;
+  }
+  .card {
+    background: #fff;
+    border-radius: 14px;
+    padding: 14px;
+    margin-bottom: 12px;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+    border: 1px solid var(--slate-200);
+  }
+  .card-title {
+    margin: 0 0 4px;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--slate-900);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .card-desc {
+    margin: 0 0 12px;
+    font-size: 12.5px;
+    color: var(--slate-500);
+  }
+
+  /* Summary Grid */
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  @media (min-width: 768px) {
+    .summary-grid { grid-template-columns: repeat(4, 1fr); }
+  }
+  .stat-box {
+    background: #fff;
+    border: 1px solid var(--slate-200);
+    border-radius: 12px;
+    padding: 10px 12px;
+  }
+  .stat-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--slate-500);
+    text-transform: uppercase;
+  }
+  .stat-val {
+    margin-top: 3px;
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--teal-800);
+  }
+  .stat-val span { font-size: 12.5px; font-weight: 500; color: var(--slate-500); }
+  .stat-val.warn { color: var(--amber-600); }
+  .stat-val.err { color: var(--rose-600); }
+
+  /* Alerts */
+  .banner {
+    padding: 10px 12px;
+    border-radius: 10px;
+    font-size: 12.5px;
+    font-weight: 500;
+    margin-bottom: 12px;
+    border: 1px solid transparent;
+  }
+  .banner.ok { background: var(--emerald-50); color: #065f46; border-color: #a7f3d0; }
+  .banner.warn { background: var(--amber-50); color: #92400e; border-color: #fde68a; }
+  .banner.err { background: var(--rose-50); color: #9f1239; border-color: #fecdd3; }
+  .banner.info { background: var(--teal-50); color: var(--teal-900); border-color: #99f6e4; }
+
+  /* Controls & Forms */
+  .form-group { margin-bottom: 11px; }
+  .form-label {
+    display: block;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--slate-700);
+    margin-bottom: 4px;
+  }
+  .form-control {
+    width: 100%;
+    padding: 9px 11px;
+    border: 1px solid var(--slate-300);
+    border-radius: 10px;
+    font-size: 14px;
+    color: var(--slate-900);
+    background: #fff;
+    outline: none;
+  }
+  .form-control:focus {
+    border-color: var(--teal-600);
+    box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15);
+  }
+  .row-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 13.5px;
+    font-weight: 700;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: 0.15s;
+  }
+  .btn:active { transform: scale(0.98); }
+  .btn-block { width: 100%; }
+  .btn-primary { background: var(--teal-700); color: #fff; }
+  .btn-primary:hover { background: var(--teal-800); }
+  .btn-secondary { background: var(--slate-100); color: var(--slate-800); border-color: var(--slate-300); }
+  .btn-amber { background: var(--amber-100); color: #92400e; border-color: #fcd34d; }
+  .btn-danger { background: var(--rose-100); color: #9f1239; border-color: #fecdd3; }
+  .btn-sm { padding: 6px 10px; font-size: 12px; border-radius: 8px; }
+  .btn-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+
+  /* Tables & Sticky Columns */
+  .table-wrap {
+    width: 100%;
+    overflow-x: auto;
+    border: 1px solid var(--slate-200);
+    border-radius: 10px;
+    background: #fff;
+    -webkit-overflow-scrolling: touch;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  th, td {
+    padding: 8px 9px;
+    border-bottom: 1px solid var(--slate-200);
+    border-right: 1px solid var(--slate-100);
+    text-align: left;
+    vertical-align: top;
+  }
+  th {
+    background: var(--slate-50);
+    color: var(--slate-700);
+    font-weight: 700;
+    font-size: 11.5px;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .sticky-col {
+    position: sticky;
+    left: 0;
+    background: #fff;
+    z-index: 2;
+    box-shadow: 2px 0 4px rgba(15, 23, 42, 0.05);
+  }
+  th.sticky-col {
+    background: var(--slate-50);
+    z-index: 3;
+  }
+  tr.today-row td { background: var(--teal-50); }
+  tr.today-row td.sticky-col { background: var(--teal-50); }
+  tr.weekend-row td { background: #fafafa; }
+  tr.weekend-row td.sticky-col { background: #fafafa; }
+  tr.warn-row td { background: var(--rose-50); }
+
+  /* Chips */
+  .chip {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 6px;
+    font-size: 11.5px;
+    font-weight: 600;
+    margin: 1px 2px 1px 0;
+    white-space: nowrap;
+  }
+  .chip-teal { background: var(--teal-100); color: var(--teal-900); }
+  .chip-sky { background: var(--sky-100); color: #075985; }
+  .chip-amber { background: var(--amber-100); color: #92400e; }
+  .chip-rose { background: var(--rose-100); color: #9f1239; }
+  .chip-slate { background: var(--slate-100); color: var(--slate-700); }
+  .chip-emerald { background: var(--emerald-100); color: #065f46; }
+
+  /* Bottom Navigation */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #fff;
+    border-top: 1px solid var(--slate-200);
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    padding: 5px 4px env(safe-area-inset-bottom, 6px);
+    z-index: 50;
+    box-shadow: 0 -2px 10px rgba(15, 23, 42, 0.06);
+  }
+  .nav-item {
+    border: none;
+    background: transparent;
+    color: var(--slate-500);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 6px 2px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    position: relative;
+  }
+  .nav-item.active {
+    background: var(--teal-700);
+    color: #fff;
+  }
+  .nav-badge {
+    position: absolute;
+    top: 2px;
+    right: 10px;
+    background: var(--rose-600);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 800;
+    padding: 1px 5px;
+    border-radius: 999px;
+  }
+
+  /* Custom Modal */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.55);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 14px;
+    z-index: 100;
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal-box {
+    background: #fff;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 460px;
+    max-height: 88vh;
+    overflow-y: auto;
+    padding: 16px;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.25);
+  }
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .modal-title { margin: 0; font-size: 16px; font-weight: 700; color: var(--slate-900); }
+  .modal-close {
+    border: none;
+    background: var(--slate-100);
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  .hidden { display: none !important; }
+  .dept-header-row td {
+    background: var(--teal-50) !important;
+    color: var(--teal-900);
+    font-weight: 700;
+    font-size: 12.5px;
+  }
+  @media print {
+    .app-header, .bottom-nav, .no-print { display: none !important; }
+    body { background: #fff; padding: 0; }
+    .card { box-shadow: none; border: none; padding: 0; }
+  }
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="header-top">
+    <div>
+      <h1 class="app-title">Quản Lý Lịch Trực 24/24 & Lịch Công Tác Trạm Y Tế</h1>
+      <p class="app-subtitle">Điểm chính (2 người: 1 BS/YS + 1 ĐD/HS) • ĐYT 2 (1 người: ĐD/HS) • Trực 24/24 & Ra trực liền kề</p>
+    </div>
+    <button type="button" class="btn-header" id="btnToggleAdmin">Đăng nhập Admin</button>
+  </div>
+  <div class="header-badges">
+    <span class="badge-pill" id="roleBadge"><span class="dot"></span> Cá nhân</span>
+    <span class="badge-pill" id="cloudBadge"><span class="dot"></span> Lưu cục bộ (Offline)</span>
+  </div>
+</header>
+
+<main class="container">
+  <!-- Cloud Sync Card (Admin Only) -->
+  <section class="card hidden no-print" id="cloudConfigCard">
+    <div class="card-title">
+      <span>Kết Nối Đồng Bộ Đám Mây Thời Gian Thực (Firebase)</span>
+      <span class="chip chip-teal" id="cloudRoomLabel">Phòng: tram-y-te</span>
+    </div>
+    <p class="card-desc">Dán Firebase Realtime Database URL để nhiều điện thoại/máy tính cùng đăng ký và đồng bộ tức thì mà không ghi đè chéo.</p>
+    <div class="row-2">
+      <div class="form-group">
+        <label class="form-label">Firebase Database URL *</label>
+        <input type="url" class="form-control" id="inputFirebaseUrl" placeholder="https://ten-du-an-default-rtdb.asia-southeast1.firebasedatabase.app" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Mã phòng dữ liệu (Room ID)</label>
+        <input type="text" class="form-control" id="inputRoomId" value="tram-y-te" placeholder="tram-y-te" />
+      </div>
+    </div>
+    <div class="btn-toolbar">
+      <button type="button" class="btn btn-primary btn-sm" id="btnConnectCloud">Kết nối & Đồng bộ ngay</button>
+      <button type="button" class="btn btn-secondary btn-sm" id="btnCopyShareLink">Tạo link chia sẻ tự động kết nối</button>
+      <button type="button" class="btn btn-danger btn-sm hidden" id="btnDisconnectCloud">Ngắt kết nối Cloud</button>
+    </div>
+    <div id="shareLinkBox" class="hidden" style="margin-top:8px;">
+      <input type="text" class="form-control" id="outputShareLink" readonly />
+    </div>
+  </section>
+
+  <!-- Summary Cards -->
+  <div class="summary-grid no-print">
+    <div class="stat-box">
+      <div class="stat-label">Nhân sự trực</div>
+      <div class="stat-val" id="statStaff">0 <span>/ 29 nhân sự</span></div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">Ngày đã xếp</div>
+      <div class="stat-val" id="statDays">0 <span>/ 30 ngày</span></div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">Chờ Admin duyệt</div>
+      <div class="stat-val warn" id="statPending">0 <span>đăng ký</span></div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">Cảnh báo quy tắc</div>
+      <div class="stat-val err" id="statWarnings">0 <span>lỗi / xung đột</span></div>
+    </div>
+  </div>
+
+  <div class="banner ok no-print" id="globalBanner">
+    Hợp lệ: Không phát hiện trùng tua trực, vi phạm ra trực 24/24 hay thiếu Bác sĩ hành chính tại Điểm chính.
+  </div>
+
+  <!-- SHEET 1: BẢNG LỊCH -->
+  <section id="sheet-1" class="sheet-section">
+    <div class="card">
+      <div class="card-title">
+        <span>Bảng Lịch Trực 24/24 & Lịch Công Tác</span>
+      </div>
+      <p class="card-desc">Ưu tiên hiển thị Hôm nay lên đầu • Cột Ngày cố định bên trái • Mặc định ngày thường (Thứ 2 – Thứ 6) là Hành chính</p>
+
+      <div class="row-2 no-print" style="margin-bottom:8px;">
+        <div class="form-group" style="margin-bottom:0;">
+          <label class="form-label">Tháng / Năm</label>
+          <input type="month" class="form-control" id="monthPicker" />
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label class="form-label">Lọc theo nhân sự</label>
+          <select class="form-control" id="filterStaffSelect"></select>
+        </div>
+      </div>
+
+      <div class="btn-toolbar no-print">
+        <label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;padding:6px 10px;border:1px solid var(--slate-300);border-radius:8px;background:#fff;">
+          <input type="checkbox" id="chkOnlyWarnings" /> Chỉ ngày có cảnh báo
+        </label>
+        <button type="button" class="btn btn-secondary btn-sm" id="btnExportExcel">Xuất Excel (.xlsx/.csv)</button>
+        <button type="button" class="btn btn-secondary btn-sm" id="btnPrint">In / Lưu PDF</button>
+      </div>
+
+      <!-- Admin Quick Schedule Tools -->
+      <div class="btn-toolbar no-print hidden" id="adminScheduleTools">
+        <button type="button" class="btn btn-primary btn-sm" id="btnAutoSchedule">Tự động xếp lịch tháng</button>
+        <button type="button" class="btn btn-amber btn-sm" id="btnFillEmpty">Điền ô trống</button>
+        <button type="button" class="btn btn-secondary btn-sm" id="btnExportJson">Xuất dữ liệu (.JSON)</button>
+        <button type="button" class="btn btn-secondary btn-sm" id="btnImportJsonTrigger">Nhập dữ liệu (.JSON)</button>
+        <button type="button" class="btn btn-danger btn-sm" id="btnClearMonth">Xoá lịch tháng</button>
+        <input type="file" id="inputJsonFile" accept=".json,application/json" class="hidden" />
+      </div>
+
+      <div class="table-wrap">
+        <table id="scheduleTable">
+          <thead>
+            <tr>
+              <th class="sticky-col" style="min-width:105px;">Ngày</th>
+              <th style="min-width:170px;">Trực Điểm Chính (24/24)</th>
+              <th style="min-width:130px;">Trực ĐYT 2 (24/24)</th>
+              <th style="min-width:110px;">Ra trực</th>
+              <th style="min-width:210px;">Lịch Công Tác (Sáng / Chiều)</th>
+              <th class="no-print" style="min-width:95px;">Cảnh báo</th>
+            </tr>
+          </thead>
+          <tbody id="scheduleBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- SHEET 2: ĐĂNG KÝ -->
+  <section id="sheet-2" class="sheet-section hidden">
+    <div class="card">
+      <div class="card-title">Đăng Ký Lịch Trực & Lịch Công Tác Đột Xuất</div>
+      <p class="card-desc">Hỗ trợ đăng ký theo Cả ngày, Buổi Sáng hoặc Buổi Chiều. Người gửi sớm hơn được ưu tiên xếp lịch trước; Admin phê duyệt sẽ tự động cập nhật vào bảng lịch.</p>
+
+      <div class="form-group">
+        <label class="form-label">Nhân sự đăng ký *</label>
+        <select class="form-control" id="regStaffSelect"></select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Ngày đăng ký (chọn từ lịch) *</label>
+        <input type="date" class="form-control" id="regDateInput" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Thời gian / Buổi *</label>
+        <select class="form-control" id="regSessionSelect">
+          <option value="Cả ngày">Cả ngày</option>
+          <option value="Buổi Sáng">Buổi Sáng</option>
+          <option value="Buổi Chiều">Buổi Chiều</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Nội dung đăng ký *</label>
+        <select class="form-control" id="regTypeSelect">
+          <option value="Trực điểm chính">Trực điểm chính</option>
+          <option value="Trực ĐYT 2">Trực ĐYT 2</option>
+          <option value="Tập huấn / Họp">Tập huấn / Họp</option>
+          <option value="Khám sức khỏe / Công tác ngoài">Khám sức khỏe / Công tác ngoài</option>
+          <option value="Nghỉ phép / Nghỉ bù">Nghỉ phép / Nghỉ bù</option>
+          <option value="Khác">Khác</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Ghi chú (nội dung tập huấn, hỗ trợ khác, lý do...)</label>
+        <input type="text" class="form-control" id="regNoteInput" placeholder="tập huấn nội dung gì, tại đâu …" />
+      </div>
+
+      <div class="btn-toolbar">
+        <button type="button" class="btn btn-secondary btn-block" id="btnRegToday">Đặt về Hôm nay</button>
+        <button type="button" class="btn btn-primary btn-block" id="btnSubmitReg">Kiểm tra & Gửi đăng ký</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- SHEET 3: DUYỆT & LS -->
+  <section id="sheet-3" class="sheet-section hidden">
+    <div class="card">
+      <div class="card-title">
+        <span>Danh Sách Đăng Ký Chờ Duyệt & Lịch Sử</span>
+      </div>
+      <p class="card-desc">Xếp theo thứ tự gửi trước – ưu tiên trước. Admin bấm Duyệt để tự động đưa vào Bảng lịch.</p>
+      <div id="regListContainer"></div>
+    </div>
+  </section>
+
+  <!-- SHEET 4: NHÂN SỰ -->
+  <section id="sheet-4" class="sheet-section hidden">
+    <div class="card hidden" id="adminAddStaffCard">
+      <div class="card-title">
+        <span>Thêm Nhân Sự Mới (Admin)</span>
+        <button type="button" class="btn btn-amber btn-sm" id="btnRestore29">Khôi phục DS 29 nhân sự</button>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Họ và tên *</label>
+        <input type="text" class="form-control" id="newStaffName" placeholder="VD: Dược sĩ Lan" />
+      </div>
+      <div class="row-2">
+        <div class="form-group">
+          <label class="form-label">Chức vụ</label>
+          <select class="form-control" id="newStaffPosition">
+            <option value="Quyền Giám đốc">Quyền Giám đốc</option>
+            <option value="Phó Giám đốc">Phó Giám đốc</option>
+            <option value="Trưởng phòng">Trưởng phòng</option>
+            <option value="Phó Trưởng phòng">Phó Trưởng phòng</option>
+            <option value="Trưởng khoa">Trưởng khoa</option>
+            <option value="Phó Trưởng khoa">Phó Trưởng khoa</option>
+            <option value="Phụ trách điểm">Phụ trách điểm</option>
+            <option value="Nhân viên" selected>Nhân viên</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Chức danh</label>
+          <select class="form-control" id="newStaffTitle">
+            <option value="Bác sĩ">Bác sĩ</option>
+            <option value="Y sĩ">Y sĩ</option>
+            <option value="Điều dưỡng">Điều dưỡng</option>
+            <option value="Hộ sinh">Hộ sinh</option>
+            <option value="Dược sĩ">Dược sĩ</option>
+            <option value="Chuyên môn khác">Chuyên môn khác</option>
+          </select>
+        </div>
+      </div>
+      <div class="row-2">
+        <div class="form-group">
+          <label class="form-label">Đơn vị công tác</label>
+          <select class="form-control" id="newStaffDept">
+            <option value="Ban Giám đốc">Ban Giám đốc</option>
+            <option value="Phòng Hành chính">Phòng Hành chính</option>
+            <option value="Phòng Dân số">Phòng Dân số</option>
+            <option value="Khoa Dược">Khoa Dược</option>
+            <option value="Khoa Khám bệnh">Khoa Khám bệnh</option>
+            <option value="Khoa Phòng bệnh">Khoa Phòng bệnh</option>
+            <option value="Điểm Y tế 2">Điểm Y tế 2</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Loại hợp đồng</label>
+          <select class="form-control" id="newStaffContract">
+            <option value="Viên chức">Viên chức</option>
+            <option value="HĐ NQ73">HĐ NQ73</option>
+            <option value="Hợp đồng">Hợp đồng</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label style="display:flex;align-items:center;gap:8px;font-weight:600;">
+          <input type="checkbox" id="newStaffAdminOnly" /> Chế độ Hành chính (không trực)
+        </label>
+      </div>
+      <button type="button" class="btn btn-primary btn-block" id="btnAddStaff">+ Thêm nhân sự</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Danh Sách Nhân Sự Trạm Y Tế (29 Nhân Sự)</div>
+      <p class="card-desc">Sắp xếp theo thứ tự đơn vị công tác và chức vụ. Cột Họ và tên cố định khi cuộn ngang.</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>STT</th>
+              <th class="sticky-col" style="min-width:140px;">Họ và tên</th>
+              <th>Chức vụ</th>
+              <th>Chức danh</th>
+              <th>Loại HĐ</th>
+              <th>Chế độ trực</th>
+              <th class="admin-col hidden">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody id="staffTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- SHEET 5: THỐNG KÊ -->
+  <section id="sheet-5" class="sheet-section hidden">
+    <div class="card">
+      <div class="card-title">Thống Kê Tua Trực & Công Tác Trong Tháng</div>
+      <p class="card-desc">Tổng hợp số tua trực Điểm chính, ĐYT 2, trực cuối tuần và lượt công tác đột xuất của từng nhân sự.</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>STT</th>
+              <th class="sticky-col">Họ và tên</th>
+              <th>Đơn vị</th>
+              <th>Điểm chính</th>
+              <th>ĐYT 2</th>
+              <th>Tổng trực</th>
+              <th>Trực T7/CN</th>
+              <th>Công tác/Nghỉ</th>
+            </tr>
+          </thead>
+          <tbody id="statsTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- Bottom 5-Sheet Navigation -->
+<nav class="bottom-nav no-print">
+  <button type="button" class="nav-item active" data-sheet="1">
+    <span>📅</span>
+    <span>1. Bảng Lịch</span>
+  </button>
+  <button type="button" class="nav-item" data-sheet="2">
+    <span>📝</span>
+    <span>2. Đăng Ký</span>
+  </button>
+  <button type="button" class="nav-item" data-sheet="3">
+    <span>✅</span>
+    <span>3. Duyệt & LS</span>
+    <span class="nav-badge hidden" id="navPendingBadge">0</span>
+  </button>
+  <button type="button" class="nav-item" data-sheet="4">
+    <span>👥</span>
+    <span>4. Nhân Sự</span>
+  </button>
+  <button type="button" class="nav-item" data-sheet="5">
+    <span>📊</span>
+    <span>5. Thống Kê</span>
+  </button>
+</nav>
+
+<!-- Universal Custom Modal -->
+<div class="modal-backdrop" id="customModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 class="modal-title" id="modalTitle">Thông báo</h3>
+      <button type="button" class="modal-close" id="modalCloseBtn">✕</button>
+    </div>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+(function() {
+  const STORAGE_KEY = "tyt_schedule_app_v4_2026";
+  const ADMIN_PIN = "2026";
+
+  const DEPT_ORDER = [
+    "Ban Giám đốc",
+    "Phòng Hành chính",
+    "Phòng Dân số",
+    "Khoa Dược",
+    "Khoa Khám bệnh",
+    "Khoa Phòng bệnh",
+    "Điểm Y tế 2"
+  ];
+
+  const POS_ORDER = {
+    "Quyền Giám đốc": 1,
+    "Phó Giám đốc": 2,
+    "Trưởng phòng": 3,
+    "Phó Trưởng phòng": 4,
+    "Trưởng khoa": 5,
+    "Phó Trưởng khoa": 6,
+    "Phụ trách điểm": 7,
+    "Nhân viên": 8
+  };
+
+  const DEFAULT_STAFF = [
+    { id: "s01", name: "Điều dưỡng Bình", position: "Quyền Giám đốc", title: "Điều dưỡng", dept: "Ban Giám đốc", contract: "Viên chức", isAdminOnly: false },
+    { id: "s02", name: "CN. Linh", position: "Phó Giám đốc", title: "Chuyên môn khác", dept: "Ban Giám đốc", contract: "Viên chức", isAdminOnly: true },
+
+    { id: "s03", name: "CN. Trân", position: "Trưởng phòng", title: "Chuyên môn khác", dept: "Phòng Hành chính", contract: "Viên chức", isAdminOnly: true },
+    { id: "s04", name: "CN. Lang", position: "Nhân viên", title: "Chuyên môn khác", dept: "Phòng Hành chính", contract: "Viên chức", isAdminOnly: true },
+    { id: "s05", name: "CN. Lam", position: "Nhân viên", title: "Chuyên môn khác", dept: "Phòng Hành chính", contract: "Viên chức", isAdminOnly: true },
+
+    { id: "s06", name: "Hộ sinh Anh", position: "Trưởng phòng", title: "Hộ sinh", dept: "Phòng Dân số", contract: "Viên chức", isAdminOnly: false },
+    { id: "s07", name: "Điều dưỡng Nhung", position: "Nhân viên", title: "Điều dưỡng", dept: "Phòng Dân số", contract: "Viên chức", isAdminOnly: false },
+    { id: "s08", name: "Hộ sinh Hằng", position: "Nhân viên", title: "Hộ sinh", dept: "Phòng Dân số", contract: "Viên chức", isAdminOnly: false },
+    { id: "s09", name: "Hộ sinh Ngọc", position: "Nhân viên", title: "Hộ sinh", dept: "Phòng Dân số", contract: "Viên chức", isAdminOnly: true },
+
+    { id: "s10", name: "Dược sĩ Dung", position: "Trưởng khoa", title: "Dược sĩ", dept: "Khoa Dược", contract: "Viên chức", isAdminOnly: true },
+    { id: "s11", name: "Dược sĩ Bích", position: "Nhân viên", title: "Dược sĩ", dept: "Khoa Dược", contract: "Viên chức", isAdminOnly: true },
+    { id: "s12", name: "Dược sĩ Thảo", position: "Nhân viên", title: "Dược sĩ", dept: "Khoa Dược", contract: "Viên chức", isAdminOnly: true },
+    { id: "s13", name: "Dược sĩ Ý", position: "Nhân viên", title: "Dược sĩ", dept: "Khoa Dược", contract: "Viên chức", isAdminOnly: true },
+
+    { id: "s14", name: "Bác sĩ Nuôi", position: "Trưởng khoa", title: "Bác sĩ", dept: "Khoa Khám bệnh", contract: "Viên chức", isAdminOnly: false },
+    { id: "s15", name: "Bác sĩ Vân", position: "Nhân viên", title: "Bác sĩ", dept: "Khoa Khám bệnh", contract: "Viên chức", isAdminOnly: true },
+    { id: "s16", name: "Bác sĩ Dung", position: "Nhân viên", title: "Bác sĩ", dept: "Khoa Khám bệnh", contract: "HĐ NQ73", isAdminOnly: true },
+    { id: "s17", name: "Điều dưỡng Ánh", position: "Nhân viên", title: "Điều dưỡng", dept: "Khoa Khám bệnh", contract: "Viên chức", isAdminOnly: false },
+
+    { id: "s18", name: "Điều dưỡng Loan", position: "Trưởng khoa", title: "Điều dưỡng", dept: "Khoa Phòng bệnh", contract: "Viên chức", isAdminOnly: false },
+    { id: "s19", name: "CN. Hường", position: "Nhân viên", title: "Chuyên môn khác", dept: "Khoa Phòng bệnh", contract: "Viên chức", isAdminOnly: true },
+    { id: "s20", name: "Điều dưỡng Liên", position: "Nhân viên", title: "Điều dưỡng", dept: "Khoa Phòng bệnh", contract: "Viên chức", isAdminOnly: false },
+    { id: "s21", name: "Điều dưỡng Mẩn", position: "Nhân viên", title: "Điều dưỡng", dept: "Khoa Phòng bệnh", contract: "Viên chức", isAdminOnly: false },
+    { id: "s22", name: "Điều dưỡng Thảo", position: "Nhân viên", title: "Điều dưỡng", dept: "Khoa Phòng bệnh", contract: "Viên chức", isAdminOnly: false },
+    { id: "s23", name: "Điều dưỡng Tuyền", position: "Nhân viên", title: "Điều dưỡng", dept: "Khoa Phòng bệnh", contract: "Viên chức", isAdminOnly: false },
+    { id: "s24", name: "Y sĩ Hà", position: "Nhân viên", title: "Y sĩ", dept: "Khoa Phòng bệnh", contract: "Viên chức", isAdminOnly: false },
+    { id: "s25", name: "Y sĩ Tuấn", position: "Nhân viên", title: "Y sĩ", dept: "Khoa Phòng bệnh", contract: "Viên chức", isAdminOnly: false },
+
+    { id: "s26", name: "Bác sĩ An", position: "Phụ trách điểm", title: "Bác sĩ", dept: "Điểm Y tế 2", contract: "Viên chức", isAdminOnly: false },
+    { id: "s27", name: "Điều dưỡng Giang", position: "Nhân viên", title: "Điều dưỡng", dept: "Điểm Y tế 2", contract: "Viên chức", isAdminOnly: false },
+    { id: "s28", name: "Điều dưỡng Vạn", position: "Nhân viên", title: "Điều dưỡng", dept: "Điểm Y tế 2", contract: "Viên chức", isAdminOnly: false },
+    { id: "s29", name: "Y sĩ Nghị", position: "Nhân viên", title: "Y sĩ", dept: "Điểm Y tế 2", contract: "Viên chức", isAdminOnly: false }
+  ];
+
+  let state = {
+    isAdmin: false,
+    activeSheet: "1",
+    selectedMonth: getTodayISO().slice(0, 7),
+    filterStaffId: "ALL",
+    onlyWarnings: false,
+    staff: JSON.parse(JSON.stringify(DEFAULT_STAFF)),
+    schedule: {}, // { "YYYY-MM-DD": { main1: id, main2: id, dyt2: id, tasks: [ {id, staffId, session, type, note} ] } }
+    registrations: [], // [ {id, staffId, date, session, type, note, status, createdAt} ]
+    cloud: {
+      url: "",
+      room: "tram-y-te",
+      connected: false
+    }
+  };
+
+  let cloudPollTimer = null;
+
+  function safeRun(fn) {
+    try {
+      fn();
+    } catch (err) {
+      console.error("App Error:", err);
+      showModal("Thông báo hệ thống", `<p style="color:#9f1239;margin:0;">Đã xử lý ngoại lệ an toàn: ${escapeHtml(err.message || String(err))}</p>`);
+    }
+  }
+
+  function escapeHtml(str) {
+    return String(str || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function getTodayISO() {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  }
+
+  function formatVNDate(iso) {
+    const [y, m, d] = iso.split("-");
+    return `${d}/${m}/${y}`;
+  }
+
+  function getDayOfWeekInfo(iso) {
+    const [y, m, d] = iso.split("-").map(Number);
+    const dt = new Date(y, m - 1, d);
+    const dow = dt.getDay(); // 0=CN, 6=T7
+    const names = ["Chủ nhật", "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7"];
+    return { dow, label: names[dow], isWeekend: dow === 0 || dow === 6 };
+  }
+
+  function addDaysISO(iso, delta) {
+    const [y, m, d] = iso.split("-").map(Number);
+    const dt = new Date(y, m - 1, d + delta);
+    const yy = dt.getFullYear();
+    const mm = String(dt.getMonth() + 1).padStart(2, "0");
+    const dd = String(dt.getDate()).padStart(2, "0");
+    return `${yy}-${mm}-${dd}`;
+  }
+
+  function normalizeStaffList(list) {
+    if (!Array.isArray(list) || list.length === 0) {
+      return JSON.parse(JSON.stringify(DEFAULT_STAFF));
+    }
+    const fixed = list.map(s => {
+      const copy = Object.assign({}, s);
+      if (copy.name === "Điều dưỡng Mẫn") copy.name = "Điều dưỡng Mẩn";
+      if (copy.name === "Hộ sinh Ngọc" || copy.name === "CN. Hường") copy.isAdminOnly = true;
+      if (copy.name === "Dược sĩ Thảo" || copy.name === "Dược sĩ Ý") copy.contract = "Viên chức";
+      if (copy.name === "Bác sĩ Dung") copy.contract = "HĐ NQ73";
+      return copy;
+    });
+
+    const baseIndex = new Map(DEFAULT_STAFF.map((s, idx) => [s.name, idx]));
+    fixed.sort((a, b) => {
+      const da = DEPT_ORDER.indexOf(a.dept);
+      const db = DEPT_ORDER.indexOf(b.dept);
+      const deptA = da === -1 ? 99 : da;
+      const deptB = db === -1 ? 99 : db;
+      if (deptA !== deptB) return deptA - deptB;
+
+      const pa = POS_ORDER[a.position] || 99;
+      const pb = POS_ORDER[b.position] || 99;
+      if (pa !== pb) return pa - pb;
+
+      const ia = baseIndex.has(a.name) ? baseIndex.get(a.name) : 999;
+      const ib = baseIndex.has(b.name) ? baseIndex.get(b.name) : 999;
+      return ia - ib;
+    });
+    return fixed;
+  }
+
+  function saveState(syncCloud = true) {
+    try {
+      const payload = {
+        selectedMonth: state.selectedMonth,
+        staff: state.staff,
+        schedule: state.schedule,
+        registrations: state.registrations,
+        cloud: { url: state.cloud.url, room: state.cloud.room }
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+      if (syncCloud && state.cloud.connected && state.cloud.url) {
+        pushToFirebase();
+      }
+    } catch (e) {
+      console.warn("Save storage failed:", e);
+    }
+  }
+
+  function loadState() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed.selectedMonth) state.selectedMonth = parsed.selectedMonth;
+        if (parsed.staff) state.staff = normalizeStaffList(parsed.staff);
+        if (parsed.schedule) state.schedule = parsed.schedule;
+        if (parsed.registrations) state.registrations = parsed.registrations;
+        if (parsed.cloud) {
+          state.cloud.url = parsed.cloud.url || "";
+          state.cloud.room = parsed.cloud.room || "tram-y-te";
+        }
+      }
+      // Check URL query params for auto cloud connection
+      const params = new URLSearchParams(window.location.search);
+      const dbParam = params.get("db");
+      const roomParam = params.get("room");
+      if (dbParam) {
+        state.cloud.url = dbParam.replace(/\/+$/, "");
+        if (roomParam) state.cloud.room = roomParam;
+      }
+    } catch (e) {
+      console.warn("Load storage failed:", e);
+      state.staff = normalizeStaffList(DEFAULT_STAFF);
+    }
+  }
+
+  /* Firebase REST Sync */
+  function getFirebaseEndpoint(subpath = "") {
+    const base = state.cloud.url.replace(/\/+$/, "");
+    const room = encodeURIComponent(state.cloud.room || "tram-y-te");
+    const sub = subpath ? `/${subpath}` : "";
+    return `${base}/tyt_rooms/${room}${sub}.json`;
+  }
+
+  async function pushToFirebase() {
+    if (!state.cloud.url) return;
+    try {
+      await fetch(getFirebaseEndpoint("shared"), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          staff: state.staff,
+          schedule: state.schedule,
+          registrations: state.registrations,
+          updatedAt: Date.now()
+        })
+      });
+    } catch (err) {
+      console.warn("Firebase push error:", err);
+    }
+  }
+
+  async function pullFromFirebase(isInitial = false) {
+    if (!state.cloud.url) return;
+    try {
+      const res = await fetch(getFirebaseEndpoint("shared"));
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const data = await res.json();
+      state.cloud.connected = true;
+      updateCloudUI();
+      if (data && typeof data === "object") {
+        if (Array.isArray(data.staff) && data.staff.length > 0) {
+          state.staff = normalizeStaffList(data.staff);
+        }
+        if (data.schedule && typeof data.schedule === "object") {
+          state.schedule = data.schedule;
+        }
+        if (Array.isArray(data.registrations)) {
+          state.registrations = data.registrations;
+        }
+        saveState(false);
+        renderAll();
+      } else if (isInitial) {
+        await pushToFirebase();
+      }
+    } catch (err) {
+      state.cloud.connected = false;
+      updateCloudUI();
+      if (isInitial) {
+        showModal("Lỗi kết nối Firebase", `<p>Không kết nối được tới <b>${escapeHtml(state.cloud.url)}</b>. Vui lòng kiểm tra lại Database URL và chế độ Test Mode (Rules đọc/ghi).</p>`);
+      }
+    }
+  }
+
+  function startCloudSync() {
+    if (!state.cloud.url) return;
+    pullFromFirebase(true);
+    if (cloudPollTimer) clearInterval(cloudPollTimer);
+    cloudPollTimer = setInterval(() => pullFromFirebase(false), 5000);
+  }
+
+  function updateCloudUI() {
+    const badge = document.getElementById("cloudBadge");
+    const btnDisc = document.getElementById("btnDisconnectCloud");
+    const roomLabel = document.getElementById("cloudRoomLabel");
+    roomLabel.textContent = "Phòng: " + (state.cloud.room || "tram-y-te");
+    if (state.cloud.connected) {
+      badge.classList.add("cloud-on");
+      badge.innerHTML = `<span class="dot"></span> Đang đồng bộ Cloud`;
+      btnDisc.classList.remove("hidden");
+    } else {
+      badge.classList.remove("cloud-on");
+      badge.innerHTML = `<span class="dot"></span> Lưu cục bộ (Offline)`;
+      btnDisc.classList.add("hidden");
+    }
+  }
+
+  /* Modal Helpers */
+  function showModal(title, htmlContent) {
+    document.getElementById("modalTitle").textContent = title;
+    document.getElementById("modalBody").innerHTML = htmlContent;
+    document.getElementById("customModal").classList.add("open");
+  }
+
+  function closeModal() {
+    document.getElementById("customModal").classList.remove("open");
+  }
+
+  /* Business Logic & Validation */
+  function getStaffById(id) {
+    return state.staff.find(s => s.id === id) || null;
+  }
+
+  function isClinicalLeadTitle(title) {
+    return title === "Bác sĩ" || title === "Y sĩ";
+  }
+
+  function isNurseOrMidwifeTitle(title) {
+    return title === "Điều dưỡng" || title === "Hộ sinh";
+  }
+
+  function getMonthDates(ym) {
+    const [y, m] = ym.split("-").map(Number);
+    const total = new Date(y, m, 0).getDate();
+    const arr = [];
+    for (let d = 1; d <= total; d++) {
+      arr.push(`${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`);
+    }
+    return arr;
+  }
+
+  function evaluateDayWarnings(iso) {
+    const warnings = [];
+    const entry = state.schedule[iso] || {};
+    const prevIso = addDaysISO(iso, -1);
+    const prevEntry = state.schedule[prevIso] || {};
+    const prevDutyIds = [prevEntry.main1, prevEntry.main2, prevEntry.dyt2].filter(Boolean);
+
+    const s1 = getStaffById(entry.main1);
+    const s2 = getStaffById(entry.main2);
+    const s3 = getStaffById(entry.dyt2);
+
+    const todayDuty = [s1, s2, s3].filter(Boolean);
+    const uniqueIds = new Set(todayDuty.map(s => s.id));
+    if (uniqueIds.size < todayDuty.length) {
+      warnings.push("Trùng người trực trong cùng ngày");
+    }
+
+    todayDuty.forEach(s => {
+      if (s.isAdminOnly) warnings.push(`${s.name} thuộc chế độ Hành chính`);
+      if (prevDutyIds.includes(s.id)) warnings.push(`${s.name} vi phạm ra trực liền kề`);
+    });
+
+    if (s1 && s2) {
+      const hasLead = isClinicalLeadTitle(s1.title) || isClinicalLeadTitle(s2.title);
+      const hasNurse = isNurseOrMidwifeTitle(s1.title) || isNurseOrMidwifeTitle(s2.title);
+      if (!hasLead || !hasNurse) {
+        warnings.push("Điểm chính cần 1 BS/YS + 1 ĐD/HS");
+      }
+    }
+
+    if (s3 && !isNurseOrMidwifeTitle(s3.title)) {
+      warnings.push("ĐYT 2 cần ĐD hoặc HS");
+    }
+
+    return warnings;
+  }
+
+  /* Rendering */
+  function renderRoleUI() {
+    const btn = document.getElementById("btnToggleAdmin");
+    const badge = document.getElementById("roleBadge");
+    const cloudCard = document.getElementById("cloudConfigCard");
+    const schedTools = document.getElementById("adminScheduleTools");
+    const addStaffCard = document.getElementById("adminAddStaffCard");
+    const adminCols = document.querySelectorAll(".admin-col");
+
+    if (state.isAdmin) {
+      btn.textContent = "Thoát Admin";
+      badge.classList.add("admin-active");
+      badge.innerHTML = `<span class="dot"></span> Quản trị viên (Admin)`;
+      cloudCard.classList.remove("hidden");
+      schedTools.classList.remove("hidden");
+      addStaffCard.classList.remove("hidden");
+      adminCols.forEach(el => el.classList.remove("hidden"));
+    } else {
+      btn.textContent = "Đăng nhập Admin";
+      badge.classList.remove("admin-active");
+      badge.innerHTML = `<span class="dot"></span> Cá nhân`;
+      cloudCard.classList.add("hidden");
+      schedTools.classList.add("hidden");
+      addStaffCard.classList.add("hidden");
+      adminCols.forEach(el => el.classList.add("hidden"));
+    }
+  }
+
+  function renderSelectOptions() {
+    const filterSel = document.getElementById("filterStaffSelect");
+    const regSel = document.getElementById("regStaffSelect");
+    const curFilter = state.filterStaffId;
+    const curReg = regSel.value;
+
+    let filterHtml = `<option value="ALL">Tất cả nhân sự (${state.staff.length})</option>`;
+    let regHtml = "";
+    state.staff.forEach(s => {
+      const label = `${s.name} – ${s.title} (${s.dept})`;
+      filterHtml += `<option value="${s.id}">${escapeHtml(label)}</option>`;
+      regHtml += `<option value="${s.id}">${escapeHtml(label)}</option>`;
+    });
+
+    filterSel.innerHTML = filterHtml;
+    filterSel.value = curFilter;
+    regSel.innerHTML = regHtml;
+    if (curReg && getStaffById(curReg)) regSel.value = curReg;
+  }
+
+  function renderSummaryAndBanner() {
+    const dutyEligible = state.staff.filter(s => !s.isAdminOnly).length;
+    document.getElementById("statStaff").innerHTML = `${dutyEligible} <span>/ ${state.staff.length} nhân sự</span>`;
+
+    const dates = getMonthDates(state.selectedMonth);
+    let scheduledCount = 0;
+    let totalWarnings = 0;
+
+    dates.forEach(iso => {
+      const e = state.schedule[iso];
+      if (e && (e.main1 || e.main2 || e.dyt2)) scheduledCount++;
+      totalWarnings += evaluateDayWarnings(iso).length;
+    });
+
+    document.getElementById("statDays").innerHTML = `${scheduledCount} <span>/ ${dates.length} ngày</span>`;
+
+    const pendingCount = state.registrations.filter(r => r.status === "pending").length;
+    document.getElementById("statPending").innerHTML = `${pendingCount} <span>đăng ký</span>`;
+    const navBadge = document.getElementById("navPendingBadge");
+    if (pendingCount > 0) {
+      navBadge.textContent = pendingCount;
+      navBadge.classList.remove("hidden");
+    } else {
+      navBadge.classList.add("hidden");
+    }
+
+    document.getElementById("statWarnings").innerHTML = `${totalWarnings} <span>lỗi / xung đột</span>`;
+
+    const banner = document.getElementById("globalBanner");
+    if (totalWarnings > 0) {
+      banner.className = "banner err no-print";
+      banner.textContent = `Cảnh báo: Phát hiện ${totalWarnings} lỗi / xung đột quy tắc trực trong tháng ${state.selectedMonth}. Vui lòng kiểm tra các dòng tô đỏ.`;
+    } else {
+      banner.className = "banner ok no-print";
+      banner.textContent = "Hợp lệ: Không phát hiện trùng tua trực, vi phạm ra trực 24/24 hay thiếu Bác sĩ hành chính tại Điểm chính.";
+    }
+  }
+
+  function renderScheduleTable() {
+    const tbody = document.getElementById("scheduleBody");
+    const todayIso = getTodayISO();
+    let dates = getMonthDates(state.selectedMonth);
+
+    // Prioritize Today on top if in selected month
+    if (dates.includes(todayIso)) {
+      const idx = dates.indexOf(todayIso);
+      dates = dates.slice(idx).concat(dates.slice(0, idx));
+    }
+
+    let html = "";
+    dates.forEach(iso => {
+      const entry = state.schedule[iso] || {};
+      const prevEntry = state.schedule[addDaysISO(iso, -1)] || {};
+      const dowInfo = getDayOfWeekInfo(iso);
+      const warnings = evaluateDayWarnings(iso);
+
+      if (state.onlyWarnings && warnings.length === 0) return;
+
+      const s1 = getStaffById(entry.main1);
+      const s2 = getStaffById(entry.main2);
+      const s3 = getStaffById(entry.dyt2);
+      const offStaff = [prevEntry.main1, prevEntry.main2, prevEntry.dyt2]
+        .map(getStaffById)
+        .filter(Boolean);
+      const tasks = Array.isArray(entry.tasks) ? entry.tasks : [];
+
+      if (state.filterStaffId !== "ALL") {
+        const fid = state.filterStaffId;
+        const involved = [entry.main1, entry.main2, entry.dyt2].includes(fid) ||
+          offStaff.some(s => s.id === fid) ||
+          tasks.some(t => t.staffId === fid);
+        if (!involved) return;
+      }
+
+      const rowClasses = [];
+      if (iso === todayIso) rowClasses.push("today-row");
+      else if (dowInfo.isWeekend) rowClasses.push("weekend-row");
+      if (warnings.length > 0) rowClasses.push("warn-row");
+
+      const clickAttr = state.isAdmin ? `style="cursor:pointer;" onclick="window.__openDayEditor('${iso}')"` : "";
+
+      const mainHtml = [s1, s2].filter(Boolean).map(s => `<span class="chip chip-teal">${escapeHtml(s.name)}</span>`).join("") || `<span style="color:#94a3b8;">—</span>`;
+      const dyt2Html = s3 ? `<span class="chip chip-sky">${escapeHtml(s3.name)}</span>` : `<span style="color:#94a3b8;">—</span>`;
+      const offHtml = offStaff.length ? offStaff.map(s => `<span class="chip chip-slate">${escapeHtml(s.name)}</span>`).join("") : `<span style="color:#94a3b8;">—</span>`;
+
+      let tasksHtml = "";
+      if (tasks.length > 0) {
+        tasksHtml = tasks.map(t => {
+          const st = getStaffById(t.staffId);
+          const nm = st ? st.name : "Nhân sự";
+          const noteStr = t.note ? ` (${escapeHtml(t.note)})` : "";
+          return `<div><span class="chip chip-amber">${escapeHtml(nm)}</span> <b>${escapeHtml(t.session)}</b>: ${escapeHtml(t.type)}${noteStr}</div>`;
+        }).join("");
+      } else {
+        // Ảnh 1 fix: Thứ 7, Chủ nhật không ghi chú "Hành chính"
+        tasksHtml = dowInfo.isWeekend ? "" : `<span style="color:#64748b;">Hành chính</span>`;
+      }
+
+      const warnHtml = warnings.length
+        ? warnings.map(w => `<div class="chip chip-rose">${escapeHtml(w)}</div>`).join("")
+        : `<span class="chip chip-emerald">Đạt</span>`;
+
+      html += `
+        <tr class="${rowClasses.join(" ")}" ${clickAttr}>
+          <td class="sticky-col">
+            <div style="font-weight:700;color:#0f172a;">${formatVNDate(iso)}</div>
+            <div style="font-size:12px;color:${dowInfo.isWeekend ? "#0f766e" : "#64748b"};font-weight:${dowInfo.isWeekend ? "700" : "500"};">
+              ${dowInfo.label} ${iso === todayIso ? '<span class="chip chip-teal" style="margin-left:3px;">Hôm nay</span>' : ""}
+            </div>
+          </td>
+          <td>${mainHtml}</td>
+          <td>${dyt2Html}</td>
+          <td>${offHtml}</td>
+          <td>${tasksHtml}</td>
+          <td class="no-print">${warnHtml}</td>
+        </tr>
+      `;
+    });
+
+    tbody.innerHTML = html || `<tr><td colspan="6" style="text-align:center;color:#64748b;padding:18px;">Không có dữ liệu phù hợp bộ lọc.</td></tr>`;
+  }
+
+  function renderRegistrations() {
+    const box = document.getElementById("regListContainer");
+    if (!state.registrations.length) {
+      box.innerHTML = `<p style="color:#64748b;text-align:center;padding:14px;">Chưa có đăng ký nào trong hệ thống.</p>`;
+      return;
+    }
+
+    const sorted = [...state.registrations].sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+    let html = "";
+    sorted.forEach((r, idx) => {
+      const st = getStaffById(r.staffId);
+      const statusChip = r.status === "approved"
+        ? `<span class="chip chip-emerald">Đã duyệt</span>`
+        : r.status === "rejected"
+        ? `<span class="chip chip-rose">Từ chối</span>`
+        : `<span class="chip chip-amber">Chờ duyệt (#${idx + 1})</span>`;
+
+      const adminActions = (state.isAdmin && r.status === "pending") ? `
+        <div class="btn-toolbar" style="margin-top:8px;margin-bottom:0;">
+          <button type="button" class="btn btn-primary btn-sm" onclick="window.__approveReg('${r.id}')">Phê duyệt & Cập nhật lịch</button>
+          <button type="button" class="btn btn-danger btn-sm" onclick="window.__rejectReg('${r.id}')">Từ chối</button>
+        </div>
+      ` : "";
+
+      html += `
+        <div style="border:1px solid var(--slate-200);border-radius:12px;padding:11px;margin-bottom:8px;background:#fff;">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;">
+            <b>${escapeHtml(st ? st.name : "Nhân sự")}</b>
+            ${statusChip}
+          </div>
+          <div style="font-size:12.5px;color:#334155;margin-top:4px;">
+            Ngày: <b>${formatVNDate(r.date)}</b> • Buổi: <b>${escapeHtml(r.session)}</b> • Nội dung: <b>${escapeHtml(r.type)}</b>
+          </div>
+          ${r.note ? `<div style="font-size:12px;color:#64748b;margin-top:3px;">Ghi chú: ${escapeHtml(r.note)}</div>` : ""}
+          ${adminActions}
+        </div>
+      `;
+    });
+    box.innerHTML = html;
+  }
+
+  function renderStaffTable() {
+    const tbody = document.getElementById("staffTableBody");
+    let html = "";
+    let currentDept = "";
+    state.staff.forEach((s, idx) => {
+      if (s.dept !== currentDept) {
+        currentDept = s.dept;
+        html += `<tr class="dept-header-row"><td colspan="7">${escapeHtml(currentDept)}</td></tr>`;
+      }
+      const posBadge = s.position !== "Nhân viên"
+        ? `<span class="chip chip-amber">${escapeHtml(s.position)}</span>`
+        : escapeHtml(s.position);
+      const contractBadge = s.contract === "HĐ NQ73"
+        ? `<span class="chip chip-sky">HĐ NQ73</span>`
+        : `<span class="chip chip-emerald">${escapeHtml(s.contract || "Viên chức")}</span>`;
+      const modeText = s.isAdminOnly
+        ? `<span style="color:#b45309;font-weight:700;">Hành chính</span>`
+        : `<span style="color:#0f766e;font-weight:700;">Tham gia trực</span>`;
+
+      html += `
+        <tr>
+          <td>${idx + 1}</td>
+          <td class="sticky-col" style="font-weight:700;">${escapeHtml(s.name)}</td>
+          <td>${posBadge}</td>
+          <td>${escapeHtml(s.title)}</td>
+          <td>${contractBadge}</td>
+          <td>${modeText}</td>
+          <td class="admin-col ${state.isAdmin ? "" : "hidden"}">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="window.__editStaff('${s.id}')">Sửa</button>
+          </td>
+        </tr>
+      `;
+    });
+    tbody.innerHTML = html;
+  }
+
+  function renderStatsTable() {
+    const tbody = document.getElementById("statsTableBody");
+    const dates = getMonthDates(state.selectedMonth);
+    let html = "";
+    state.staff.forEach((s, idx) => {
+      let mainCnt = 0, dyt2Cnt = 0, wkndCnt = 0, taskCnt = 0;
+      dates.forEach(iso => {
+        const e = state.schedule[iso] || {};
+        const dow = getDayOfWeekInfo(iso);
+        const inMain = e.main1 === s.id || e.main2 === s.id;
+        const inDyt2 = e.dyt2 === s.id;
+        if (inMain) mainCnt++;
+        if (inDyt2) dyt2Cnt++;
+        if ((inMain || inDyt2) && dow.isWeekend) wkndCnt++;
+        if (Array.isArray(e.tasks)) {
+          taskCnt += e.tasks.filter(t => t.staffId === s.id).length;
+        }
+      });
+      html += `
+        <tr>
+          <td>${idx + 1}</td>
+          <td class="sticky-col" style="font-weight:700;">${escapeHtml(s.name)}</td>
+          <td>${escapeHtml(s.dept)}</td>
+          <td><b>${mainCnt}</b></td>
+          <td><b>${dyt2Cnt}</b></td>
+          <td><span class="chip chip-teal">${mainCnt + dyt2Cnt}</span></td>
+          <td>${wkndCnt}</td>
+          <td>${taskCnt}</td>
+        </tr>
+      `;
+    });
+    tbody.innerHTML = html;
+  }
+
+  function renderAll() {
+    renderRoleUI();
+    renderSelectOptions();
+    renderSummaryAndBanner();
+    renderScheduleTable();
+    renderRegistrations();
+    renderStaffTable();
+    renderStatsTable();
+  }
+
+  /* Admin Interactive Actions */
+  window.__openDayEditor = function(iso) {
+    safeRun(() => {
+      if (!state.isAdmin) return;
+      const entry = state.schedule[iso] || {};
+      const eligible = state.staff.filter(s => !s.isAdminOnly);
+      const buildOpts = (selectedId) => {
+        let out = `<option value="">-- Trống --</option>`;
+        eligible.forEach(s => {
+          out += `<option value="${s.id}" ${s.id === selectedId ? "selected" : ""}>${escapeHtml(s.name)} (${escapeHtml(s.title)})</option>`;
+        });
+        return out;
+      };
+
+      const tasks = Array.isArray(entry.tasks) ? entry.tasks : [];
+      const tasksListHtml = tasks.length
+        ? tasks.map((t, i) => {
+            const st = getStaffById(t.staffId);
+            return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 8px;background:#f8fafc;border-radius:8px;margin-bottom:5px;">
+              <span><b>${escapeHtml(st ? st.name : "")}</b> (${escapeHtml(t.session)}): ${escapeHtml(t.type)}</span>
+              <button type="button" class="btn btn-danger btn-sm" onclick="window.__removeDayTask('${iso}', ${i})">Xoá</button>
+            </div>`;
+          }).join("")
+        : `<p style="font-size:12px;color:#64748b;margin:4px 0;">Chưa có lịch công tác/nghỉ riêng.</p>`;
+
+      showModal(`Xếp Lịch Ngày ${formatVNDate(iso)}`, `
+        <div class="form-group">
+          <label class="form-label">Điểm chính 1 (BS / YS)</label>
+          <select class="form-control" id="editMain1">${buildOpts(entry.main1)}</select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Điểm chính 2 (ĐD / HS)</label>
+          <select class="form-control" id="editMain2">${buildOpts(entry.main2)}</select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Điểm Y tế 2 (ĐD / HS)</label>
+          <select class="form-control" id="editDyt2">${buildOpts(entry.dyt2)}</select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Lịch công tác / Nghỉ trong ngày</label>
+          ${tasksListHtml}
+        </div>
+        <button type="button" class="btn btn-primary btn-block" id="btnSaveDayEdit">Lưu thay đổi ngày ${formatVNDate(iso)}</button>
+      `);
+
+      document.getElementById("btnSaveDayEdit").onclick = () => safeRun(() => {
+        const cur = state.schedule[iso] || {};
+        state.schedule[iso] = {
+          main1: document.getElementById("editMain1").value || "",
+          main2: document.getElementById("editMain2").value || "",
+          dyt2: document.getElementById("editDyt2").value || "",
+          tasks: cur.tasks || []
+        };
+        saveState();
+        closeModal();
+        renderAll();
+      });
+    });
+  };
+
+  window.__removeDayTask = function(iso, idx) {
+    safeRun(() => {
+      if (!state.schedule[iso] || !Array.isArray(state.schedule[iso].tasks)) return;
+      state.schedule[iso].tasks.splice(idx, 1);
+      saveState();
+      window.__openDayEditor(iso);
+      renderAll();
+    });
+  };
+
+  window.__editStaff = function(id) {
+    safeRun(() => {
+      if (!state.isAdmin) return;
+      const s = getStaffById(id);
+      if (!s) return;
+      const positions = ["Quyền Giám đốc", "Phó Giám đốc", "Trưởng phòng", "Phó Trưởng phòng", "Trưởng khoa", "Phó Trưởng khoa", "Phụ trách điểm", "Nhân viên"];
+      const titles = ["Bác sĩ", "Y sĩ", "Điều dưỡng", "Hộ sinh", "Dược sĩ", "Chuyên môn khác"];
+      const contracts = ["Viên chức", "HĐ NQ73", "Hợp đồng"];
+
+      showModal(`Chỉnh Sửa: ${s.name}`, `
+        <div class="form-group">
+          <label class="form-label">Họ và tên</label>
+          <input type="text" class="form-control" id="editSName" value="${escapeHtml(s.name)}" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Chức vụ</label>
+          <select class="form-control" id="editSPos">
+            ${positions.map(p => `<option value="${p}" ${p === s.position ? "selected" : ""}>${p}</option>`).join("")}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Chức danh</label>
+          <select class="form-control" id="editSTitle">
+            ${titles.map(t => `<option value="${t}" ${t === s.title ? "selected" : ""}>${t}</option>`).join("")}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Đơn vị công tác</label>
+          <select class="form-control" id="editSDept">
+            ${DEPT_ORDER.map(d => `<option value="${d}" ${d === s.dept ? "selected" : ""}>${d}</option>`).join("")}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Loại hợp đồng</label>
+          <select class="form-control" id="editSContract">
+            ${contracts.map(c => `<option value="${c}" ${c === s.contract ? "selected" : ""}>${c}</option>`).join("")}
+          </select>
+        </div>
+        <div class="form-group">
+          <label style="display:flex;align-items:center;gap:8px;font-weight:600;">
+            <input type="checkbox" id="editSAdminOnly" ${s.isAdminOnly ? "checked" : ""} /> Chế độ Hành chính (không trực)
+          </label>
+        </div>
+        <button type="button" class="btn btn-primary btn-block" id="btnSaveStaffEdit">Lưu thông tin nhân sự</button>
+      `);
+
+      document.getElementById("btnSaveStaffEdit").onclick = () => safeRun(() => {
+        s.name = document.getElementById("editSName").value.trim() || s.name;
+        s.position = document.getElementById("editSPos").value;
+        s.title = document.getElementById("editSTitle").value;
+        s.dept = document.getElementById("editSDept").value;
+        s.contract = document.getElementById("editSContract").value;
+        s.isAdminOnly = document.getElementById("editSAdminOnly").checked;
+        state.staff = normalizeStaffList(state.staff);
+        saveState();
+        closeModal();
+        renderAll();
+      });
+    });
+  };
+
+  window.__approveReg = function(regId) {
+    safeRun(() => {
+      if (!state.isAdmin) return;
+      const reg = state.registrations.find(r => r.id === regId);
+      if (!reg) return;
+      reg.status = "approved";
+      if (!state.schedule[reg.date]) {
+        state.schedule[reg.date] = { main1: "", main2: "", dyt2: "", tasks: [] };
+      }
+      const dayObj = state.schedule[reg.date];
+      if (reg.type === "Trực điểm chính") {
+        const st = getStaffById(reg.staffId);
+        if (st && isClinicalLeadTitle(st.title)) dayObj.main1 = reg.staffId;
+        else if (!dayObj.main2) dayObj.main2 = reg.staffId;
+        else dayObj.main1 = reg.staffId;
+      } else if (reg.type === "Trực ĐYT 2") {
+        dayObj.dyt2 = reg.staffId;
+      } else {
+        if (!Array.isArray(dayObj.tasks)) dayObj.tasks = [];
+        dayObj.tasks.push({
+          id: "t_" + Date.now(),
+          staffId: reg.staffId,
+          session: reg.session,
+          type: reg.type,
+          note: reg.note
+        });
+      }
+      saveState();
+      renderAll();
+    });
+  };
+
+  window.__rejectReg = function(regId) {
+    safeRun(() => {
+      if (!state.isAdmin) return;
+      const reg = state.registrations.find(r => r.id === regId);
+      if (!reg) return;
+      reg.status = "rejected";
+      saveState();
+      renderAll();
+    });
+  };
+
+  function autoGenerateSchedule(onlyEmpty) {
+    const dates = getMonthDates(state.selectedMonth);
+    const leads = state.staff.filter(s => !s.isAdminOnly && isClinicalLeadTitle(s.title));
+    const nurses = state.staff.filter(s => !s.isAdminOnly && isNurseOrMidwifeTitle(s.title));
+
+    if (leads.length < 1 || nurses.length < 2) {
+      showModal("Không đủ nhân sự trực", "<p>Cần tối thiểu 1 Bác sĩ/Y sĩ và 2 Điều dưỡng/Hộ sinh tham gia trực để xếp tự động.</p>");
+      return;
+    }
+
+    const counts = {};
+    state.staff.forEach(s => { counts[s.id] = 0; });
+
+    dates.forEach(iso => {
+      const cur = state.schedule[iso] || { main1: "", main2: "", dyt2: "", tasks: [] };
+      const prev = state.schedule[addDaysISO(iso, -1)] || {};
+      const blocked = new Set([prev.main1, prev.main2, prev.dyt2].filter(Boolean));
+      if (Array.isArray(cur.tasks)) {
+        cur.tasks.forEach(t => blocked.add(t.staffId));
+      }
+
+      if (!onlyEmpty || !cur.main1) {
+        const candLeads = [...leads].sort((a, b) => counts[a.id] - counts[b.id]);
+        const pick1 = candLeads.find(s => !blocked.has(s.id)) || candLeads[0];
+        if (pick1) {
+          cur.main1 = pick1.id;
+          blocked.add(pick1.id);
+          counts[pick1.id]++;
+        }
+      }
+
+      if (!onlyEmpty || !cur.main2) {
+        const candNurses = [...nurses].sort((a, b) => counts[a.id] - counts[b.id]);
+        const pick2 = candNurses.find(s => !blocked.has(s.id)) || candNurses[0];
+        if (pick2) {
+          cur.main2 = pick2.id;
+          blocked.add(pick2.id);
+          counts[pick2.id]++;
+        }
+      }
+
+      if (!onlyEmpty || !cur.dyt2) {
+        const candDyt2 = [...nurses].sort((a, b) => counts[a.id] - counts[b.id]);
+        const pick3 = candDyt2.find(s => !blocked.has(s.id)) || candDyt2[0];
+        if (pick3) {
+          cur.dyt2 = pick3.id;
+          blocked.add(pick3.id);
+          counts[pick3.id]++;
+        }
+      }
+
+      state.schedule[iso] = cur;
+    });
+
+    saveState();
+    renderAll();
+  }
+
+  function exportCSV() {
+    const dates = getMonthDates(state.selectedMonth);
+    const rows = [["Ngày", "Thứ", "Trực Điểm chính 1", "Trực Điểm chính 2", "Trực ĐYT 2", "Ra trực", "Lịch công tác"]];
+    dates.forEach(iso => {
+      const e = state.schedule[iso] || {};
+      const prev = state.schedule[addDaysISO(iso, -1)] || {};
+      const dow = getDayOfWeekInfo(iso);
+      const s1 = getStaffById(e.main1)?.name || "";
+      const s2 = getStaffById(e.main2)?.name || "";
+      const s3 = getStaffById(e.dyt2)?.name || "";
+      const off = [prev.main1, prev.main2, prev.dyt2].map(id => getStaffById(id)?.name).filter(Boolean).join("; ");
+      const tasks = Array.isArray(e.tasks) && e.tasks.length
+        ? e.tasks.map(t => `${getStaffById(t.staffId)?.name || ""} (${t.session}: ${t.type}${t.note ? " - " + t.note : ""})`).join("; ")
+        : (dow.isWeekend ? "" : "Hành chính");
+      rows.push([formatVNDate(iso), dow.label, s1, s2, s3, off, tasks]);
+    });
+
+    const csv = "\uFEFF" + rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Lich_Truc_TYT_${state.selectedMonth}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  /* Bind Events */
+  function bindEvents() {
+    document.getElementById("modalCloseBtn").onclick = closeModal;
+    document.getElementById("customModal").onclick = (e) => {
+      if (e.target.id === "customModal") closeModal();
+    };
+
+    // Bottom Navigation
+    document.querySelectorAll(".nav-item").forEach(btn => {
+      btn.onclick = () => safeRun(() => {
+        const sheet = btn.getAttribute("data-sheet");
+        state.activeSheet = sheet;
+        document.querySelectorAll(".nav-item").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        document.querySelectorAll(".sheet-section").forEach(sec => sec.classList.add("hidden"));
+        document.getElementById(`sheet-${sheet}`).classList.remove("hidden");
+      });
+    });
+
+    // Admin Login / Logout
+    document.getElementById("btnToggleAdmin").onclick = () => safeRun(() => {
+      if (state.isAdmin) {
+        state.isAdmin = false;
+        renderAll();
+        return;
+      }
+      showModal("Đăng Nhập Quản Trị Viên (Admin)", `
+        <div class="form-group">
+          <label class="form-label">Nhập mã PIN Admin (mặc định: 2026)</label>
+          <input type="password" inputmode="numeric" class="form-control" id="adminPinInput" placeholder="Nhập PIN..." />
+        </div>
+        <button type="button" class="btn btn-primary btn-block" id="btnConfirmPin">Xác nhận đăng nhập</button>
+      `);
+      setTimeout(() => document.getElementById("adminPinInput")?.focus(), 100);
+      document.getElementById("btnConfirmPin").onclick = () => safeRun(() => {
+        const val = document.getElementById("adminPinInput").value.trim();
+        if (val === ADMIN_PIN) {
+          state.isAdmin = true;
+          closeModal();
+          renderAll();
+        } else {
+          showModal("Sai mã PIN", "<p style='color:#9f1239;'>Mã PIN không chính xác. Vui lòng thử lại.</p>");
+        }
+      });
+    });
+
+    // Cloud Connect
+    document.getElementById("btnConnectCloud").onclick = () => safeRun(() => {
+      const url = document.getElementById("inputFirebaseUrl").value.trim().replace(/\/+$/, "");
+      const room = document.getElementById("inputRoomId").value.trim() || "tram-y-te";
+      if (!url || !url.startsWith("https://")) {
+        showModal("Thiếu đường dẫn Firebase", "<p>Vui lòng nhập đúng Firebase Realtime Database URL bắt đầu bằng <code>https://</code>.</p>");
+        return;
+      }
+      state.cloud.url = url;
+      state.cloud.room = room;
+      saveState(false);
+      startCloudSync();
+    });
+
+    document.getElementById("btnDisconnectCloud").onclick = () => safeRun(() => {
+      if (cloudPollTimer) clearInterval(cloudPollTimer);
+      state.cloud.connected = false;
+      state.cloud.url = "";
+      saveState(false);
+      updateCloudUI();
+    });
+
+    document.getElementById("btnCopyShareLink").onclick = () => safeRun(() => {
+      const url = document.getElementById("inputFirebaseUrl").value.trim().replace(/\/+$/, "") || state.cloud.url;
+      const room = document.getElementById("inputRoomId").value.trim() || state.cloud.room || "tram-y-te";
+      if (!url) {
+        showModal("Chưa có URL Firebase", "<p>Hãy dán Firebase Database URL và bấm Kết nối trước khi tạo link chia sẻ.</p>");
+        return;
+      }
+      const baseLoc = window.location.href.split("?")[0];
+      const shareUrl = `${baseLoc}?db=${encodeURIComponent(url)}&room=${encodeURIComponent(room)}`;
+      const box = document.getElementById("shareLinkBox");
+      const out = document.getElementById("outputShareLink");
+      box.classList.remove("hidden");
+      out.value = shareUrl;
+      out.select();
+      if (navigator.clipboard) navigator.clipboard.writeText(shareUrl).catch(() => {});
+      showModal("Đã Tạo Link Chia Sẻ", `<p>Link tự động kết nối phòng <b>${escapeHtml(room)}</b> đã sẵn sàng. Hãy sao chép đường link bên dưới gửi cho nhân viên:</p><input type="text" class="form-control" value="${escapeHtml(shareUrl)}" readonly onclick="this.select()" />`);
+    });
+
+    // Sheet 1 filters & tools
+    const monthPicker = document.getElementById("monthPicker");
+    monthPicker.value = state.selectedMonth;
+    monthPicker.onchange = () => safeRun(() => {
+      state.selectedMonth = monthPicker.value || getTodayISO().slice(0, 7);
+      saveState(false);
+      renderAll();
+    });
+
+    document.getElementById("filterStaffSelect").onchange = (e) => safeRun(() => {
+      state.filterStaffId = e.target.value;
+      renderScheduleTable();
+    });
+
+    document.getElementById("chkOnlyWarnings").onchange = (e) => safeRun(() => {
+      state.onlyWarnings = e.target.checked;
+      renderScheduleTable();
+    });
+
+    document.getElementById("btnExportExcel").onclick = () => safeRun(exportCSV);
+    document.getElementById("btnPrint").onclick = () => safeRun(() => window.print());
+    document.getElementById("btnAutoSchedule").onclick = () => safeRun(() => autoGenerateSchedule(false));
+    document.getElementById("btnFillEmpty").onclick = () => safeRun(() => autoGenerateSchedule(true));
+
+    document.getElementById("btnClearMonth").onclick = () => safeRun(() => {
+      getMonthDates(state.selectedMonth).forEach(iso => { delete state.schedule[iso]; });
+      saveState();
+      renderAll();
+    });
+
+    document.getElementById("btnExportJson").onclick = () => safeRun(() => {
+      const blob = new Blob([JSON.stringify({ staff: state.staff, schedule: state.schedule, registrations: state.registrations }, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `SaoLuu_LichTruc_TYT_${getTodayISO()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    document.getElementById("btnImportJsonTrigger").onclick = () => document.getElementById("inputJsonFile").click();
+    document.getElementById("inputJsonFile").onchange = (e) => safeRun(() => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => safeRun(() => {
+        const data = JSON.parse(ev.target.result);
+        if (data.staff) state.staff = normalizeStaffList(data.staff);
+        if (data.schedule) state.schedule = data.schedule;
+        if (data.registrations) state.registrations = data.registrations;
+        saveState();
+        renderAll();
+        showModal("Khôi phục thành công", "<p>Đã nạp dữ liệu từ file sao lưu .JSON.</p>");
+      });
+      reader.readAsText(file);
+    });
+
+    // Sheet 2 Registration
+    const regDate = document.getElementById("regDateInput");
+    regDate.value = getTodayISO();
+    document.getElementById("btnRegToday").onclick = () => { regDate.value = getTodayISO(); };
+
+    document.getElementById("btnSubmitReg").onclick = () => safeRun(() => {
+      const staffId = document.getElementById("regStaffSelect").value;
+      const date = document.getElementById("regDateInput").value;
+      const session = document.getElementById("regSessionSelect").value;
+      const type = document.getElementById("regTypeSelect").value;
+      const note = document.getElementById("regNoteInput").value.trim();
+
+      if (!staffId || !date) {
+        showModal("Thiếu thông tin", "<p>Vui lòng chọn đầy đủ nhân sự và ngày đăng ký.</p>");
+        return;
+      }
+
+      const st = getStaffById(staffId);
+      if ((type === "Trực điểm chính" || type === "Trực ĐYT 2") && st && st.isAdminOnly) {
+        showModal("Không hợp lệ", `<p>Nhân sự <b>${escapeHtml(st.name)}</b> đang ở chế độ <b>Hành chính (không trực)</b>.</p>`);
+        return;
+      }
+
+      state.registrations.push({
+        id: "reg_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6),
+        staffId,
+        date,
+        session,
+        type,
+        note,
+        status: "pending",
+        createdAt: Date.now()
+      });
+
+      document.getElementById("regNoteInput").value = "";
+      saveState();
+      renderAll();
+      showModal("Đã Gửi Đăng Ký", `<p>Đăng ký của <b>${escapeHtml(st ? st.name : "")}</b> ngày <b>${formatVNDate(date)}</b> (${escapeHtml(session)}) đã được đưa vào hàng chờ duyệt theo thứ tự ưu tiên thời gian.</p>`);
+    });
+
+    // Sheet 4 Staff management
+    document.getElementById("btnAddStaff").onclick = () => safeRun(() => {
+      const name = document.getElementById("newStaffName").value.trim();
+      if (!name) {
+        showModal("Thiếu họ tên", "<p>Vui lòng nhập họ và tên nhân sự mới.</p>");
+        return;
+      }
+      state.staff.push({
+        id: "s_" + Date.now(),
+        name,
+        position: document.getElementById("newStaffPosition").value,
+        title: document.getElementById("newStaffTitle").value,
+        dept: document.getElementById("newStaffDept").value,
+        contract: document.getElementById("newStaffContract").value,
+        isAdminOnly: document.getElementById("newStaffAdminOnly").checked
+      });
+      state.staff = normalizeStaffList(state.staff);
+      document.getElementById("newStaffName").value = "";
+      saveState();
+      renderAll();
+    });
+
+    document.getElementById("btnRestore29").onclick = () => safeRun(() => {
+      state.staff = normalizeStaffList(DEFAULT_STAFF);
+      saveState();
+      renderAll();
+      showModal("Đã khôi phục", "<p>Đã khôi phục đầy đủ danh sách chuẩn 29 nhân sự Trạm Y tế.</p>");
+    });
+  }
+
+  /* Init */
+  loadState();
+  bindEvents();
+  if (state.cloud.url) {
+    document.getElementById("inputFirebaseUrl").value = state.cloud.url;
+    document.getElementById("inputRoomId").value = state.cloud.room;
+    startCloudSync();
+  }
+  renderAll();
+})();
+</script>
+</body>
+</html>
