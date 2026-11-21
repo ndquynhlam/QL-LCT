@@ -673,6 +673,71 @@
     min-width: 148px;
     max-width: 175px;
   }
+
+  #sheet-4 .table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  #sheet-4 table {
+    table-layout: fixed;
+    min-width: 820px;
+    width: 100%;
+  }
+  #sheet-4 th, #sheet-4 td {
+    padding: 8px 8px;
+    font-size: 12.5px;
+    line-height: 1.38;
+    white-space: normal;
+    word-break: normal;
+    overflow-wrap: break-word;
+    vertical-align: middle;
+  }
+  #sheet-4 .col-stt { width: 52px; text-align: center; }
+  #sheet-4 td:first-child { text-align: center; font-weight: 600; color: var(--slate-600); }
+  #sheet-4 .col-name, #sheet-4 td.sticky-col { width: 152px; min-width: 140px; max-width: 170px; }
+  #sheet-4 .col-dept { width: 138px; }
+  #sheet-4 .col-loc { width: 136px; }
+  #sheet-4 .col-pos { width: 112px; }
+  #sheet-4 .col-title { width: 112px; }
+  #sheet-4 .col-contract { width: 96px; }
+  #sheet-4 .col-mode { width: 108px; }
+  #sheet-4 .col-action { width: 108px; }
+
+  @media (min-width: 900px) {
+    #sheet-4 table {
+      table-layout: auto;
+      min-width: 100%;
+    }
+    #sheet-4 .col-name, #sheet-4 td.sticky-col { min-width: 165px; max-width: 210px; }
+    #sheet-4 .col-dept { min-width: 145px; }
+    #sheet-4 .col-loc { min-width: 145px; }
+    #sheet-4 .col-pos { min-width: 115px; }
+    #sheet-4 .col-title { min-width: 115px; }
+    #sheet-4 .col-contract { min-width: 100px; }
+    #sheet-4 .col-mode { min-width: 112px; }
+    #sheet-4 .col-action { min-width: 116px; }
+  }
+
+  @media (max-width: 600px) {
+    #sheet-4 table {
+      table-layout: fixed;
+      min-width: 760px;
+    }
+    #sheet-4 th, #sheet-4 td {
+      padding: 7px 6px;
+      font-size: 12px;
+      line-height: 1.35;
+    }
+    #sheet-4 .col-stt { width: 44px; }
+    #sheet-4 .col-name, #sheet-4 td.sticky-col { width: 132px; min-width: 124px; max-width: 142px; }
+    #sheet-4 .col-dept { width: 124px; }
+    #sheet-4 .col-loc { width: 122px; }
+    #sheet-4 .col-pos { width: 102px; }
+    #sheet-4 .col-title { width: 102px; }
+    #sheet-4 .col-contract { width: 88px; }
+    #sheet-4 .col-mode { width: 96px; }
+    #sheet-4 .col-action { width: 98px; }
+  }
 </style>
 </head>
 <body>
@@ -1017,15 +1082,15 @@
         <table>
           <thead>
             <tr>
-              <th>STT</th>
-              <th class="sticky-col" style="min-width:140px;">Họ và tên</th>
-              <th>Đơn vị công tác</th>
-              <th>Địa điểm làm việc thực tế</th>
-              <th>Chức vụ</th>
-              <th>Chức danh</th>
-              <th>Loại HĐ</th>
-              <th>Chế độ trực</th>
-              <th class="admin-col hidden">Thao tác</th>
+              <th class="col-stt">STT</th>
+              <th class="sticky-col col-name">Họ và tên</th>
+              <th class="col-dept">Đơn vị công tác</th>
+              <th class="col-loc">Địa điểm làm việc thực tế</th>
+              <th class="col-pos">Chức vụ</th>
+              <th class="col-title">Chức danh</th>
+              <th class="col-contract">Loại HĐ</th>
+              <th class="col-mode">Chế độ trực</th>
+              <th class="admin-col hidden col-action">Thao tác</th>
             </tr>
           </thead>
           <tbody id="staffTableBody"></tbody>
@@ -1110,9 +1175,9 @@
         </div>
 
         <div class="info-credit-centered">
-          <div class="info-credit-line"><b>Quyền sở hữu &amp; sáng tạo hệ thống:</b> Nguyễn Đặng Quỳnh Lam — Tác giả thiết kế, xây dựng cấu trúc và phát triển ứng dụng quản lý lịch trực &amp; công tác.</div>
-          <div class="info-credit-line"><b>Đơn vị quản lý hệ thống:</b> Phòng Hành chính, tài chính, nhân sự — Chịu trách nhiệm vận hành, đối chiếu dữ liệu nhân sự, chấm công và lịch trực.</div>
-          <div class="info-credit-line"><b>Email khôi phục hệ thống:</b> ndquynhlam@gmail.com — Địa chỉ email chính thức dùng cho khôi phục và xác thực quyền quản trị hệ thống.</div>
+          <div class="info-credit-line"><b>Quyền sở hữu &amp; sáng tạo hệ thống:</b> Nguyễn Đặng Quỳnh Lam</div>
+          <div class="info-credit-line"><b>Đơn vị quản lý hệ thống:</b> Phòng Hành chính, tài chính, nhân sự</div>
+          <div class="info-credit-line"><b>Email khôi phục hệ thống:</b> ndquynhlam@gmail.com</div>
         </div>
       </div>
     </div>
