@@ -2177,6 +2177,42 @@
       }
     });
 
+    const getPresencePriorityRank = (item) => {
+      const st = item.staff || {};
+      const title = String(st.title || "");
+      const dept = String(st.dept || "");
+      const isDuty = !!item.isDuty;
+
+      if (isDuty && title === "Bác sĩ") return 1;
+      if (isDuty && title === "Y sĩ") return 2;
+      if (isDuty && (title === "Điều dưỡng" || title === "Hộ sinh")) return 3;
+      if (!isDuty && title === "Bác sĩ") return 4;
+      if (!isDuty && title === "Y sĩ") return 5;
+
+      const deptRanks = {
+        "Ban Giám đốc": 6,
+        "Phòng Hành chính": 7,
+        "Phòng Dân số": 8,
+        "Khoa Dược": 9,
+        "Khoa Khám bệnh": 10,
+        "Khoa Phòng bệnh": 11,
+        "Điểm Y tế 2": 12
+      };
+      return deptRanks[dept] || 20;
+    };
+
+    const sortByPresencePriority = (arr) => {
+      return [...arr].sort((a, b) => {
+        const ra = getPresencePriorityRank(a);
+        const rb = getPresencePriorityRank(b);
+        if (ra !== rb) return ra - rb;
+        return String(a.staff?.name || "").localeCompare(String(b.staff?.name || ""), "vi");
+      });
+    };
+
+    const sortedMainPresent = sortByPresencePriority(mainPresent);
+    const sortedDyt2Present = sortByPresencePriority(dyt2Present);
+
     const dateLabelVN = formatVNDate(targetIso);
     const renderList = (items, emptyText) => {
       if (!items.length) return `<div style="font-size:12px;color:#64748b;padding:4px 2px;">${emptyText}</div>`;
@@ -2202,16 +2238,16 @@
         <div class="presence-branch-card">
           <div class="presence-branch-head">
             <b style="color:#0f3d3e;font-size:13.5px;">Trụ sở Điểm Chính</b>
-            <span class="chip chip-teal" style="margin:0;">${mainPresent.length} người</span>
+            <span class="chip chip-teal" style="margin:0;">${sortedMainPresent.length} người</span>
           </div>
-          <div class="presence-list">${renderList(mainPresent, `Chưa ghi nhận nhân sự có mặt ngày ${dateLabelVN}.`)}</div>
+          <div class="presence-list">${renderList(sortedMainPresent, `Chưa ghi nhận nhân sự có mặt ngày ${dateLabelVN}.`)}</div>
         </div>
         <div class="presence-branch-card">
           <div class="presence-branch-head">
             <b style="color:#075985;font-size:13.5px;">Điểm Y Tế 2</b>
-            <span class="chip chip-sky" style="margin:0;">${dyt2Present.length} người</span>
+            <span class="chip chip-sky" style="margin:0;">${sortedDyt2Present.length} người</span>
           </div>
-          <div class="presence-list">${renderList(dyt2Present, `Chưa ghi nhận nhân sự có mặt ngày ${dateLabelVN}.`)}</div>
+          <div class="presence-list">${renderList(sortedDyt2Present, `Chưa ghi nhận nhân sự có mặt ngày ${dateLabelVN}.`)}</div>
         </div>
       </div>
     `;
@@ -2777,8 +2813,24 @@
       }
       reg.status = "approved";
 
-      const warningsAfter = evaluateDayWarnings(reg.date);
-      const stName = getStaffById(reg.staffId)?.name || "Nhân sự";
+      const prevWarnings = new Set(
+        (function() {
+          const curDay = state.schedule[reg.date];
+          state.schedule[reg.date] = prevSnap;
+          const wBefore = evaluateDayWarnings(reg.date);
+          state.schedule[reg.date] = curDay;
+          return wBefore;
+        })()
+      );
+      const stObj = getStaffById(reg.staffId);
+      const stName = stObj?.name || "Nhân sự";
+      const stNameLower = String(stName || "").toLowerCase();
+      const warningsAfter = evaluateDayWarnings(reg.date).filter(w => {
+        const wLower = String(w || "").toLowerCase();
+        const involvesTargetStaff = stNameLower && wLower.includes(stNameLower);
+        const isNewWarning = !prevWarnings.has(w);
+        return involvesTargetStaff || isNewWarning;
+      });
 
       const commitApproval = () => {
         dispatchEmailChangeNotification(
@@ -2795,7 +2847,7 @@
         requestAdminConflictConfirmation({
           modalTitle: `Cảnh Báo Khi Duyệt Đăng Ký (${formatVNDate(reg.date)})`,
           conflictMessages: warningsAfter,
-          summaryHtml: `Đăng ký của <b>${escapeHtml(stName)}</b> (${escapeHtml(reg.type)} - ${escapeHtml(reg.session)}) làm phát sinh cảnh báo/xung đột.`,
+          summaryHtml: `Đăng ký của <b>${escapeHtml(stName)}</b> (${escapeHtml(reg.type)} - ${escapeHtml(reg.session)}) phát sinh cảnh báo/xung đột liên quan.`,
           keepOldLabel: "Giữ nguyên lịch cũ",
           applyAnywayLabel: "Vẫn duyệt & cập nhật",
           onKeepOld: () => {
