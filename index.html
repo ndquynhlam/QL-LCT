@@ -486,6 +486,86 @@
     padding: 2px 6px;
     white-space: nowrap;
   }
+  .chip, .badge-pill, .presence-role, td, th, div, span, p, button, a {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+  .chip, .badge-pill, .presence-role {
+    white-space: normal !important;
+    max-width: 100%;
+    text-align: left;
+  }
+  td, th {
+    white-space: normal !important;
+  }
+  input[type="date"], input[type="month"] {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    -webkit-appearance: none;
+    appearance: none;
+    min-height: 40px;
+  }
+  .dept-header-row td.sticky-dept-cell {
+    position: sticky;
+    left: 0;
+    z-index: 4;
+    background: var(--teal-50) !important;
+    box-shadow: 2px 0 4px rgba(15, 23, 42, 0.08);
+    max-width: 240px;
+  }
+  .searchable-combo {
+    position: relative;
+  }
+  .searchable-combo-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: #fff;
+    border: 1px solid var(--slate-300);
+    border-radius: 10px;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.16);
+    max-height: 230px;
+    overflow-y: auto;
+    z-index: 60;
+  }
+  .searchable-combo-item {
+    padding: 8px 11px;
+    font-size: 13px;
+    color: var(--slate-800);
+    cursor: pointer;
+    border-bottom: 1px solid var(--slate-100);
+  }
+  .searchable-combo-item:last-child { border-bottom: none; }
+  .searchable-combo-item:hover, .searchable-combo-item.active {
+    background: var(--teal-50);
+    color: var(--teal-900);
+    font-weight: 600;
+  }
+  .multi-date-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--teal-100);
+    color: var(--teal-900);
+    border: 1px solid #99f6e4;
+    border-radius: 999px;
+    padding: 3px 9px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .multi-date-chip button {
+    border: none;
+    background: transparent;
+    color: #9f1239;
+    font-weight: 800;
+    cursor: pointer;
+    padding: 0 2px;
+    font-size: 13px;
+  }
   @media (max-width: 600px) {
     .row-2 { grid-template-columns: 1fr; }
     .form-control { font-size: 13.5px; padding: 8px 10px; }
@@ -640,13 +720,21 @@
       <p class="card-desc">Hỗ trợ đăng ký theo Cả ngày, Buổi Sáng hoặc Buổi Chiều. Người gửi sớm hơn được ưu tiên xếp lịch trước; Admin phê duyệt sẽ tự động cập nhật vào bảng lịch.</p>
 
       <div class="form-group">
-        <label class="form-label">Nhân sự đăng ký *</label>
-        <select class="form-control" id="regStaffSelect"></select>
+        <label class="form-label">Nhân sự đăng ký * (chọn từ danh sách hoặc gõ tên để lọc)</label>
+        <div class="searchable-combo" id="regStaffCombo">
+          <input type="text" class="form-control" id="regStaffSearchInput" placeholder="Gõ tên để tìm hoặc bấm để cuộn chọn nhân sự..." autocomplete="off" />
+          <select class="form-control hidden" id="regStaffSelect"></select>
+          <div class="searchable-combo-dropdown hidden" id="regStaffDropdown"></div>
+        </div>
       </div>
 
       <div class="form-group">
-        <label class="form-label">Ngày đăng ký (chọn từ lịch) *</label>
-        <input type="date" class="form-control" id="regDateInput" />
+        <label class="form-label">Ngày đăng ký (chọn 1 hoặc nhiều ngày bất kỳ / liên tiếp) *</label>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <input type="date" class="form-control" id="regDateInput" style="flex:1;" />
+          <button type="button" class="btn btn-secondary btn-sm" id="btnAddRegDate">+ Thêm ngày</button>
+        </div>
+        <div id="regMultiDatesList" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>
       </div>
 
       <div class="form-group">
@@ -701,7 +789,11 @@
     <div class="card">
       <div class="card-title" style="flex-wrap:wrap;">
         <span>Danh Sách Đăng Ký Chờ Duyệt &amp; Lịch Sử</span>
-        <button type="button" class="btn btn-danger btn-sm admin-col hidden" id="btnDeleteProcessedRegs">Xoá đăng ký cũ (đã duyệt / từ chối)</button>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;">
+          <button type="button" class="btn btn-primary btn-sm admin-col hidden" id="btnBulkApproveRegs">Duyệt hàng loạt (<span id="bulkRegSelectedCnt">0</span>)</button>
+          <button type="button" class="btn btn-secondary btn-sm admin-col hidden" id="btnSelectAllPendingRegs">Chọn tất cả chờ duyệt</button>
+          <button type="button" class="btn btn-danger btn-sm admin-col hidden" id="btnDeleteProcessedRegs">Xoá đăng ký cũ (đã duyệt / từ chối)</button>
+        </div>
       </div>
       <p class="card-desc">Đánh số thứ tự từ mới nhất đến cũ nhất. Admin bấm Duyệt để tự động đưa vào Bảng lịch hoặc xoá đăng ký cũ.</p>
       <div id="regListContainer"></div>
@@ -864,7 +956,8 @@
               <th>ĐYT 2</th>
               <th>Tổng trực</th>
               <th>Trực T7/CN</th>
-              <th>Công tác/Nghỉ</th>
+              <th>Công tác (Tập huấn/Học/Tiêm/Hỗ trợ)</th>
+              <th>Nghỉ (Nghỉ phép/Nghỉ bù)</th>
             </tr>
           </thead>
           <tbody id="statsTableBody"></tbody>
@@ -1355,7 +1448,7 @@
     if (tasks.length > 0 && todayDuty.length > 0) {
       const dutyMap = new Map(todayDuty.map(s => [s.id, s]));
       const seenConflict = new Set();
-      tasks.forEach(t => {
+      tasks.forEach((t, idx) => {
         if (!t || !t.staffId) return;
         const st = dutyMap.get(t.staffId);
         if (!st) return;
@@ -1363,7 +1456,8 @@
         const isDutyType = tName === "Trực điểm chính" || tName === "Trực ĐYT 2";
         if (isDutyType) return;
         const sessLabel = t.session ? ` (${t.session})` : "";
-        const msg = `${st.name} có ${tName || "lịch công tác/nghỉ"}${sessLabel} nhưng vẫn đang có tên trong ca trực cùng ngày`;
+        const locLabel = t.workLocation ? ` [${t.workLocation}]` : "";
+        const msg = `${st.name} có ${tName || "lịch công tác/nghỉ"}${sessLabel}${locLabel} nhưng vẫn đang có tên trong ca trực cùng ngày [#${idx + 1}]`;
         if (!seenConflict.has(msg)) {
           seenConflict.add(msg);
           warnings.push(msg);
@@ -1647,6 +1741,66 @@
     }
   }
 
+  let selectedRegDates = [];
+
+  function renderMultiRegDatesChips() {
+    const box = document.getElementById("regMultiDatesList");
+    if (!box) return;
+    if (!selectedRegDates.length) {
+      box.innerHTML = `<span style="font-size:11.5px;color:#64748b;">Đang áp dụng ngày đang chọn ở ô trên (bấm "+ Thêm ngày" để chọn nhiều ngày).</span>`;
+      return;
+    }
+    box.innerHTML = selectedRegDates.map(dIso => `
+      <span class="multi-date-chip">
+        <span>${formatVNDate(dIso)}</span>
+        <button type="button" onclick="window.__removeRegDateChip('${dIso}')" title="Xoá ngày">✕</button>
+      </span>
+    `).join("");
+  }
+
+  window.__removeRegDateChip = function(dIso) {
+    selectedRegDates = selectedRegDates.filter(x => x !== dIso);
+    renderMultiRegDatesChips();
+  };
+
+  window.__updateBulkRegCount = function() {
+    const cnt = document.querySelectorAll(".bulk-reg-chk:checked").length;
+    const el = document.getElementById("bulkRegSelectedCnt");
+    if (el) el.textContent = cnt;
+  };
+
+  function populateRegStaffDropdown(queryText = "") {
+    const dd = document.getElementById("regStaffDropdown");
+    const sel = document.getElementById("regStaffSelect");
+    if (!dd || !sel) return;
+    const q = String(queryText || "").trim().toLowerCase();
+    const matches = state.staff.filter(s => {
+      const full = `${s.name} – ${s.title} (${s.dept})`.toLowerCase();
+      return !q || full.includes(q);
+    });
+    if (!matches.length) {
+      dd.innerHTML = `<div class="searchable-combo-item" style="color:#64748b;">Không tìm thấy nhân sự phù hợp</div>`;
+      return;
+    }
+    dd.innerHTML = matches.map(s => {
+      const label = `${s.name} – ${s.title} (${s.dept})`;
+      const active = sel.value === s.id ? "active" : "";
+      return `<div class="searchable-combo-item ${active}" data-id="${s.id}" data-label="${escapeHtml(label)}">${escapeHtml(label)}</div>`;
+    }).join("");
+
+    dd.querySelectorAll(".searchable-combo-item[data-id]").forEach(item => {
+      item.addEventListener("mousedown", (ev) => {
+        ev.preventDefault();
+        const sid = item.getAttribute("data-id");
+        const lbl = item.getAttribute("data-label");
+        sel.value = sid;
+        const inp = document.getElementById("regStaffSearchInput");
+        if (inp) inp.value = lbl;
+        dd.classList.add("hidden");
+      });
+    });
+  }
+
   function renderSelectOptions() {
     const filterSel = document.getElementById("filterStaffSelect");
     const regSel = document.getElementById("regStaffSelect");
@@ -1664,7 +1818,18 @@
     filterSel.innerHTML = filterHtml;
     filterSel.value = curFilter;
     regSel.innerHTML = regHtml;
-    if (curReg && getStaffById(curReg)) regSel.value = curReg;
+    if (curReg && getStaffById(curReg)) {
+      regSel.value = curReg;
+    } else if (state.staff.length > 0) {
+      regSel.value = state.staff[0].id;
+    }
+    const chosen = getStaffById(regSel.value);
+    const searchInp = document.getElementById("regStaffSearchInput");
+    if (searchInp && chosen && document.activeElement !== searchInp) {
+      searchInp.value = `${chosen.name} – ${chosen.title} (${chosen.dept})`;
+    }
+    populateRegStaffDropdown("");
+    renderMultiRegDatesChips();
   }
 
   function renderSummaryAndBanner() {
@@ -1826,7 +1991,11 @@
       html += `
         <div style="border:1px solid var(--slate-200);border-radius:12px;padding:11px;margin-bottom:8px;background:#fff;">
           <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;">
-            <span><span class="chip chip-slate" style="margin-right:4px;">STT ${stt}</span><b>${escapeHtml(st ? st.name : "Nhân sự")}</b></span>
+            <span style="display:flex;align-items:center;gap:6px;">
+              ${(state.isAdmin && r.status === "pending") ? `<input type="checkbox" class="bulk-reg-chk" value="${r.id}" onchange="window.__updateBulkRegCount()" />` : ""}
+              <span class="chip chip-slate" style="margin-right:2px;">STT ${stt}</span>
+              <b>${escapeHtml(st ? st.name : "Nhân sự")}</b>
+            </span>
             ${statusChip}
           </div>
           <div style="font-size:12.5px;color:#334155;margin-top:4px;">
@@ -1847,7 +2016,7 @@
     state.staff.forEach((s, idx) => {
       if (s.dept !== currentDept) {
         currentDept = s.dept;
-        html += `<tr class="dept-header-row"><td colspan="9">${escapeHtml(currentDept)}</td></tr>`;
+        html += `<tr class="dept-header-row"><td class="sticky-dept-cell">${escapeHtml(currentDept)}</td><td colspan="8">${escapeHtml(currentDept)}</td></tr>`;
       }
       const actualLoc = s.workLocation || (s.dept === "Điểm Y tế 2" ? "Điểm Y tế 2" : "Điểm chính");
       const locBadge = actualLoc === "Điểm Y tế 2"
@@ -2031,6 +2200,7 @@
     let html = "";
     state.staff.forEach((s, idx) => {
       let mainCnt = 0, dyt2Cnt = 0, wkndCnt = 0, taskCnt = 0;
+      let workTripCnt = 0, leaveCnt = 0;
       dates.forEach(iso => {
         const e = state.schedule[iso] || {};
         const dow = getDayOfWeekInfo(iso);
@@ -2040,7 +2210,15 @@
         if (inDyt2) dyt2Cnt++;
         if ((inMain || inDyt2) && dow.isWeekend) wkndCnt++;
         if (Array.isArray(e.tasks)) {
-          taskCnt += e.tasks.filter(t => t.staffId === s.id).length;
+          e.tasks.filter(t => t.staffId === s.id).forEach(t => {
+            taskCnt++;
+            const tp = String(t.type || "").toLowerCase();
+            if (tp.includes("nghỉ phép") || tp.includes("nghỉ bù") || tp.includes("nghỉ")) {
+              leaveCnt++;
+            } else {
+              workTripCnt++;
+            }
+          });
         }
       });
       html += `
@@ -2052,7 +2230,8 @@
           <td><b>${dyt2Cnt}</b></td>
           <td><span class="chip chip-teal">${mainCnt + dyt2Cnt}</span></td>
           <td>${wkndCnt}</td>
-          <td>${taskCnt}</td>
+          <td><span class="chip chip-emerald">${workTripCnt} công tác</span></td>
+          <td><span class="chip chip-amber">${leaveCnt} nghỉ</span></td>
         </tr>
       `;
     });
@@ -3606,14 +3785,104 @@
     regDate.value = getTodayISO();
     document.getElementById("btnRegToday").onclick = () => { regDate.value = getTodayISO(); };
 
+    const regSearchInp = document.getElementById("regStaffSearchInput");
+    const regDropdown = document.getElementById("regStaffDropdown");
+    if (regSearchInp && regDropdown) {
+      regSearchInp.addEventListener("focus", () => {
+        populateRegStaffDropdown(regSearchInp.value);
+        regDropdown.classList.remove("hidden");
+      });
+      regSearchInp.addEventListener("input", () => {
+        populateRegStaffDropdown(regSearchInp.value);
+        regDropdown.classList.remove("hidden");
+      });
+      document.addEventListener("click", (ev) => {
+        if (!document.getElementById("regStaffCombo")?.contains(ev.target)) {
+          regDropdown.classList.add("hidden");
+        }
+      });
+    }
+
+    const btnAddRegDate = document.getElementById("btnAddRegDate");
+    if (btnAddRegDate) {
+      btnAddRegDate.onclick = () => safeRun(() => {
+        const dVal = document.getElementById("regDateInput").value;
+        if (!dVal) return;
+        if (!selectedRegDates.includes(dVal)) {
+          selectedRegDates.push(dVal);
+          selectedRegDates.sort();
+        }
+        renderMultiRegDatesChips();
+      });
+    }
+
+    const btnSelAllPending = document.getElementById("btnSelectAllPendingRegs");
+    if (btnSelAllPending) {
+      btnSelAllPending.onclick = () => safeRun(() => {
+        document.querySelectorAll(".bulk-reg-chk").forEach(chk => { chk.checked = true; });
+        window.__updateBulkRegCount();
+      });
+    }
+
+    const btnBulkApprove = document.getElementById("btnBulkApproveRegs");
+    if (btnBulkApprove) {
+      btnBulkApprove.onclick = () => safeRun(() => {
+        if (!state.isAdmin) return;
+        const checkedIds = Array.from(document.querySelectorAll(".bulk-reg-chk:checked")).map(c => c.value);
+        if (!checkedIds.length) {
+          showModal("Chưa chọn đăng ký", "<p style='margin:0;'>Vui lòng tick chọn các đăng ký chờ duyệt cần phê duyệt hàng loạt.</p>");
+          return;
+        }
+        const affectedDates = [];
+        checkedIds.forEach(regId => {
+          const reg = state.registrations.find(r => r.id === regId && r.status === "pending");
+          if (!reg) return;
+          if (!state.schedule[reg.date]) {
+            state.schedule[reg.date] = { main1: "", main2: "", dyt2: "", tasks: [] };
+          }
+          const dayObj = state.schedule[reg.date];
+          if (!Array.isArray(dayObj.tasks)) dayObj.tasks = [];
+
+          if (reg.type === "Trực điểm chính") {
+            const st = getStaffById(reg.staffId);
+            if (st && isClinicalLeadTitle(st.title)) dayObj.main1 = reg.staffId;
+            else if (!dayObj.main2) dayObj.main2 = reg.staffId;
+            else dayObj.main1 = reg.staffId;
+          } else if (reg.type === "Trực ĐYT 2") {
+            dayObj.dyt2 = reg.staffId;
+          } else {
+            dayObj.tasks.push({
+              id: "t_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6),
+              staffId: reg.staffId,
+              session: reg.session,
+              type: reg.type,
+              workLocation: reg.workLocation || "",
+              note: reg.note
+            });
+          }
+          reg.status = "approved";
+          affectedDates.push(reg.date);
+        });
+        dispatchEmailChangeNotification(
+          "Phê duyệt hàng loạt",
+          `Đã duyệt hàng loạt ${checkedIds.length} đăng ký`,
+          `Cập nhật lịch cho ${Array.from(new Set(affectedDates)).length} ngày.`,
+          affectedDates
+        );
+        saveState();
+        renderAll();
+      });
+    }
+
     document.getElementById("btnSubmitReg").onclick = () => safeRun(() => {
       const staffId = document.getElementById("regStaffSelect").value;
-      const date = document.getElementById("regDateInput").value;
+      const singleDate = document.getElementById("regDateInput").value;
+      const targetDates = selectedRegDates.length > 0 ? [...selectedRegDates] : (singleDate ? [singleDate] : []);
       const session = document.getElementById("regSessionSelect").value;
       const type = document.getElementById("regTypeSelect").value;
       const note = document.getElementById("regNoteInput").value.trim();
 
-      if (!staffId || !date) {
+      if (!staffId || targetDates.length === 0) {
         showModal("Thiếu thông tin", "<p>Vui lòng chọn đầy đủ nhân sự và ngày đăng ký.</p>");
         return;
       }
@@ -3625,28 +3894,31 @@
       }
 
       const workLocation = document.getElementById("regWorkLocSelect") ? document.getElementById("regWorkLocSelect").value : "";
-      state.registrations.push({
-        id: "reg_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6),
-        staffId,
-        date,
-        session,
-        type,
-        workLocation,
-        note,
-        status: "pending",
-        createdAt: Date.now()
+      targetDates.forEach((dIso, i) => {
+        state.registrations.push({
+          id: "reg_" + Date.now() + "_" + i + "_" + Math.random().toString(36).slice(2, 6),
+          staffId,
+          date: dIso,
+          session,
+          type,
+          workLocation,
+          note,
+          status: "pending",
+          createdAt: Date.now() + i
+        });
       });
 
       document.getElementById("regNoteInput").value = "";
+      selectedRegDates = [];
       dispatchEmailChangeNotification(
         "Đăng ký mới",
-        `${st ? st.name : "Nhân sự"} đăng ký "${type}" (${formatVNDate(date)})`,
-        `Buổi: ${session}${note ? " • Ghi chú: " + note : ""}`,
-        [date]
+        `${st ? st.name : "Nhân sự"} đăng ký "${type}" (${targetDates.length} ngày)`,
+        `Ngày: ${targetDates.map(formatVNDate).join(", ")} • Buổi: ${session}${note ? " • Ghi chú: " + note : ""}`,
+        targetDates
       );
       saveState();
       renderAll();
-      showModal("Đã Gửi Đăng Ký", `<p>Đăng ký của <b>${escapeHtml(st ? st.name : "")}</b> ngày <b>${formatVNDate(date)}</b> (${escapeHtml(session)}) đã được đưa vào hàng chờ duyệt theo thứ tự ưu tiên thời gian.</p>`);
+      showModal("Đã Gửi Đăng Ký", `<p>Đã gửi <b>${targetDates.length}</b> đăng ký cho <b>${escapeHtml(st ? st.name : "")}</b> (${targetDates.map(formatVNDate).join(", ")}) vào hàng chờ duyệt.</p>`);
     });
 
     document.getElementById("btnAddStaff").onclick = () => safeRun(() => {
