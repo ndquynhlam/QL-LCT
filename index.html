@@ -439,41 +439,42 @@
   .presence-grid {
     display: grid;
     grid-template-columns: 1fr;
-    gap: 10px;
+    gap: 8px;
+    align-items: start;
   }
   @media (min-width: 640px) {
     .presence-grid { grid-template-columns: 1fr 1fr; }
   }
   .presence-branch-card {
     border: 1px solid var(--slate-200);
-    border-radius: 12px;
-    padding: 10px 12px;
+    border-radius: 10px;
+    padding: 8px 10px;
     background: var(--slate-50);
   }
   .presence-branch-head {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 8px;
-    margin-bottom: 8px;
-    padding-bottom: 6px;
+    gap: 6px;
+    margin-bottom: 6px;
+    padding-bottom: 4px;
     border-bottom: 1px dashed var(--slate-200);
   }
   .presence-list {
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: 4px;
   }
   .presence-item {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 8px;
+    gap: 6px;
     background: #fff;
     border: 1px solid var(--slate-200);
-    border-radius: 8px;
-    padding: 6px 9px;
-    font-size: 12.5px;
+    border-radius: 7px;
+    padding: 4px 8px;
+    font-size: 12px;
   }
   .presence-role {
     font-size: 11px;
@@ -688,10 +689,11 @@
   <!-- SHEET 3: DUYỆT & LS -->
   <section id="sheet-3" class="sheet-section hidden">
     <div class="card">
-      <div class="card-title">
-        <span>Danh Sách Đăng Ký Chờ Duyệt & Lịch Sử</span>
+      <div class="card-title" style="flex-wrap:wrap;">
+        <span>Danh Sách Đăng Ký Chờ Duyệt &amp; Lịch Sử</span>
+        <button type="button" class="btn btn-danger btn-sm admin-col hidden" id="btnDeleteProcessedRegs">Xoá đăng ký cũ (đã duyệt / từ chối)</button>
       </div>
-      <p class="card-desc">Xếp theo thứ tự gửi trước – ưu tiên trước. Admin bấm Duyệt để tự động đưa vào Bảng lịch.</p>
+      <p class="card-desc">Đánh số thứ tự từ mới nhất đến cũ nhất. Admin bấm Duyệt để tự động đưa vào Bảng lịch hoặc xoá đăng ký cũ.</p>
       <div id="regListContainer"></div>
     </div>
 
@@ -772,13 +774,20 @@
           </select>
         </div>
         <div class="form-group">
-          <label class="form-label">Loại hợp đồng</label>
-          <select class="form-control" id="newStaffContract">
-            <option value="Viên chức">Viên chức</option>
-            <option value="HĐ NQ73">HĐ NQ73</option>
-            <option value="Hợp đồng">Hợp đồng</option>
+          <label class="form-label">Địa điểm làm việc thực tế</label>
+          <select class="form-control" id="newStaffWorkLoc">
+            <option value="Điểm chính">Điểm chính</option>
+            <option value="Điểm Y tế 2">Điểm Y tế 2</option>
           </select>
         </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Loại hợp đồng</label>
+        <select class="form-control" id="newStaffContract">
+          <option value="Viên chức">Viên chức</option>
+          <option value="HĐ NQ73">HĐ NQ73</option>
+          <option value="Hợp đồng">Hợp đồng</option>
+        </select>
       </div>
       <div class="form-group">
         <label style="display:flex;align-items:center;gap:8px;font-weight:600;">
@@ -796,6 +805,8 @@
             <tr>
               <th>STT</th>
               <th class="sticky-col" style="min-width:140px;">Họ và tên</th>
+              <th>Đơn vị công tác</th>
+              <th>Địa điểm làm việc thực tế</th>
               <th>Chức vụ</th>
               <th>Chức danh</th>
               <th>Loại HĐ</th>
@@ -918,35 +929,35 @@
   };
 
   const DEFAULT_STAFF = [
-{ id: "s01", name: "Điều dưỡng Bình", position: "Quyền Giám đốc", title: "Điều dưỡng", dept: "Ban Giám đốc", contract: "Viên chức", isAdminOnly: false },
-{ id: "s02", name: "CN. Linh", position: "Phó Giám đốc", title: "Chuyên môn khác", dept: "Ban Giám đốc", contract: "Viên chức", isAdminOnly: true },
-{ id: "s03", name: "CN. Trân", position: "Trưởng phòng", title: "Chuyên môn khác", dept: "Phòng Hành chính", contract: "Viên chức", isAdminOnly: true },
-{ id: "s04", name: "CN. Lang", position: "Nhân viên", title: "Chuyên môn khác", dept: "Phòng Hành chính", contract: "Viên chức", isAdminOnly: true },
-{ id: "s05", name: "CN. Lam", position: "Nhân viên", title: "Chuyên môn khác", dept: "Phòng Hành chính", contract: "Viên chức", isAdminOnly: true },
-{ id: "s06", name: "Hộ sinh Anh", position: "Trưởng phòng", title: "Hộ sinh", dept: "Phòng Dân số", contract: "Viên chức", isAdminOnly: false },
-{ id: "s07", name: "Điều dưỡng Nhung", position: "Nhân viên", title: "Điều dưỡng", dept: "Phòng Dân số", contract: "Viên chức", isAdminOnly: false },
-{ id: "s08", name: "Hộ sinh Hằng", position: "Nhân viên", title: "Hộ sinh", dept: "Phòng Dân số", contract: "Viên chức", isAdminOnly: false },
-{ id: "s09", name: "Hộ sinh Ngọc", position: "Nhân viên", title: "Hộ sinh", dept: "Phòng Dân số", contract: "Viên chức", isAdminOnly: true },
-{ id: "s10", name: "Dược sĩ Dung", position: "Trưởng khoa", title: "Dược sĩ", dept: "Khoa Dược", contract: "Viên chức", isAdminOnly: true },
-{ id: "s11", name: "Dược sĩ Bích", position: "Nhân viên", title: "Dược sĩ", dept: "Khoa Dược", contract: "Viên chức", isAdminOnly: true },
-{ id: "s12", name: "Dược sĩ Thảo", position: "Nhân viên", title: "Dược sĩ", dept: "Khoa Dược", contract: "Viên chức", isAdminOnly: true },
-{ id: "s13", name: "Dược sĩ Ý", position: "Nhân viên", title: "Dược sĩ", dept: "Khoa Dược", contract: "Viên chức", isAdminOnly: true },
-{ id: "s14", name: "Bác sĩ Nuôi", position: "Trưởng khoa", title: "Bác sĩ", dept: "Khoa Khám bệnh", contract: "Viên chức", isAdminOnly: false },
-{ id: "s15", name: "Bác sĩ Vân", position: "Nhân viên", title: "Bác sĩ", dept: "Khoa Khám bệnh", contract: "Viên chức", isAdminOnly: true },
-{ id: "s16", name: "Bác sĩ Dung", position: "Nhân viên", title: "Bác sĩ", dept: "Khoa Khám bệnh", contract: "HĐ NQ73", isAdminOnly: true },
-{ id: "s17", name: "Điều dưỡng Ánh", position: "Nhân viên", title: "Điều dưỡng", dept: "Khoa Khám bệnh", contract: "Viên chức", isAdminOnly: false },
-{ id: "s18", name: "Điều dưỡng Loan", position: "Trưởng khoa", title: "Điều dưỡng", dept: "Khoa Phòng bệnh", contract: "Viên chức", isAdminOnly: false },
-{ id: "s19", name: "CN. Hường", position: "Nhân viên", title: "Chuyên môn khác", dept: "Khoa Phòng bệnh", contract: "Viên chức", isAdminOnly: true },
-{ id: "s20", name: "Điều dưỡng Liên", position: "Nhân viên", title: "Điều dưỡng", dept: "Khoa Phòng bệnh", contract: "Viên chức", isAdminOnly: false },
-{ id: "s21", name: "Điều dưỡng Mẩn", position: "Nhân viên", title: "Điều dưỡng", dept: "Khoa Phòng bệnh", contract: "Viên chức", isAdminOnly: false },
-{ id: "s22", name: "Điều dưỡng Thảo", position: "Nhân viên", title: "Điều dưỡng", dept: "Khoa Phòng bệnh", contract: "Viên chức", isAdminOnly: false },
-{ id: "s23", name: "Điều dưỡng Tuyền", position: "Nhân viên", title: "Điều dưỡng", dept: "Khoa Phòng bệnh", contract: "Viên chức", isAdminOnly: false },
-{ id: "s24", name: "Y sĩ Hà", position: "Nhân viên", title: "Y sĩ", dept: "Khoa Phòng bệnh", contract: "Viên chức", isAdminOnly: false },
-{ id: "s25", name: "Y sĩ Tuấn", position: "Nhân viên", title: "Y sĩ", dept: "Khoa Phòng bệnh", contract: "Viên chức", isAdminOnly: false },
-{ id: "s26", name: "Bác sĩ An", position: "Phụ trách điểm", title: "Bác sĩ", dept: "Điểm Y tế 2", contract: "Viên chức", isAdminOnly: false },
-{ id: "s27", name: "Điều dưỡng Giang", position: "Nhân viên", title: "Điều dưỡng", dept: "Điểm Y tế 2", contract: "Viên chức", isAdminOnly: false },
-{ id: "s28", name: "Điều dưỡng Vạn", position: "Nhân viên", title: "Điều dưỡng", dept: "Điểm Y tế 2", contract: "Viên chức", isAdminOnly: false },
-{ id: "s29", name: "Y sĩ Nghị", position: "Nhân viên", title: "Y sĩ", dept: "Điểm Y tế 2", contract: "Viên chức", isAdminOnly: false }
+{ id: "s01", name: "Điều dưỡng Bình", position: "Quyền Giám đốc", title: "Điều dưỡng", dept: "Ban Giám đốc", workLocation: "Điểm chính", contract: "Viên chức", isAdminOnly: false },
+{ id: "s02", name: "CN. Linh", position: "Phó Giám đốc", title: "Chuyên môn khác", dept: "Ban Giám đốc", workLocation: "Điểm chính", contract: "Viên chức", isAdminOnly: true },
+{ id: "s03", name: "CN. Trân", position: "Trưởng phòng", title: "Chuyên môn khác", dept: "Phòng Hành chính", workLocation: "Điểm chính", contract: "Viên chức", isAdminOnly: true },
+{ id: "s04", name: "CN. Lang", position: "Nhân viên", title: "Chuyên môn khác", dept: "Phòng Hành chính", workLocation: "Điểm chính", contract: "Viên chức", isAdminOnly: true },
+{ id: "s05", name: "CN. Lam", position: "Nhân viên", title: "Chuyên môn khác", dept: "Phòng Hành chính", workLocation: "Điểm chính", contract: "Viên chức", isAdminOnly: true },
+{ id: "s06", name: "Hộ sinh Anh", position: "Trưởng phòng", title: "Hộ sinh", dept: "Phòng Dân số", workLocation: "Điểm chính", contract: "Viên chức", isAdminOnly: false },
+{ id: "s07", name: "Điều dưỡng Nhung", position: "Nhân viên", title: "Điều dưỡng", dept: "Phòng Dân số", workLocation: "Điểm chính", contract: "Viên chức", isAdminOnly: false },
+{ id: "s08", name: "Hộ sinh Hằng", position: "Nhân viên", title: "Hộ sinh", dept: "Phòng Dân số", workLocation: "Điểm chính", contract: "Viên chức", isAdminOnly: false },
+{ id: "s09", name: "Hộ sinh Ngọc", position: "Nhân viên", title: "Hộ sinh", dept: "Phòng Dân số", workLocation: "Điểm chính", contract: "Viên chức", isAdminOnly: true },
+{ id: "s10", name: "Dược sĩ Dung", position: "Trưởng khoa", title: "Dược sĩ", dept: "Khoa Dược", workLocation: "Điểm chính", contract: "Viên chức", isAdminOnly: true },
+{ id: "s11", name: "Dược sĩ Bích", position: "Nhân viên", title: "Dược sĩ", dept: "Khoa Dược", workLocation: "Điểm chính", contract: "Viên chức", isAdminOnly: true },
+{ id: "s12", name: "Dược sĩ Thảo", position: "Nhân viên", title: "Dược sĩ", dept: "Khoa Dược", workLocation: "Điểm chính", contract: "Viên chức", isAdminOnly: true },
+{ id: "s13", name: "Dược sĩ Ý", position: "Nhân viên", title: "Dược sĩ", dept: "Khoa Dược", workLocation: "Điểm chính", contract: "Viên chức", isAdminOnly: true },
+{ id: "s14", name: "Bác sĩ Nuôi", position: "Trưởng khoa", title: "Bác sĩ", dept: "Khoa Khám bệnh", workLocation: "Điểm chính", contract: "Viên chức", isAdminOnly: false },
+{ id: "s15", name: "Bác sĩ Vân", position: "Nhân viên", title: "Bác sĩ", dept: "Khoa Khám bệnh", workLocation: "Điểm chính", contract: "Viên chức", isAdminOnly: true },
+{ id: "s16", name: "Bác sĩ Dung", position: "Nhân viên", title: "Bác sĩ", dept: "Khoa Khám bệnh", workLocation: "Điểm chính", contract: "HĐ NQ73", isAdminOnly: true },
+{ id: "s17", name: "Điều dưỡng Ánh", position: "Nhân viên", title: "Điều dưỡng", dept: "Khoa Khám bệnh", workLocation: "Điểm chính", contract: "Viên chức", isAdminOnly: false },
+{ id: "s18", name: "Điều dưỡng Loan", position: "Trưởng khoa", title: "Điều dưỡng", dept: "Khoa Phòng bệnh", workLocation: "Điểm chính", contract: "Viên chức", isAdminOnly: false },
+{ id: "s19", name: "CN. Hường", position: "Nhân viên", title: "Chuyên môn khác", dept: "Khoa Phòng bệnh", workLocation: "Điểm chính", contract: "Viên chức", isAdminOnly: true },
+{ id: "s20", name: "Điều dưỡng Liên", position: "Nhân viên", title: "Điều dưỡng", dept: "Khoa Phòng bệnh", workLocation: "Điểm chính", contract: "Viên chức", isAdminOnly: false },
+{ id: "s21", name: "Điều dưỡng Mẩn", position: "Nhân viên", title: "Điều dưỡng", dept: "Khoa Phòng bệnh", workLocation: "Điểm chính", contract: "Viên chức", isAdminOnly: false },
+{ id: "s22", name: "Điều dưỡng Thảo", position: "Nhân viên", title: "Điều dưỡng", dept: "Khoa Phòng bệnh", workLocation: "Điểm chính", contract: "Viên chức", isAdminOnly: false },
+{ id: "s23", name: "Điều dưỡng Tuyền", position: "Nhân viên", title: "Điều dưỡng", dept: "Khoa Phòng bệnh", workLocation: "Điểm chính", contract: "Viên chức", isAdminOnly: false },
+{ id: "s24", name: "Y sĩ Hà", position: "Nhân viên", title: "Y sĩ", dept: "Khoa Phòng bệnh", workLocation: "Điểm chính", contract: "Viên chức", isAdminOnly: false },
+{ id: "s25", name: "Y sĩ Tuấn", position: "Nhân viên", title: "Y sĩ", dept: "Khoa Phòng bệnh", workLocation: "Điểm chính", contract: "Viên chức", isAdminOnly: false },
+{ id: "s26", name: "Bác sĩ An", position: "Phụ trách điểm", title: "Bác sĩ", dept: "Điểm Y tế 2", workLocation: "Điểm Y tế 2", contract: "Viên chức", isAdminOnly: false },
+{ id: "s27", name: "Điều dưỡng Giang", position: "Nhân viên", title: "Điều dưỡng", dept: "Điểm Y tế 2", workLocation: "Điểm Y tế 2", contract: "Viên chức", isAdminOnly: false },
+{ id: "s28", name: "Điều dưỡng Vạn", position: "Nhân viên", title: "Điều dưỡng", dept: "Điểm Y tế 2", workLocation: "Điểm Y tế 2", contract: "Viên chức", isAdminOnly: false },
+{ id: "s29", name: "Y sĩ Nghị", position: "Nhân viên", title: "Y sĩ", dept: "Điểm Y tế 2", workLocation: "Điểm Y tế 2", contract: "Viên chức", isAdminOnly: false }
   ];
 
   let state = {
@@ -1029,6 +1040,9 @@
       if (copy.name === "Hộ sinh Ngọc" || copy.name === "CN. Hường") copy.isAdminOnly = true;
       if (copy.name === "Dược sĩ Thảo" || copy.name === "Dược sĩ Ý") copy.contract = "Viên chức";
       if (copy.name === "Bác sĩ Dung") copy.contract = "HĐ NQ73";
+      if (!copy.workLocation) {
+        copy.workLocation = copy.dept === "Điểm Y tế 2" ? "Điểm Y tế 2" : "Điểm chính";
+      }
       return copy;
     });
 
@@ -1771,27 +1785,37 @@
       return;
     }
 
-    const sorted = [...state.registrations].sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+    const sortedNewestFirst = [...state.registrations].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
     let html = "";
-    sorted.forEach((r, idx) => {
+    sortedNewestFirst.forEach((r, idx) => {
+      const stt = idx + 1;
       const st = getStaffById(r.staffId);
       const statusChip = r.status === "approved"
         ? `<span class="chip chip-emerald">Đã duyệt</span>`
         : r.status === "rejected"
         ? `<span class="chip chip-rose">Từ chối</span>`
-        : `<span class="chip chip-amber">Chờ duyệt (#${idx + 1})</span>`;
+        : `<span class="chip chip-amber">Chờ duyệt</span>`;
 
-      const adminActions = (state.isAdmin && r.status === "pending") ? `
+      const pendingBtns = (state.isAdmin && r.status === "pending")
+        ? `<button type="button" class="btn btn-primary btn-sm" onclick="window.__approveReg('${r.id}')">Phê duyệt &amp; Cập nhật lịch</button>
+           <button type="button" class="btn btn-secondary btn-sm" onclick="window.__rejectReg('${r.id}')">Từ chối</button>`
+        : "";
+
+      const deleteBtn = state.isAdmin
+        ? `<button type="button" class="btn btn-danger btn-sm" onclick="window.__deleteReg('${r.id}')">Xoá</button>`
+        : "";
+
+      const adminActions = (pendingBtns || deleteBtn) ? `
         <div class="btn-toolbar" style="margin-top:8px;margin-bottom:0;">
-          <button type="button" class="btn btn-primary btn-sm" onclick="window.__approveReg('${r.id}')">Phê duyệt & Cập nhật lịch</button>
-          <button type="button" class="btn btn-danger btn-sm" onclick="window.__rejectReg('${r.id}')">Từ chối</button>
+          ${pendingBtns}
+          ${deleteBtn}
         </div>
       ` : "";
 
       html += `
         <div style="border:1px solid var(--slate-200);border-radius:12px;padding:11px;margin-bottom:8px;background:#fff;">
           <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;">
-            <b>${escapeHtml(st ? st.name : "Nhân sự")}</b>
+            <span><span class="chip chip-slate" style="margin-right:4px;">STT ${stt}</span><b>${escapeHtml(st ? st.name : "Nhân sự")}</b></span>
             ${statusChip}
           </div>
           <div style="font-size:12.5px;color:#334155;margin-top:4px;">
@@ -1812,8 +1836,12 @@
     state.staff.forEach((s, idx) => {
       if (s.dept !== currentDept) {
         currentDept = s.dept;
-        html += `<tr class="dept-header-row"><td colspan="7">${escapeHtml(currentDept)}</td></tr>`;
+        html += `<tr class="dept-header-row"><td colspan="9">${escapeHtml(currentDept)}</td></tr>`;
       }
+      const actualLoc = s.workLocation || (s.dept === "Điểm Y tế 2" ? "Điểm Y tế 2" : "Điểm chính");
+      const locBadge = actualLoc === "Điểm Y tế 2"
+        ? `<span class="chip chip-sky">${escapeHtml(actualLoc)}</span>`
+        : `<span class="chip chip-teal">${escapeHtml(actualLoc)}</span>`;
       const posBadge = s.position !== "Nhân viên"
         ? `<span class="chip chip-amber">${escapeHtml(s.position)}</span>`
         : escapeHtml(s.position);
@@ -1828,6 +1856,8 @@
         <tr>
           <td>${idx + 1}</td>
           <td class="sticky-col" style="font-weight:700;">${escapeHtml(s.name)}</td>
+          <td>${escapeHtml(s.dept)}</td>
+          <td>${locBadge}</td>
           <td>${posBadge}</td>
           <td>${escapeHtml(s.title)}</td>
           <td>${contractBadge}</td>
@@ -1880,6 +1910,14 @@
 
     const prevDutyIds = new Set([prevEntry.main1, prevEntry.main2, prevEntry.dyt2].filter(Boolean));
 
+    const getActualWorkLoc = (st) => {
+      if (st.workLocation === "Điểm Y tế 2" || st.workLocation === "Điểm chính") return st.workLocation;
+      return st.dept === "Điểm Y tế 2" ? "Điểm Y tế 2" : "Điểm chính";
+    };
+
+    const mainDutyIds = new Set([entry.main1, entry.main2].filter(Boolean));
+    const dyt2DutyIds = new Set([entry.dyt2].filter(Boolean));
+
     const mainPresent = [];
     const mainSeen = new Set();
     [sMain1, sMain2].filter(Boolean).forEach(st => {
@@ -1889,41 +1927,44 @@
       }
     });
 
-    state.staff.forEach(st => {
-      if (mainSeen.has(st.id) || offAllDayIds.has(st.id)) return;
-      if (st.dept === "Điểm Y tế 2") return;
-      const hasTaskDay = tasks.some(t => t.staffId === st.id);
-      const isRaTruc = prevDutyIds.has(st.id);
-      if (!dow.isWeekend && !isRaTruc && !hasTaskDay) {
-        mainSeen.add(st.id);
-        mainPresent.push({ staff: st, roleLabel: st.isAdminOnly ? "Hành chính" : "Có mặt tại Điểm chính", isDuty: false });
-      } else if (hasTaskDay) {
-        const matchedTasks = tasks.filter(t => t.staffId === st.id);
-        const desc = matchedTasks.map(t => `${t.type} (${t.session})`).join(", ");
-        mainSeen.add(st.id);
-        mainPresent.push({ staff: st, roleLabel: desc, isDuty: false });
-      }
-    });
-
     const dyt2Present = [];
     const dyt2Seen = new Set();
     if (sDyt2 && !offAllDayIds.has(sDyt2.id)) {
       dyt2Seen.add(sDyt2.id);
       dyt2Present.push({ staff: sDyt2, roleLabel: "Trực 24/24 ĐYT 2", isDuty: true });
     }
+
+    const isWeekdayMonToFri = dow.dow >= 1 && dow.dow <= 5;
+
     state.staff.forEach(st => {
-      if (dyt2Seen.has(st.id) || offAllDayIds.has(st.id)) return;
-      if (st.dept !== "Điểm Y tế 2") return;
+      if (mainSeen.has(st.id) || dyt2Seen.has(st.id) || offAllDayIds.has(st.id)) return;
+      const isDutyAny = mainDutyIds.has(st.id) || dyt2DutyIds.has(st.id);
+      const actualLoc = getActualWorkLoc(st);
       const hasTaskDay = tasks.some(t => t.staffId === st.id);
       const isRaTruc = prevDutyIds.has(st.id);
-      if (!dow.isWeekend && !isRaTruc && !hasTaskDay) {
-        dyt2Seen.add(st.id);
-        dyt2Present.push({ staff: st, roleLabel: st.isAdminOnly ? "Hành chính ĐYT 2" : "Có mặt tại ĐYT 2", isDuty: false });
-      } else if (hasTaskDay) {
+
+      let targetBranch = actualLoc;
+      if (mainDutyIds.has(st.id)) targetBranch = "Điểm chính";
+      else if (dyt2DutyIds.has(st.id)) targetBranch = "Điểm Y tế 2";
+
+      let label = "";
+      if (hasTaskDay) {
         const matchedTasks = tasks.filter(t => t.staffId === st.id);
-        const desc = matchedTasks.map(t => `${t.type} (${t.session})`).join(", ");
+        label = matchedTasks.map(t => `${t.type} (${t.session})`).join(", ");
+      } else if (isWeekdayMonToFri && !st.isAdminOnly && !isDutyAny && !isRaTruc) {
+        label = "Hành chính";
+      } else if (!dow.isWeekend && !isRaTruc) {
+        label = st.isAdminOnly ? "Hành chính" : `Có mặt tại ${targetBranch}`;
+      } else {
+        return;
+      }
+
+      if (targetBranch === "Điểm Y tế 2") {
         dyt2Seen.add(st.id);
-        dyt2Present.push({ staff: st, roleLabel: desc, isDuty: false });
+        dyt2Present.push({ staff: st, roleLabel: label, isDuty: false });
+      } else {
+        mainSeen.add(st.id);
+        mainPresent.push({ staff: st, roleLabel: label, isDuty: false });
       }
     });
 
@@ -2096,17 +2137,17 @@
         <div class="form-group">
           <label class="form-label">Điểm chính 1 (Bác sĩ / Y sĩ)</label>
           <select class="form-control" id="editMain1">${buildSmartOpts(leadSuggestions, curM1)}</select>
-          ${renderFreeChipsHtml(leadSuggestions, "editMain1")}
+
         </div>
         <div class="form-group">
           <label class="form-label">Điểm chính 2 (Điều dưỡng / Hộ sinh)</label>
           <select class="form-control" id="editMain2">${buildSmartOpts(nurseSuggestionsM2, curM2)}</select>
-          ${renderFreeChipsHtml(nurseSuggestionsM2, "editMain2")}
+
         </div>
         <div class="form-group">
           <label class="form-label">Điểm Y tế 2 (Điều dưỡng / Hộ sinh)</label>
           <select class="form-control" id="editDyt2">${buildSmartOpts(nurseSuggestionsD2, curD2)}</select>
-          ${renderFreeChipsHtml(nurseSuggestionsD2, "editDyt2")}
+
         </div>
 
         <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:10px;margin-bottom:10px;">
@@ -2398,6 +2439,13 @@
           </select>
         </div>
         <div class="form-group">
+          <label class="form-label">Địa điểm làm việc thực tế</label>
+          <select class="form-control" id="editSWorkLoc">
+            <option value="Điểm chính" ${(s.workLocation || (s.dept === "Điểm Y tế 2" ? "Điểm Y tế 2" : "Điểm chính")) === "Điểm chính" ? "selected" : ""}>Điểm chính</option>
+            <option value="Điểm Y tế 2" ${(s.workLocation || (s.dept === "Điểm Y tế 2" ? "Điểm Y tế 2" : "Điểm chính")) === "Điểm Y tế 2" ? "selected" : ""}>Điểm Y tế 2</option>
+          </select>
+        </div>
+        <div class="form-group">
           <label class="form-label">Loại hợp đồng</label>
           <select class="form-control" id="editSContract">
             ${contracts.map(c => `<option value="${c}" ${c === s.contract ? "selected" : ""}>${c}</option>`).join("")}
@@ -2416,6 +2464,7 @@
         s.position = document.getElementById("editSPos").value;
         s.title = document.getElementById("editSTitle").value;
         s.dept = document.getElementById("editSDept").value;
+        s.workLocation = document.getElementById("editSWorkLoc").value;
         s.contract = document.getElementById("editSContract").value;
         s.isAdminOnly = document.getElementById("editSAdminOnly").checked;
         state.staff = normalizeStaffList(state.staff);
@@ -2545,6 +2594,17 @@
         `Buổi: ${reg.session}${reg.note ? " • Ghi chú: " + reg.note : ""}`,
         [reg.date]
       );
+      saveState();
+      renderAll();
+    });
+  };
+
+  window.__deleteReg = function(regId) {
+    safeRun(() => {
+      if (!state.isAdmin) return;
+      const idx = state.registrations.findIndex(r => r.id === regId);
+      if (idx === -1) return;
+      state.registrations.splice(idx, 1);
       saveState();
       renderAll();
     });
@@ -3401,6 +3461,31 @@
       });
     });
 
+    const btnDelProcessed = document.getElementById("btnDeleteProcessedRegs");
+    if (btnDelProcessed) {
+      btnDelProcessed.onclick = () => safeRun(() => {
+        if (!state.isAdmin) return;
+        const oldCount = state.registrations.filter(r => r.status !== "pending").length;
+        if (!oldCount) {
+          showModal("Không có đăng ký cũ", "<p style='margin:0;'>Hiện không có đăng ký cũ (đã duyệt hoặc từ chối) để xoá.</p>");
+          return;
+        }
+        confirmActionWarningModal({
+          title: "Xoá Đăng Ký Cũ",
+          warningText: `Bạn đang chuẩn bị xoá ${oldCount} đăng ký cũ (đã duyệt hoặc từ chối).`,
+          detailHtml: "Các đăng ký đang ở trạng thái <b>Chờ duyệt</b> sẽ được giữ lại.",
+          confirmLabel: "Xác nhận xoá",
+          cancelLabel: "Huỷ bỏ",
+          confirmClass: "btn-danger",
+          onConfirm: () => {
+            state.registrations = state.registrations.filter(r => r.status === "pending");
+            saveState();
+            renderAll();
+          }
+        });
+      });
+    }
+
     document.getElementById("btnClearMonth").onclick = () => safeRun(() => {
       if (!state.isAdmin) return;
       const mDates = getMonthDates(state.selectedMonth);
@@ -3545,6 +3630,7 @@
         position: document.getElementById("newStaffPosition").value,
         title: document.getElementById("newStaffTitle").value,
         dept: document.getElementById("newStaffDept").value,
+        workLocation: document.getElementById("newStaffWorkLoc").value,
         contract: document.getElementById("newStaffContract").value,
         isAdminOnly: document.getElementById("newStaffAdminOnly").checked
       });
