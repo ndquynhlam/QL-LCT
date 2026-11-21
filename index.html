@@ -512,7 +512,10 @@
     z-index: 4;
     background: var(--teal-50) !important;
     box-shadow: 2px 0 4px rgba(15, 23, 42, 0.08);
-    max-width: 240px;
+    max-width: 260px;
+    font-size: 14.5px !important;
+    font-weight: 800 !important;
+    color: var(--teal-900) !important;
   }
   .searchable-combo {
     position: relative;
@@ -665,8 +668,12 @@
             <input type="month" class="form-control" id="monthPicker" />
           </div>
           <div class="form-group" style="margin-bottom:0;">
-            <label class="form-label">Lọc theo nhân sự</label>
-            <select class="form-control" id="filterStaffSelect"></select>
+            <label class="form-label">Lọc theo nhân sự (gõ tên hoặc bấm chọn)</label>
+            <div class="searchable-combo" id="filterStaffCombo">
+              <input type="text" class="form-control" id="filterStaffSearchInput" value="Tất cả nhân sự" placeholder="Gõ tên để lọc hoặc bấm chọn..." autocomplete="off" />
+              <select class="form-control hidden" id="filterStaffSelect"></select>
+              <div class="searchable-combo-dropdown hidden" id="filterStaffDropdown"></div>
+            </div>
           </div>
         </div>
         <div class="btn-toolbar" style="margin-bottom:0;">
@@ -727,23 +734,19 @@
       </div>
 
       <div class="form-group">
-        <label class="form-label">Ngày đăng ký (bấm hoặc kéo chọn nhiều ngày ngay trên lịch) *</label>
-        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
-          <input type="date" class="form-control" id="regDateInput" style="flex:1;min-width:150px;" />
-          <button type="button" class="btn btn-secondary btn-sm" id="btnToggleInlineCal">Chọn trên lịch</button>
-          <button type="button" class="btn btn-primary btn-sm" id="btnAddRegDate">+ Thêm đồng loạt</button>
-        </div>
-        <div id="inlineMultiCalBox" class="hidden" style="margin-top:8px;border:1px solid var(--slate-200);border-radius:12px;padding:10px;background:var(--slate-50);user-select:none;">
+        <label class="form-label">Ngày đăng ký (bấm chọn ngày đơn lẻ hoặc bấm ngày đầu – ngày cuối để chọn nhiều ngày liên tiếp) *</label>
+        <input type="hidden" id="regDateInput" />
+        <div id="inlineMultiCalBox" style="margin-top:4px;border:1px solid var(--slate-200);border-radius:12px;padding:10px;background:var(--slate-50);user-select:none;touch-action:manipulation;">
           <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;margin-bottom:8px;">
             <button type="button" class="btn btn-secondary btn-sm" id="btnCalPrevMonth">‹</button>
             <b id="inlineCalMonthTitle" style="font-size:13px;color:var(--teal-900);"></b>
             <button type="button" class="btn btn-secondary btn-sm" id="btnCalNextMonth">›</button>
           </div>
-          <div style="font-size:11.5px;color:var(--slate-600);margin-bottom:6px;">Bấm từng ngày hoặc kéo ngang/dọc qua các ngày liên tiếp để chọn hàng loạt:</div>
+          <div style="font-size:11.5px;color:var(--slate-600);margin-bottom:6px;">Bấm 1 ngày để chọn đơn lẻ; bấm ngày đầu rồi bấm ngày cuối (hoặc kéo chọn) để chọn nhiều ngày liên tiếp:</div>
           <div id="inlineCalGrid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center;"></div>
           <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;margin-top:8px;">
             <button type="button" class="link-btn" id="btnClearPickedDates">Xoá vùng chọn</button>
-            <button type="button" class="btn btn-primary btn-sm" id="btnBulkAddFromCal">Thêm đồng loạt ngày đã chọn</button>
+            <span style="font-size:11.5px;color:#0f766e;font-weight:600;" id="pickedDatesSummary">0 ngày đã chọn</span>
           </div>
         </div>
         <div id="regMultiDatesList" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>
@@ -777,7 +780,6 @@
       <div class="form-group">
         <label class="form-label">Địa điểm làm việc thực tế (khi công tác / lịch nội dung)</label>
         <select class="form-control" id="regWorkLocSelect">
-          <option value="">—</option>
           <option value="Điểm chính">Điểm chính</option>
           <option value="Điểm Y tế 2">Điểm Y tế 2</option>
           <option value="Không có mặt tại đơn vị">Không có mặt tại đơn vị</option>
@@ -1813,6 +1815,43 @@
     });
   }
 
+  function populateFilterStaffDropdown(queryText = "") {
+    const dd = document.getElementById("filterStaffDropdown");
+    const sel = document.getElementById("filterStaffSelect");
+    if (!dd || !sel) return;
+    const q = String(queryText || "").trim().toLowerCase();
+    const allLabel = `Tất cả nhân sự (${state.staff.length})`;
+    const items = [{ id: "ALL", label: allLabel }].concat(
+      state.staff.map(s => ({ id: s.id, label: `${s.name} – ${s.title} (${s.dept})` }))
+    );
+    const matches = items.filter(it => {
+      if (!q || q === "tất cả nhân sự" || it.id === "ALL" && "tất cả".includes(q)) return !q || it.label.toLowerCase().includes(q);
+      return it.label.toLowerCase().includes(q);
+    });
+    if (!matches.length) {
+      dd.innerHTML = `<div class="searchable-combo-item" style="color:#64748b;">Không tìm thấy nhân sự chứa "${escapeHtml(queryText)}"</div>`;
+      return;
+    }
+    dd.innerHTML = matches.map(it => {
+      const active = sel.value === it.id ? "active" : "";
+      return `<div class="searchable-combo-item ${active}" data-id="${it.id}" data-label="${escapeHtml(it.label)}">${escapeHtml(it.label)}</div>`;
+    }).join("");
+
+    dd.querySelectorAll(".searchable-combo-item[data-id]").forEach(item => {
+      item.addEventListener("mousedown", (ev) => {
+        ev.preventDefault();
+        const fid = item.getAttribute("data-id");
+        const lbl = item.getAttribute("data-label");
+        sel.value = fid;
+        state.filterStaffId = fid;
+        const inp = document.getElementById("filterStaffSearchInput");
+        if (inp) inp.value = fid === "ALL" ? "Tất cả nhân sự" : lbl;
+        dd.classList.add("hidden");
+        renderScheduleTable();
+      });
+    });
+  }
+
   function renderSelectOptions() {
     const filterSel = document.getElementById("filterStaffSelect");
     const regSel = document.getElementById("regStaffSelect");
@@ -1829,6 +1868,17 @@
 
     filterSel.innerHTML = filterHtml;
     filterSel.value = curFilter;
+    const filterInp = document.getElementById("filterStaffSearchInput");
+    if (filterInp && document.activeElement !== filterInp) {
+      if (curFilter === "ALL") {
+        filterInp.value = "Tất cả nhân sự";
+      } else {
+        const stF = getStaffById(curFilter);
+        filterInp.value = stF ? `${stF.name} – ${stF.title} (${stF.dept})` : "Tất cả nhân sự";
+      }
+    }
+    populateFilterStaffDropdown("");
+
     regSel.innerHTML = regHtml;
     if (curReg && getStaffById(curReg)) {
       regSel.value = curReg;
@@ -2039,7 +2089,7 @@
     state.staff.forEach((s, idx) => {
       if (s.dept !== currentDept) {
         currentDept = s.dept;
-        html += `<tr class="dept-header-row"><td class="sticky-col" style="background:var(--teal-50);font-weight:700;color:var(--teal-900);">—</td><td class="sticky-dept-cell">${escapeHtml(currentDept)}</td><td colspan="7">${escapeHtml(currentDept)}</td></tr>`;
+        html += `<tr class="dept-header-row"><td class="sticky-col" style="background:var(--teal-50);font-weight:800;color:var(--teal-900);"></td><td class="sticky-dept-cell">${escapeHtml(currentDept)}</td><td colspan="7"></td></tr>`;
       }
       const actualLoc = s.workLocation || (s.dept === "Điểm Y tế 2" ? "Điểm Y tế 2" : "Điểm chính");
       const locBadge = actualLoc === "Điểm Y tế 2"
@@ -2201,11 +2251,20 @@
       return deptRanks[dept] || 20;
     };
 
+    const getPosRank = (st) => {
+      const pos = String((st && st.position) || "").trim();
+      if (!pos) return 99;
+      return pos === "Nhân viên" ? 50 : (POS_ORDER[pos] || 10);
+    };
+
     const sortByPresencePriority = (arr) => {
       return [...arr].sort((a, b) => {
         const ra = getPresencePriorityRank(a);
         const rb = getPresencePriorityRank(b);
         if (ra !== rb) return ra - rb;
+        const pa = getPosRank(a.staff);
+        const pb = getPosRank(b.staff);
+        if (pa !== pb) return pa - pb;
         return String(a.staff?.name || "").localeCompare(String(b.staff?.name || ""), "vi");
       });
     };
@@ -2460,7 +2519,6 @@
             <div class="form-group" style="margin-bottom:8px;">
               <label class="form-label">Địa điểm làm việc thực tế</label>
               <select class="form-control" id="addTaskWorkLoc">
-                <option value="">—</option>
                 <option value="Điểm chính">Điểm chính</option>
                 <option value="Điểm Y tế 2">Điểm Y tế 2</option>
                 <option value="Không có mặt tại đơn vị">Không có mặt tại đơn vị</option>
@@ -3607,6 +3665,9 @@
         btn.classList.add("active");
         document.querySelectorAll(".sheet-section").forEach(sec => sec.classList.add("hidden"));
         document.getElementById(`sheet-${sheet}`).classList.remove("hidden");
+        if (sheet === "2") {
+          renderInlineMultiCalendar();
+        }
       });
     });
 
@@ -3678,6 +3739,25 @@
       state.filterStaffId = e.target.value;
       renderScheduleTable();
     });
+
+    const filterSearchInp = document.getElementById("filterStaffSearchInput");
+    const filterDropdown = document.getElementById("filterStaffDropdown");
+    if (filterSearchInp && filterDropdown) {
+      filterSearchInp.addEventListener("focus", () => {
+        const q = filterSearchInp.value === "Tất cả nhân sự" ? "" : filterSearchInp.value;
+        populateFilterStaffDropdown(q);
+        filterDropdown.classList.remove("hidden");
+      });
+      filterSearchInp.addEventListener("input", () => {
+        populateFilterStaffDropdown(filterSearchInp.value);
+        filterDropdown.classList.remove("hidden");
+      });
+      document.addEventListener("click", (ev) => {
+        if (!document.getElementById("filterStaffCombo")?.contains(ev.target)) {
+          filterDropdown.classList.add("hidden");
+        }
+      });
+    }
 
     document.getElementById("chkOnlyWarnings").onchange = (e) => safeRun(() => {
       state.onlyWarnings = e.target.checked;
@@ -3988,6 +4068,15 @@
     let calDragStart = null;
     let calIsDragging = false;
 
+    let calRangeAnchor = null;
+
+    function updatePickedDatesSummary() {
+      const sumEl = document.getElementById("pickedDatesSummary");
+      if (sumEl) {
+        sumEl.textContent = selectedRegDates.length ? `${selectedRegDates.length} ngày đã chọn` : "0 ngày đã chọn";
+      }
+    }
+
     function renderInlineMultiCalendar() {
       const grid = document.getElementById("inlineCalGrid");
       const titleEl = document.getElementById("inlineCalMonthTitle");
@@ -4005,40 +4094,53 @@
       for (let d = 1; d <= daysInMonth; d++) {
         const iso = `${yy}-${String(mm).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
         const picked = selectedRegDates.includes(iso);
+        const isAnchor = calRangeAnchor === iso;
         const bg = picked ? "var(--teal-700)" : "#fff";
         const fg = picked ? "#fff" : "#0f172a";
-        const bd = picked ? "var(--teal-700)" : "#cbd5e1";
-        html += `<button type="button" data-cal-iso="${iso}" style="border:1px solid ${bd};background:${bg};color:${fg};border-radius:8px;padding:6px 0;font-size:12px;font-weight:600;cursor:pointer;">${d}</button>`;
+        const bd = isAnchor ? "#d97706" : (picked ? "var(--teal-700)" : "#cbd5e1");
+        html += `<button type="button" data-cal-iso="${iso}" style="border:2px solid ${bd};background:${bg};color:${fg};border-radius:8px;padding:6px 0;font-size:12px;font-weight:700;cursor:pointer;">${d}</button>`;
       }
       grid.innerHTML = html;
+      updatePickedDatesSummary();
 
-      const selectRange = (aIso, bIso) => {
+      const applyContinuousRange = (aIso, bIso) => {
         const start = aIso <= bIso ? aIso : bIso;
         const end = aIso <= bIso ? bIso : aIso;
+        const nextList = [];
         let cur = start;
         while (cur <= end) {
-          if (!selectedRegDates.includes(cur)) selectedRegDates.push(cur);
+          nextList.push(cur);
           cur = addDaysISO(cur, 1);
         }
-        selectedRegDates.sort();
+        selectedRegDates = nextList;
+        document.getElementById("regDateInput").value = start;
       };
 
       grid.querySelectorAll("button[data-cal-iso]").forEach(btn => {
         const iso = btn.getAttribute("data-cal-iso");
-        btn.addEventListener("mousedown", () => {
+        btn.addEventListener("pointerdown", (ev) => {
+          ev.preventDefault();
           calIsDragging = true;
           calDragStart = iso;
-          if (!selectedRegDates.includes(iso)) {
-            selectedRegDates.push(iso);
-            selectedRegDates.sort();
+          if (!calRangeAnchor) {
+            calRangeAnchor = iso;
+            selectedRegDates = [iso];
+            document.getElementById("regDateInput").value = iso;
+          } else if (calRangeAnchor === iso && selectedRegDates.length === 1 && selectedRegDates[0] === iso) {
+            calRangeAnchor = null;
+            selectedRegDates = [];
+            document.getElementById("regDateInput").value = "";
+          } else {
+            applyContinuousRange(calRangeAnchor, iso);
+            calRangeAnchor = null;
           }
-          document.getElementById("regDateInput").value = iso;
           renderMultiRegDatesChips();
           renderInlineMultiCalendar();
         });
-        btn.addEventListener("mouseenter", () => {
-          if (calIsDragging && calDragStart) {
-            selectRange(calDragStart, iso);
+        btn.addEventListener("pointerenter", () => {
+          if (calIsDragging && calDragStart && calDragStart !== iso) {
+            applyContinuousRange(calDragStart, iso);
+            calRangeAnchor = null;
             renderMultiRegDatesChips();
             renderInlineMultiCalendar();
           }
@@ -4046,7 +4148,7 @@
       });
     }
 
-    document.addEventListener("mouseup", () => {
+    document.addEventListener("pointerup", () => {
       calIsDragging = false;
       calDragStart = null;
     });
