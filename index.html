@@ -135,7 +135,7 @@
     border: 1px solid var(--slate-200);
   }
   .card-title {
-    margin: 0 0 4px;
+    margin: 0 0 8px;
     font-size: 16px;
     font-weight: 700;
     color: var(--slate-900);
@@ -250,6 +250,11 @@
     flex-wrap: wrap;
     gap: 6px;
     margin-bottom: 10px;
+  }
+  .action-cell {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
   }
 
   /* Tables & Sticky Columns */
@@ -398,6 +403,16 @@
     border-radius: 50%;
     font-size: 16px;
     cursor: pointer;
+  }
+  .link-btn {
+    background: none;
+    border: none;
+    color: var(--teal-700);
+    font-size: 12.5px;
+    font-weight: 600;
+    padding: 4px 0;
+    cursor: pointer;
+    text-decoration: underline;
   }
   .hidden { display: none !important; }
   .dept-header-row td {
@@ -665,7 +680,6 @@
 
     <div class="card">
       <div class="card-title">Danh Sách Nhân Sự Trạm Y Tế (29 Nhân Sự)</div>
-      <p class="card-desc">Sắp xếp theo thứ tự đơn vị công tác và chức vụ. Cột Họ và tên cố định khi cuộn ngang.</p>
       <div class="table-wrap">
         <table>
           <thead>
@@ -749,8 +763,8 @@
 
 <script>
 (function() {
-  const STORAGE_KEY = "tyt_schedule_app_v4_2026";
-  const ADMIN_PIN = "2026";
+  const STORAGE_KEY = "tyt_schedule_app_v5_2026";
+  const DEFAULT_PIN = "2026";
 
   const DEPT_ORDER = [
     "Ban Giám đốc",
@@ -813,13 +827,14 @@
 
   let state = {
     isAdmin: false,
+    adminPin: DEFAULT_PIN,
     activeSheet: "1",
     selectedMonth: getTodayISO().slice(0, 7),
     filterStaffId: "ALL",
     onlyWarnings: false,
     staff: JSON.parse(JSON.stringify(DEFAULT_STAFF)),
-    schedule: {}, // { "YYYY-MM-DD": { main1: id, main2: id, dyt2: id, tasks: [ {id, staffId, session, type, note} ] } }
-    registrations: [], // [ {id, staffId, date, session, type, note, status, createdAt} ]
+    schedule: {},
+    registrations: [],
     cloud: {
       url: "",
       room: "tram-y-te",
@@ -862,7 +877,7 @@
   function getDayOfWeekInfo(iso) {
     const [y, m, d] = iso.split("-").map(Number);
     const dt = new Date(y, m - 1, d);
-    const dow = dt.getDay(); // 0=CN, 6=T7
+    const dow = dt.getDay();
     const names = ["Chủ nhật", "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7"];
     return { dow, label: names[dow], isWeekend: dow === 0 || dow === 6 };
   }
@@ -912,6 +927,7 @@
     try {
       const payload = {
         selectedMonth: state.selectedMonth,
+        adminPin: state.adminPin,
         staff: state.staff,
         schedule: state.schedule,
         registrations: state.registrations,
@@ -928,10 +944,11 @@
 
   function loadState() {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
+      let raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem("tyt_schedule_app_v4_2026");
       if (raw) {
         const parsed = JSON.parse(raw);
         if (parsed.selectedMonth) state.selectedMonth = parsed.selectedMonth;
+        if (parsed.adminPin) state.adminPin = String(parsed.adminPin);
         if (parsed.staff) state.staff = normalizeStaffList(parsed.staff);
         if (parsed.schedule) state.schedule = parsed.schedule;
         if (parsed.registrations) state.registrations = parsed.registrations;
@@ -940,7 +957,6 @@
           state.cloud.room = parsed.cloud.room || "tram-y-te";
         }
       }
-      // Check URL query params for auto cloud connection
       const params = new URLSearchParams(window.location.search);
       const dbParam = params.get("db");
       const roomParam = params.get("room");
@@ -1044,6 +1060,70 @@
 
   function closeModal() {
     document.getElementById("customModal").classList.remove("open");
+  }
+
+  function openPinLoginModal() {
+    showModal("Đăng Nhập Quản Trị Viên (Admin)", `
+      <div class="form-group">
+        <label class="form-label">Nhập mã PIN Admin</label>
+        <input type="password" inputmode="numeric" class="form-control" id="adminPinInput" placeholder="Nhập mã PIN..." />
+      </div>
+      <div style="margin-bottom:10px;">
+        <button type="button" class="link-btn" id="btnOpenForgotPin">Quên mã PIN? Cập nhật mã PIN mới</button>
+      </div>
+      <button type="button" class="btn btn-primary btn-block" id="btnConfirmPin">Xác nhận đăng nhập</button>
+    `);
+    setTimeout(() => document.getElementById("adminPinInput")?.focus(), 100);
+
+    document.getElementById("btnConfirmPin").onclick = () => safeRun(() => {
+      const val = document.getElementById("adminPinInput").value.trim();
+      if (val === state.adminPin) {
+        state.isAdmin = true;
+        closeModal();
+        renderAll();
+      } else {
+        showModal("Sai mã PIN", `
+          <p style='color:#9f1239;margin-top:0;'>Mã PIN không chính xác. Vui lòng thử lại.</p>
+          <button type="button" class="btn btn-secondary btn-block" id="btnBackToLogin">Quay lại nhập PIN</button>
+        `);
+        document.getElementById("btnBackToLogin").onclick = openPinLoginModal;
+      }
+    });
+
+    document.getElementById("btnOpenForgotPin").onclick = () => safeRun(() => {
+      showModal("Cập Nhật Mã PIN Admin Mới", `
+        <p style="font-size:12.5px;color:#475569;margin-top:0;">Đặt mã PIN mới để truy cập quyền Quản trị viên trên thiết bị này.</p>
+        <div class="form-group">
+          <label class="form-label">Mã PIN mới (tối thiểu 4 ký tự) *</label>
+          <input type="password" inputmode="numeric" class="form-control" id="newPinInput" placeholder="Nhập mã PIN mới..." />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Xác nhận lại mã PIN mới *</label>
+          <input type="password" inputmode="numeric" class="form-control" id="confirmNewPinInput" placeholder="Nhập lại mã PIN mới..." />
+        </div>
+        <button type="button" class="btn btn-primary btn-block" id="btnSaveNewPin">Cập nhật & Đăng nhập Admin</button>
+      `);
+      setTimeout(() => document.getElementById("newPinInput")?.focus(), 100);
+
+      document.getElementById("btnSaveNewPin").onclick = () => safeRun(() => {
+        const p1 = document.getElementById("newPinInput").value.trim();
+        const p2 = document.getElementById("confirmNewPinInput").value.trim();
+        if (p1.length < 4) {
+          showModal("Mã PIN quá ngắn", "<p style='color:#9f1239;'>Vui lòng nhập mã PIN mới có ít nhất 4 ký tự.</p>");
+          return;
+        }
+        if (p1 !== p2) {
+          showModal("Không khớp mã PIN", "<p style='color:#9f1239;'>Hai lần nhập mã PIN mới chưa trùng khớp. Vui lòng kiểm tra lại.</p>");
+          return;
+        }
+        state.adminPin = p1;
+        state.isAdmin = true;
+        saveState(false);
+        closeModal();
+        renderAll();
+        showModal("Đã Cập Nhật Mã PIN", "<p>Mã PIN Admin mới đã được lưu và bạn đã đăng nhập quyền Quản trị viên.</p>");
+      });
+    });
   }
 
   /* Business Logic & Validation */
@@ -1197,7 +1277,6 @@
     const todayIso = getTodayISO();
     let dates = getMonthDates(state.selectedMonth);
 
-    // Prioritize Today on top if in selected month
     if (dates.includes(todayIso)) {
       const idx = dates.indexOf(todayIso);
       dates = dates.slice(idx).concat(dates.slice(0, idx));
@@ -1248,7 +1327,6 @@
           return `<div><span class="chip chip-amber">${escapeHtml(nm)}</span> <b>${escapeHtml(t.session)}</b>: ${escapeHtml(t.type)}${noteStr}</div>`;
         }).join("");
       } else {
-        // Ảnh 1 fix: Thứ 7, Chủ nhật không ghi chú "Hành chính"
         tasksHtml = dowInfo.isWeekend ? "" : `<span style="color:#64748b;">Hành chính</span>`;
       }
 
@@ -1345,7 +1423,10 @@
           <td>${contractBadge}</td>
           <td>${modeText}</td>
           <td class="admin-col ${state.isAdmin ? "" : "hidden"}">
-            <button type="button" class="btn btn-secondary btn-sm" onclick="window.__editStaff('${s.id}')">Sửa</button>
+            <div class="action-cell">
+              <button type="button" class="btn btn-secondary btn-sm" onclick="window.__editStaff('${s.id}')">Sửa</button>
+              <button type="button" class="btn btn-danger btn-sm" onclick="window.__deleteStaff('${s.id}')">Xoá</button>
+            </div>
           </td>
         </tr>
       `;
@@ -1528,6 +1609,45 @@
     });
   };
 
+  window.__deleteStaff = function(id) {
+    safeRun(() => {
+      if (!state.isAdmin) return;
+      const s = getStaffById(id);
+      if (!s) return;
+
+      showModal("Xác Nhận Xoá Nhân Sự", `
+        <p style="margin-top:0;">Bạn có chắc chắn muốn xoá nhân sự <b>${escapeHtml(s.name)}</b> (${escapeHtml(s.dept)}) khỏi danh sách không?</p>
+        <p style="font-size:12.5px;color:#64748b;">Các ô trực và đăng ký liên quan đến nhân sự này cũng sẽ được dọn sạch khỏi lịch.</p>
+        <div class="row-2" style="margin-top:12px;">
+          <button type="button" class="btn btn-secondary" id="btnCancelDeleteStaff">Huỷ</button>
+          <button type="button" class="btn btn-danger" id="btnConfirmDeleteStaff">Xác nhận xoá</button>
+        </div>
+      `);
+
+      document.getElementById("btnCancelDeleteStaff").onclick = closeModal;
+      document.getElementById("btnConfirmDeleteStaff").onclick = () => safeRun(() => {
+        state.staff = state.staff.filter(item => item.id !== id);
+        if (state.filterStaffId === id) state.filterStaffId = "ALL";
+
+        Object.keys(state.schedule).forEach(iso => {
+          const day = state.schedule[iso];
+          if (!day) return;
+          if (day.main1 === id) day.main1 = "";
+          if (day.main2 === id) day.main2 = "";
+          if (day.dyt2 === id) day.dyt2 = "";
+          if (Array.isArray(day.tasks)) {
+            day.tasks = day.tasks.filter(t => t.staffId !== id);
+          }
+        });
+
+        state.registrations = state.registrations.filter(r => r.staffId !== id);
+        saveState();
+        closeModal();
+        renderAll();
+      });
+    });
+  };
+
   window.__approveReg = function(regId) {
     safeRun(() => {
       if (!state.isAdmin) return;
@@ -1663,7 +1783,6 @@
       if (e.target.id === "customModal") closeModal();
     };
 
-    // Bottom Navigation
     document.querySelectorAll(".nav-item").forEach(btn => {
       btn.onclick = () => safeRun(() => {
         const sheet = btn.getAttribute("data-sheet");
@@ -1675,34 +1794,15 @@
       });
     });
 
-    // Admin Login / Logout
     document.getElementById("btnToggleAdmin").onclick = () => safeRun(() => {
       if (state.isAdmin) {
         state.isAdmin = false;
         renderAll();
         return;
       }
-      showModal("Đăng Nhập Quản Trị Viên (Admin)", `
-        <div class="form-group">
-          <label class="form-label">Nhập mã PIN Admin (mặc định: 2026)</label>
-          <input type="password" inputmode="numeric" class="form-control" id="adminPinInput" placeholder="Nhập PIN..." />
-        </div>
-        <button type="button" class="btn btn-primary btn-block" id="btnConfirmPin">Xác nhận đăng nhập</button>
-      `);
-      setTimeout(() => document.getElementById("adminPinInput")?.focus(), 100);
-      document.getElementById("btnConfirmPin").onclick = () => safeRun(() => {
-        const val = document.getElementById("adminPinInput").value.trim();
-        if (val === ADMIN_PIN) {
-          state.isAdmin = true;
-          closeModal();
-          renderAll();
-        } else {
-          showModal("Sai mã PIN", "<p style='color:#9f1239;'>Mã PIN không chính xác. Vui lòng thử lại.</p>");
-        }
-      });
+      openPinLoginModal();
     });
 
-    // Cloud Connect
     document.getElementById("btnConnectCloud").onclick = () => safeRun(() => {
       const url = document.getElementById("inputFirebaseUrl").value.trim().replace(/\/+$/, "");
       const room = document.getElementById("inputRoomId").value.trim() || "tram-y-te";
@@ -1742,7 +1842,6 @@
       showModal("Đã Tạo Link Chia Sẻ", `<p>Link tự động kết nối phòng <b>${escapeHtml(room)}</b> đã sẵn sàng. Hãy sao chép đường link bên dưới gửi cho nhân viên:</p><input type="text" class="form-control" value="${escapeHtml(shareUrl)}" readonly onclick="this.select()" />`);
     });
 
-    // Sheet 1 filters & tools
     const monthPicker = document.getElementById("monthPicker");
     monthPicker.value = state.selectedMonth;
     monthPicker.onchange = () => safeRun(() => {
@@ -1799,7 +1898,6 @@
       reader.readAsText(file);
     });
 
-    // Sheet 2 Registration
     const regDate = document.getElementById("regDateInput");
     regDate.value = getTodayISO();
     document.getElementById("btnRegToday").onclick = () => { regDate.value = getTodayISO(); };
@@ -1839,7 +1937,6 @@
       showModal("Đã Gửi Đăng Ký", `<p>Đăng ký của <b>${escapeHtml(st ? st.name : "")}</b> ngày <b>${formatVNDate(date)}</b> (${escapeHtml(session)}) đã được đưa vào hàng chờ duyệt theo thứ tự ưu tiên thời gian.</p>`);
     });
 
-    // Sheet 4 Staff management
     document.getElementById("btnAddStaff").onclick = () => safeRun(() => {
       const name = document.getElementById("newStaffName").value.trim();
       if (!name) {
