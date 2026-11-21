@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-<title>Quản Lý Lịch Trực 24/24 & Lịch Công Tác Trạm Y Tế</title>
+<title>QUẢN LÝ LỊCH TRỰC & LỊCH CÔNG TÁC TRẠM Y TẾ XÃ HƯNG LONG</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <style>
@@ -323,7 +323,7 @@
     background: #fff;
     border-top: 1px solid var(--slate-200);
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(6, 1fr);
     padding: 5px 4px env(safe-area-inset-bottom, 6px);
     z-index: 50;
     box-shadow: 0 -2px 10px rgba(15, 23, 42, 0.06);
@@ -584,7 +584,7 @@
 <header class="app-header">
   <div class="header-top">
     <div>
-      <h1 class="app-title">Quản Lý Lịch Trực 24/24 & Lịch Công Tác Trạm Y Tế</h1>
+      <h1 class="app-title">QUẢN LÝ LỊCH TRỰC & LỊCH CÔNG TÁC TRẠM Y TẾ XÃ HƯNG LONG</h1>
       <p class="app-subtitle">Điểm chính (2 người: 1 BS/YS + 1 ĐD/HS) • ĐYT 2 (1 người: ĐD/HS) • Trực 24/24 & Ra trực liền kề</p>
     </div>
     <button type="button" class="btn-header" id="btnToggleAdmin">Đăng nhập Admin</button>
@@ -628,7 +628,8 @@
     </div>
   </section>
 
-  <!-- Summary Cards -->
+  <!-- Summary Cards & Global Banner (Hidden on Nhân sự, Thống kê, Thông tin) -->
+  <div id="topOverviewBlock">
   <div class="summary-grid no-print">
     <div class="stat-box">
       <div class="stat-label">Nhân sự trực</div>
@@ -650,6 +651,7 @@
 
   <div class="banner ok no-print" id="globalBanner">
     Hợp lệ: Không phát hiện trùng tua trực, vi phạm ra trực 24/24 hay thiếu Bác sĩ hành chính tại Điểm chính.
+  </div>
   </div>
 
   <!-- SHEET 1: BẢNG LỊCH -->
@@ -680,8 +682,8 @@
           <label style="display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;padding:6px 10px;border:1px solid var(--slate-300);border-radius:8px;background:#fff;cursor:pointer;">
             <input type="checkbox" id="chkOnlyWarnings" /> Chỉ ngày có cảnh báo
           </label>
-          <button type="button" class="btn btn-primary btn-sm" id="btnExportExcel">Xuất Excel (.xlsx)</button>
-          <button type="button" class="btn btn-secondary btn-sm" id="btnImportExcelTrigger">Nhập Excel (.xlsx)</button>
+          <button type="button" class="btn btn-primary btn-sm admin-col hidden" id="btnExportExcel">Xuất Excel (.xlsx)</button>
+          <button type="button" class="btn btn-secondary btn-sm admin-col hidden" id="btnImportExcelTrigger">Nhập Excel (.xlsx)</button>
           <button type="button" class="btn btn-secondary btn-sm" id="btnPrint">In / Lưu PDF</button>
           <input type="file" id="inputExcelFile" accept=".xlsx,.xls" class="hidden" />
         </div>
@@ -970,12 +972,54 @@
               <th>ĐYT 2</th>
               <th>Tổng trực</th>
               <th>Trực T7/CN</th>
-              <th>Công tác (Tập huấn/Học/Tiêm/Hỗ trợ)</th>
-              <th>Nghỉ (Nghỉ phép/Nghỉ bù)</th>
+              <th style="white-space:normal;min-width:118px;line-height:1.3;text-align:center;">Công tác<br><span style="font-size:10px;font-weight:600;text-transform:none;">(Tập huấn / Học /<br>Tiêm / Hỗ trợ)</span></th>
+              <th style="white-space:normal;min-width:105px;line-height:1.3;text-align:center;">Nghỉ<br><span style="font-size:10px;font-weight:600;text-transform:none;">(Nghỉ phép /<br>Nghỉ bù)</span></th>
             </tr>
           </thead>
           <tbody id="statsTableBody"></tbody>
         </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- SHEET 6: THÔNG TIN HỆ THỐNG -->
+  <section id="sheet-6" class="sheet-section hidden">
+    <div class="card">
+      <div class="card-title">
+        <span>Thông Tin Trạm Y Tế Xã Hưng Long</span>
+        <span class="chip chip-teal">Đơn vị &amp; Lãnh đạo</span>
+      </div>
+      <p class="card-desc">Thông tin địa chỉ trụ sở và ban lãnh đạo Trạm Y tế xã Hưng Long.</p>
+
+      <div style="display:grid;grid-template-columns:1fr;gap:10px;">
+        <div style="background:#fff;border:1px solid var(--slate-200);border-radius:12px;padding:12px;">
+          <div style="font-size:11.5px;font-weight:700;text-transform:uppercase;color:var(--slate-500);margin-bottom:4px;">Địa chỉ Trạm Y tế xã Hưng Long</div>
+          <div style="font-size:13.5px;color:var(--slate-800);font-weight:600;">758 Đoàn Nguyễn Tuấn, xã Hưng Long, Thành phố Hồ Chí Minh</div>
+        </div>
+
+        <div style="background:#fff;border:1px solid var(--slate-200);border-radius:12px;padding:12px;">
+          <div style="font-size:11.5px;font-weight:700;text-transform:uppercase;color:var(--slate-500);margin-bottom:8px;">Ban Lãnh Đạo &amp; Phụ Trách Quản Lý</div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:var(--slate-50);border-radius:8px;border:1px solid var(--slate-200);">
+              <span style="font-size:12.5px;color:var(--slate-600);font-weight:600;">Giám đốc</span>
+              <b style="font-size:13.5px;color:var(--slate-900);">Lê Quốc Bình</b>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:var(--slate-50);border-radius:8px;border:1px solid var(--slate-200);">
+              <span style="font-size:12.5px;color:var(--slate-600);font-weight:600;">Phó Giám đốc</span>
+              <b style="font-size:13.5px;color:var(--slate-900);">Nguyễn Thị Mỹ Linh</b>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:var(--slate-50);border-radius:8px;border:1px solid var(--slate-200);">
+              <span style="font-size:12.5px;color:var(--slate-600);font-weight:600;">Trưởng phòng Hành chính, tài chính, nhân sự</span>
+              <b style="font-size:13.5px;color:var(--slate-900);">Lư Thị Mỹ Trân</b>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:4px;padding-top:8px;border-top:1px dashed var(--slate-200);font-size:11px;line-height:1.45;color:var(--slate-500);">
+          <div><b>Quyền sở hữu &amp; sáng tạo hệ thống:</b> Nguyễn Đặng Quỳnh Lam — Tác giả thiết kế, xây dựng cấu trúc và phát triển ứng dụng quản lý lịch trực &amp; công tác.</div>
+          <div style="margin-top:2px;"><b>Đơn vị quản lý hệ thống:</b> Phòng Hành chính, tài chính, nhân sự — Chịu trách nhiệm vận hành, đối chiếu dữ liệu nhân sự, chấm công và lịch trực.</div>
+          <div style="margin-top:2px;"><b>Email khôi phục hệ thống:</b> ndquynhlam@gmail.com — Địa chỉ email chính thức dùng cho khôi phục và xác thực quyền quản trị hệ thống.</div>
+        </div>
       </div>
     </div>
   </section>
@@ -1003,6 +1047,10 @@
   <button type="button" class="nav-item" data-sheet="5">
     <span>📊</span>
     <span>5. Thống Kê</span>
+  </button>
+  <button type="button" class="nav-item" data-sheet="6">
+    <span>ℹ️</span>
+    <span>6. Thông Tin</span>
   </button>
 </nav>
 
@@ -2348,8 +2396,8 @@
           <td><b>${dyt2Cnt}</b></td>
           <td><span class="chip chip-teal">${mainCnt + dyt2Cnt}</span></td>
           <td>${wkndCnt}</td>
-          <td>${workTripCnt > 0 ? `<button type="button" class="chip chip-emerald" style="border:none;cursor:pointer;" onclick="window.__showStaffMonthDetails('${s.id}','work')">${workTripCnt} công tác</button>` : `<span style="color:#94a3b8;">0</span>`}</td>
-          <td>${leaveCnt > 0 ? `<button type="button" class="chip chip-amber" style="border:none;cursor:pointer;" onclick="window.__showStaffMonthDetails('${s.id}','leave')">${leaveCnt} nghỉ</button>` : `<span style="color:#94a3b8;">0</span>`}</td>
+          <td style="text-align:center;vertical-align:middle;">${workTripCnt > 0 ? `<button type="button" class="chip chip-emerald" style="border:none;cursor:pointer;line-height:1.25;text-align:center;" onclick="window.__showStaffMonthDetails('${s.id}','work')"><b>${workTripCnt}</b><br><span style="font-size:10.5px;">công tác</span></button>` : `<span style="color:#94a3b8;">0</span>`}</td>
+          <td style="text-align:center;vertical-align:middle;">${leaveCnt > 0 ? `<button type="button" class="chip chip-amber" style="border:none;cursor:pointer;line-height:1.25;text-align:center;" onclick="window.__showStaffMonthDetails('${s.id}','leave')"><b>${leaveCnt}</b><br><span style="font-size:10.5px;">nghỉ</span></button>` : `<span style="color:#94a3b8;">0</span>`}</td>
         </tr>
       `;
     });
@@ -3160,14 +3208,113 @@
     });
   }
 
-  function exportFormattedExcel() {
+  function getMondayToSundayDates(anchorIso) {
+    const [y, m, d] = anchorIso.split("-").map(Number);
+    const dt = new Date(y, m - 1, d);
+    const dow = dt.getDay(); // 0=CN, 1=T2..6=T7
+    const diffToMon = dow === 0 ? -6 : (1 - dow);
+    const monIso = addDaysISO(anchorIso, diffToMon);
+    const arr = [];
+    for (let i = 0; i < 7; i++) {
+      arr.push(addDaysISO(monIso, i));
+    }
+    return arr;
+  }
+
+  function openExportOptionsModal() {
+    if (!state.isAdmin) return;
+    const defaultAnchor = getTodayISO().startsWith(state.selectedMonth)
+      ? getTodayISO()
+      : `${state.selectedMonth}-01`;
+    const initWeek = getMondayToSundayDates(defaultAnchor);
+
+    showModal("Tuỳ Chọn Xuất File Excel (.xlsx)", `
+      <p style="font-size:12.5px;color:#475569;margin-top:0;">Vui lòng chọn phạm vi thời gian cụ thể muốn xuất file lịch công tác:</p>
+      <div class="form-group">
+        <label class="form-label">Chế độ xuất dữ liệu *</label>
+        <select class="form-control" id="exportModeSelect">
+          <option value="month">Xuất theo Tháng (toàn bộ tháng)</option>
+          <option value="week">Xuất theo Tuần (từ Thứ 2 đến Chủ nhật)</option>
+        </select>
+      </div>
+
+      <div id="exportMonthBox" class="form-group">
+        <label class="form-label">Chọn Tháng / Năm cụ thể *</label>
+        <input type="month" class="form-control" id="exportMonthInput" value="${escapeHtml(state.selectedMonth)}" />
+      </div>
+
+      <div id="exportWeekBox" class="form-group hidden">
+        <label class="form-label">Chọn 1 ngày bất kỳ trong tuần cần xuất *</label>
+        <input type="date" class="form-control" id="exportWeekAnchorInput" value="${escapeHtml(defaultAnchor)}" />
+        <div id="exportWeekPreview" style="margin-top:6px;padding:8px 10px;background:#f0fdfa;border:1px solid #99f6e4;border-radius:8px;font-size:12.5px;color:#0f3d3e;font-weight:600;">
+          Khoảng thời gian xuất: Thứ 2 (${formatVNDate(initWeek[0])}) đến Chủ nhật (${formatVNDate(initWeek[6])})
+        </div>
+      </div>
+
+      <div class="row-2" style="gap:8px;margin-top:12px;">
+        <button type="button" class="btn btn-secondary" id="btnCancelExportModal">Huỷ bỏ</button>
+        <button type="button" class="btn btn-primary" id="btnConfirmExportExcel">Xuất file Excel ngay</button>
+      </div>
+    `);
+
+    const modeSel = document.getElementById("exportModeSelect");
+    const monthBox = document.getElementById("exportMonthBox");
+    const weekBox = document.getElementById("exportWeekBox");
+    const weekInp = document.getElementById("exportWeekAnchorInput");
+    const weekPrev = document.getElementById("exportWeekPreview");
+
+    const updateWeekPreview = () => {
+      const val = weekInp.value || defaultAnchor;
+      const wDates = getMondayToSundayDates(val);
+      weekPrev.textContent = `Khoảng thời gian xuất: Thứ 2 (${formatVNDate(wDates[0])}) đến Chủ nhật (${formatVNDate(wDates[6])})`;
+    };
+
+    modeSel.onchange = () => {
+      const isWeek = modeSel.value === "week";
+      monthBox.classList.toggle("hidden", isWeek);
+      weekBox.classList.toggle("hidden", !isWeek);
+      if (isWeek) updateWeekPreview();
+    };
+    weekInp.onchange = updateWeekPreview;
+
+    document.getElementById("btnCancelExportModal").onclick = closeModal;
+    document.getElementById("btnConfirmExportExcel").onclick = () => safeRun(() => {
+      const mode = modeSel.value;
+      if (mode === "week") {
+        const anchor = weekInp.value || defaultAnchor;
+        const wDates = getMondayToSundayDates(anchor);
+        closeModal();
+        exportFormattedExcel({
+          mode: "week",
+          dates: wDates,
+          titleText: `LỊCH CÔNG TÁC TUẦN (TỪ ${formatVNDate(wDates[0])} ĐẾN ${formatVNDate(wDates[6])})`,
+          fileName: `Lich_Cong_Tac_TYT_Hung_Long_Tuan_${wDates[0].slice(8,10)}_${wDates[0].slice(5,7)}_den_${wDates[6].slice(8,10)}_${wDates[6].slice(5,7)}_${wDates[6].slice(0,4)}.xlsx`
+        });
+      } else {
+        const ym = document.getElementById("exportMonthInput").value || state.selectedMonth;
+        const [yy, mm] = ym.split("-");
+        const mDates = getMonthDates(ym);
+        closeModal();
+        exportFormattedExcel({
+          mode: "month",
+          dates: mDates,
+          titleText: `LỊCH CÔNG TÁC THÁNG ${mm} NĂM ${yy}`,
+          fileName: `Lich_Cong_Tac_TYT_Hung_Long_Thang_${mm}_${yy}.xlsx`
+        });
+      }
+    });
+  }
+
+  function exportFormattedExcel(opts) {
     if (typeof XLSX === "undefined") {
       showModal("Lỗi thư viện Excel", "<p>Chưa tải được thư viện xuất Excel. Vui lòng kiểm tra kết nối mạng và tải lại trang.</p>");
       return;
     }
 
-    const [yyyy, mm] = state.selectedMonth.split("-");
-    const dates = getMonthDates(state.selectedMonth);
+    const [defY, defM] = state.selectedMonth.split("-");
+    const dates = (opts && Array.isArray(opts.dates) && opts.dates.length) ? opts.dates : getMonthDates(state.selectedMonth);
+    const titleBannerText = (opts && opts.titleText) ? opts.titleText : `LỊCH CÔNG TÁC THÁNG ${defM} NĂM ${defY}`;
+    const downloadFileName = (opts && opts.fileName) ? opts.fileName : `Lich_Cong_Tac_TYT_Hung_Long_Thang_${defM}_${defY}.xlsx`;
     const numDays = dates.length;
     const totalCols = 6 + numDays; // A..F (6) + days
     const lastColLetter = XLSX.utils.encode_col(totalCols - 1);
@@ -3215,7 +3362,7 @@
 
     // Dòng 3: Trống hoàn toàn
     // Dòng 4: Tên bảng LỊCH CÔNG TÁC THÁNG [MM] NĂM [YYYY]
-    setCell(ws1, 3, 0, `LỊCH CÔNG TÁC THÁNG ${mm} NĂM ${yyyy}`, {
+    setCell(ws1, 3, 0, titleBannerText, {
       font: { name: "Times New Roman", sz: 15, bold: true, color: { rgb: "1E3A5F" } },
       alignment: { horizontal: "center", vertical: "center" }
     });
@@ -3425,7 +3572,7 @@
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `Lich_Cong_Tac_TYT_Hung_Long_Thang_${mm}_${yyyy}.xlsx`;
+      a.download = downloadFileName;
       a.click();
       URL.revokeObjectURL(url);
     });
@@ -3665,6 +3812,10 @@
         btn.classList.add("active");
         document.querySelectorAll(".sheet-section").forEach(sec => sec.classList.add("hidden"));
         document.getElementById(`sheet-${sheet}`).classList.remove("hidden");
+        const topOv = document.getElementById("topOverviewBlock");
+        if (topOv) {
+          topOv.classList.toggle("hidden", sheet === "4" || sheet === "5" || sheet === "6");
+        }
         if (sheet === "2") {
           renderInlineMultiCalendar();
         }
@@ -3764,7 +3915,7 @@
       renderScheduleTable();
     });
 
-    document.getElementById("btnExportExcel").onclick = () => safeRun(exportFormattedExcel);
+    document.getElementById("btnExportExcel").onclick = () => safeRun(openExportOptionsModal);
     document.getElementById("btnImportExcelTrigger").onclick = () => {
       if (!state.isAdmin) {
         showModal("Yêu cầu quyền Admin", "<p>Vui lòng bấm <b>Đăng nhập Admin</b> ở góc trên bên phải trước khi nhập dữ liệu từ file Excel.</p>");
