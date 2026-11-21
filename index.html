@@ -486,17 +486,15 @@
     padding: 2px 6px;
     white-space: nowrap;
   }
-  .chip, .badge-pill, .presence-role, td, th, div, span, p, button, a {
-    overflow-wrap: anywhere;
-    word-break: break-word;
-  }
   .chip, .badge-pill, .presence-role {
-    white-space: normal !important;
+    white-space: normal;
+    overflow-wrap: break-word;
+    word-break: normal;
     max-width: 100%;
-    text-align: left;
   }
   td, th {
-    white-space: normal !important;
+    word-break: normal;
+    overflow-wrap: break-word;
   }
   input[type="date"], input[type="month"] {
     display: block;
@@ -722,17 +720,31 @@
       <div class="form-group">
         <label class="form-label">Nhân sự đăng ký * (chọn từ danh sách hoặc gõ tên để lọc)</label>
         <div class="searchable-combo" id="regStaffCombo">
-          <input type="text" class="form-control" id="regStaffSearchInput" placeholder="Gõ tên để tìm hoặc bấm để cuộn chọn nhân sự..." autocomplete="off" />
+          <input type="text" class="form-control" id="regStaffSearchInput" value="" placeholder="Gõ tên bất kỳ để tìm hoặc bấm để cuộn chọn..." autocomplete="off" />
           <select class="form-control hidden" id="regStaffSelect"></select>
           <div class="searchable-combo-dropdown hidden" id="regStaffDropdown"></div>
         </div>
       </div>
 
       <div class="form-group">
-        <label class="form-label">Ngày đăng ký (chọn 1 hoặc nhiều ngày bất kỳ / liên tiếp) *</label>
-        <div style="display:flex;gap:6px;align-items:center;">
-          <input type="date" class="form-control" id="regDateInput" style="flex:1;" />
-          <button type="button" class="btn btn-secondary btn-sm" id="btnAddRegDate">+ Thêm ngày</button>
+        <label class="form-label">Ngày đăng ký (bấm hoặc kéo chọn nhiều ngày ngay trên lịch) *</label>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+          <input type="date" class="form-control" id="regDateInput" style="flex:1;min-width:150px;" />
+          <button type="button" class="btn btn-secondary btn-sm" id="btnToggleInlineCal">Chọn trên lịch</button>
+          <button type="button" class="btn btn-primary btn-sm" id="btnAddRegDate">+ Thêm đồng loạt</button>
+        </div>
+        <div id="inlineMultiCalBox" class="hidden" style="margin-top:8px;border:1px solid var(--slate-200);border-radius:12px;padding:10px;background:var(--slate-50);user-select:none;">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;margin-bottom:8px;">
+            <button type="button" class="btn btn-secondary btn-sm" id="btnCalPrevMonth">‹</button>
+            <b id="inlineCalMonthTitle" style="font-size:13px;color:var(--teal-900);"></b>
+            <button type="button" class="btn btn-secondary btn-sm" id="btnCalNextMonth">›</button>
+          </div>
+          <div style="font-size:11.5px;color:var(--slate-600);margin-bottom:6px;">Bấm từng ngày hoặc kéo ngang/dọc qua các ngày liên tiếp để chọn hàng loạt:</div>
+          <div id="inlineCalGrid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center;"></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;margin-top:8px;">
+            <button type="button" class="link-btn" id="btnClearPickedDates">Xoá vùng chọn</button>
+            <button type="button" class="btn btn-primary btn-sm" id="btnBulkAddFromCal">Thêm đồng loạt ngày đã chọn</button>
+          </div>
         </div>
         <div id="regMultiDatesList" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>
       </div>
@@ -765,7 +777,7 @@
       <div class="form-group">
         <label class="form-label">Địa điểm làm việc thực tế (khi công tác / lịch nội dung)</label>
         <select class="form-control" id="regWorkLocSelect">
-          <option value="">Mặc định theo nhân sự / lịch trực</option>
+          <option value="">—</option>
           <option value="Điểm chính">Điểm chính</option>
           <option value="Điểm Y tế 2">Điểm Y tế 2</option>
           <option value="Không có mặt tại đơn vị">Không có mặt tại đơn vị</option>
@@ -779,7 +791,7 @@
 
       <div class="btn-toolbar">
         <button type="button" class="btn btn-secondary btn-block" id="btnRegToday">Đặt về Hôm nay</button>
-        <button type="button" class="btn btn-primary btn-block" id="btnSubmitReg">Kiểm tra & Gửi đăng ký</button>
+        <button type="button" class="btn btn-primary btn-block" id="btnSubmitReg">Kiểm tra trước khi gửi</button>
       </div>
     </div>
   </section>
@@ -888,7 +900,7 @@
         <select class="form-control" id="newStaffContract">
           <option value="Viên chức">Viên chức</option>
           <option value="HĐ NQ73">HĐ NQ73</option>
-          <option value="Hợp đồng">Hợp đồng</option>
+          
         </select>
       </div>
       <div class="form-group">
@@ -1779,7 +1791,7 @@
       return !q || full.includes(q);
     });
     if (!matches.length) {
-      dd.innerHTML = `<div class="searchable-combo-item" style="color:#64748b;">Không tìm thấy nhân sự phù hợp</div>`;
+      dd.innerHTML = `<div class="searchable-combo-item" style="color:#64748b;">Không tìm thấy nhân sự chứa "${escapeHtml(queryText)}"</div>`;
       return;
     }
     dd.innerHTML = matches.map(s => {
@@ -1823,10 +1835,9 @@
     } else if (state.staff.length > 0) {
       regSel.value = state.staff[0].id;
     }
-    const chosen = getStaffById(regSel.value);
     const searchInp = document.getElementById("regStaffSearchInput");
-    if (searchInp && chosen && document.activeElement !== searchInp) {
-      searchInp.value = `${chosen.name} – ${chosen.title} (${chosen.dept})`;
+    if (searchInp && document.activeElement !== searchInp && !searchInp.value) {
+      searchInp.placeholder = "Gõ tên bất kỳ để tìm hoặc bấm để cuộn chọn...";
     }
     populateRegStaffDropdown("");
     renderMultiRegDatesChips();
@@ -1913,9 +1924,18 @@
 
       const clickAttr = state.isAdmin ? `style="cursor:pointer;" onclick="window.__openDayEditor('${iso}')"` : "";
 
-      const mainHtml = [s1, s2].filter(Boolean).map(s => `<span class="chip chip-teal">${escapeHtml(s.name)}</span>`).join("") || `<span style="color:#94a3b8;">—</span>`;
-      const dyt2Html = s3 ? `<span class="chip chip-sky">${escapeHtml(s3.name)}</span>` : `<span style="color:#94a3b8;">—</span>`;
-      const offHtml = offStaff.length ? offStaff.map(s => `<span class="chip chip-slate">${escapeHtml(s.name)}</span>`).join("") : `<span style="color:#94a3b8;">—</span>`;
+      const warnTextLower = warnings.join(" ").toLowerCase();
+      const isStaffWarned = (stObj) => stObj && warnTextLower.includes(String(stObj.name || "").toLowerCase());
+      const renderChipWithWarn = (stObj, baseClass) => {
+        if (!stObj) return "";
+        if (isStaffWarned(stObj)) {
+          return `<span class="chip chip-rose" style="font-weight:700;">⚠️ ${escapeHtml(stObj.name)}</span>`;
+        }
+        return `<span class="chip ${baseClass}">${escapeHtml(stObj.name)}</span>`;
+      };
+      const mainHtml = [s1, s2].filter(Boolean).map(s => renderChipWithWarn(s, "chip-teal")).join("") || `<span style="color:#94a3b8;">—</span>`;
+      const dyt2Html = s3 ? renderChipWithWarn(s3, "chip-sky") : `<span style="color:#94a3b8;">—</span>`;
+      const offHtml = offStaff.length ? offStaff.map(s => renderChipWithWarn(s, "chip-slate")).join("") : `<span style="color:#94a3b8;">—</span>`;
 
       let tasksHtml = "";
       if (tasks.length > 0) {
@@ -1924,14 +1944,17 @@
           const nm = st ? st.name : "Nhân sự";
           const noteStr = t.note ? ` (${escapeHtml(t.note)})` : "";
           const locStr = t.workLocation ? ` <i>[${escapeHtml(t.workLocation)}]</i>` : "";
-          return `<div><span class="chip chip-amber">${escapeHtml(nm)}</span> <b>${escapeHtml(t.session)}</b>: ${escapeHtml(t.type)}${locStr}${noteStr}</div>`;
+          const chipHtml = isStaffWarned(st)
+            ? `<span class="chip chip-rose" style="font-weight:700;">⚠️ ${escapeHtml(nm)}</span>`
+            : `<span class="chip chip-amber">${escapeHtml(nm)}</span>`;
+          return `<div>${chipHtml} <b>${escapeHtml(t.session)}</b>: ${escapeHtml(t.type)}${locStr}${noteStr}</div>`;
         }).join("");
       } else {
         tasksHtml = dowInfo.isWeekend ? "" : `<span style="color:#64748b;">Hành chính</span>`;
       }
 
       const warnHtml = warnings.length
-        ? warnings.map(w => `<div class="chip chip-rose">${escapeHtml(w)}</div>`).join("")
+        ? warnings.map(w => `<div class="chip chip-rose">⚠️ ${escapeHtml(w)}</div>`).join("")
         : `<span class="chip chip-emerald">Đạt</span>`;
 
       html += `
@@ -2016,7 +2039,7 @@
     state.staff.forEach((s, idx) => {
       if (s.dept !== currentDept) {
         currentDept = s.dept;
-        html += `<tr class="dept-header-row"><td class="sticky-dept-cell">${escapeHtml(currentDept)}</td><td colspan="8">${escapeHtml(currentDept)}</td></tr>`;
+        html += `<tr class="dept-header-row"><td class="sticky-col" style="background:var(--teal-50);font-weight:700;color:var(--teal-900);">—</td><td class="sticky-dept-cell">${escapeHtml(currentDept)}</td><td colspan="7">${escapeHtml(currentDept)}</td></tr>`;
       }
       const actualLoc = s.workLocation || (s.dept === "Điểm Y tế 2" ? "Điểm Y tế 2" : "Điểm chính");
       const locBadge = actualLoc === "Điểm Y tế 2"
@@ -2230,8 +2253,8 @@
           <td><b>${dyt2Cnt}</b></td>
           <td><span class="chip chip-teal">${mainCnt + dyt2Cnt}</span></td>
           <td>${wkndCnt}</td>
-          <td><span class="chip chip-emerald">${workTripCnt} công tác</span></td>
-          <td><span class="chip chip-amber">${leaveCnt} nghỉ</span></td>
+          <td>${workTripCnt > 0 ? `<button type="button" class="chip chip-emerald" style="border:none;cursor:pointer;" onclick="window.__showStaffMonthDetails('${s.id}','work')">${workTripCnt} công tác</button>` : `<span style="color:#94a3b8;">0</span>`}</td>
+          <td>${leaveCnt > 0 ? `<button type="button" class="chip chip-amber" style="border:none;cursor:pointer;" onclick="window.__showStaffMonthDetails('${s.id}','leave')">${leaveCnt} nghỉ</button>` : `<span style="color:#94a3b8;">0</span>`}</td>
         </tr>
       `;
     });
@@ -2401,7 +2424,7 @@
             <div class="form-group" style="margin-bottom:8px;">
               <label class="form-label">Địa điểm làm việc thực tế</label>
               <select class="form-control" id="addTaskWorkLoc">
-                <option value="">Mặc định theo nhân sự / lịch trực</option>
+                <option value="">—</option>
                 <option value="Điểm chính">Điểm chính</option>
                 <option value="Điểm Y tế 2">Điểm Y tế 2</option>
                 <option value="Không có mặt tại đơn vị">Không có mặt tại đơn vị</option>
@@ -2620,7 +2643,7 @@
       if (!s) return;
       const positions = ["Quyền Giám đốc", "Phó Giám đốc", "Trưởng khoa", "Trưởng phòng", "Phó Trưởng khoa", "Phó Trưởng phòng", "Phụ trách điểm", "Nhân viên"];
       const titles = ["Bác sĩ", "Y sĩ", "Điều dưỡng", "Hộ sinh", "Dược sĩ", "Chuyên môn khác"];
-      const contracts = ["Viên chức", "HĐ NQ73", "Hợp đồng"];
+      const contracts = ["Viên chức", "HĐ NQ73"];
 
       showModal(`Chỉnh Sửa: ${s.name}`, `
         <div class="form-group">
@@ -3874,6 +3897,149 @@
       });
     }
 
+  window.__showStaffMonthDetails = function(staffId, mode) {
+    safeRun(() => {
+      const st = getStaffById(staffId);
+      if (!st) return;
+      const dates = getMonthDates(state.selectedMonth);
+      const items = [];
+      dates.forEach(iso => {
+        const e = state.schedule[iso] || {};
+        if (!Array.isArray(e.tasks)) return;
+        e.tasks.filter(t => t.staffId === staffId).forEach(t => {
+          const tp = String(t.type || "").toLowerCase();
+          const isLeave = tp.includes("nghỉ phép") || tp.includes("nghỉ bù") || tp.includes("nghỉ");
+          if ((mode === "leave" && isLeave) || (mode === "work" && !isLeave)) {
+            items.push({ iso, session: t.session || "Cả ngày", type: t.type || "", note: t.note || "", workLocation: t.workLocation || "" });
+          }
+        });
+      });
+      const titleTxt = mode === "leave"
+        ? `Chi Tiết Nghỉ (${st.name} – ${state.selectedMonth})`
+        : `Chi Tiết Công Tác (${st.name} – ${state.selectedMonth})`;
+      if (!items.length) {
+        showModal(titleTxt, `<p style="margin:0;color:#64748b;">Không có bản ghi nào trong tháng ${escapeHtml(state.selectedMonth)}.</p>`);
+        return;
+      }
+      const listHtml = items.map(it => `
+        <div style="border:1px solid var(--slate-200);border-radius:8px;padding:8px 10px;margin-bottom:6px;background:#f8fafc;">
+          <b>${formatVNDate(it.iso)}</b> • <span class="chip chip-teal" style="margin:0;">${escapeHtml(it.session)}</span>
+          <div style="margin-top:4px;font-weight:600;color:#0f172a;">${escapeHtml(it.type)}${it.workLocation ? ` (${escapeHtml(it.workLocation)})` : ""}</div>
+          ${it.note ? `<div style="font-size:12px;color:#475569;margin-top:2px;">Ghi chú/Lý do: ${escapeHtml(it.note)}</div>` : ""}
+        </div>
+      `).join("");
+      showModal(titleTxt, listHtml);
+    });
+  };
+
+    let calViewYM = getTodayISO().slice(0, 7);
+    let calDragStart = null;
+    let calIsDragging = false;
+
+    function renderInlineMultiCalendar() {
+      const grid = document.getElementById("inlineCalGrid");
+      const titleEl = document.getElementById("inlineCalMonthTitle");
+      if (!grid || !titleEl) return;
+      const [yy, mm] = calViewYM.split("-").map(Number);
+      titleEl.textContent = `Tháng ${String(mm).padStart(2, "0")}/${yy}`;
+      const dows = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
+      let html = dows.map(d => `<div style="font-size:11px;font-weight:700;color:#64748b;padding:2px 0;">${d}</div>`).join("");
+
+      const firstDow = new Date(yy, mm - 1, 1).getDay();
+      const offset = firstDow === 0 ? 6 : firstDow - 1;
+      for (let i = 0; i < offset; i++) html += `<div></div>`;
+
+      const daysInMonth = new Date(yy, mm, 0).getDate();
+      for (let d = 1; d <= daysInMonth; d++) {
+        const iso = `${yy}-${String(mm).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+        const picked = selectedRegDates.includes(iso);
+        const bg = picked ? "var(--teal-700)" : "#fff";
+        const fg = picked ? "#fff" : "#0f172a";
+        const bd = picked ? "var(--teal-700)" : "#cbd5e1";
+        html += `<button type="button" data-cal-iso="${iso}" style="border:1px solid ${bd};background:${bg};color:${fg};border-radius:8px;padding:6px 0;font-size:12px;font-weight:600;cursor:pointer;">${d}</button>`;
+      }
+      grid.innerHTML = html;
+
+      const selectRange = (aIso, bIso) => {
+        const start = aIso <= bIso ? aIso : bIso;
+        const end = aIso <= bIso ? bIso : aIso;
+        let cur = start;
+        while (cur <= end) {
+          if (!selectedRegDates.includes(cur)) selectedRegDates.push(cur);
+          cur = addDaysISO(cur, 1);
+        }
+        selectedRegDates.sort();
+      };
+
+      grid.querySelectorAll("button[data-cal-iso]").forEach(btn => {
+        const iso = btn.getAttribute("data-cal-iso");
+        btn.addEventListener("mousedown", () => {
+          calIsDragging = true;
+          calDragStart = iso;
+          if (!selectedRegDates.includes(iso)) {
+            selectedRegDates.push(iso);
+            selectedRegDates.sort();
+          }
+          document.getElementById("regDateInput").value = iso;
+          renderMultiRegDatesChips();
+          renderInlineMultiCalendar();
+        });
+        btn.addEventListener("mouseenter", () => {
+          if (calIsDragging && calDragStart) {
+            selectRange(calDragStart, iso);
+            renderMultiRegDatesChips();
+            renderInlineMultiCalendar();
+          }
+        });
+      });
+    }
+
+    document.addEventListener("mouseup", () => {
+      calIsDragging = false;
+      calDragStart = null;
+    });
+
+    const btnToggleCal = document.getElementById("btnToggleInlineCal");
+    if (btnToggleCal) {
+      btnToggleCal.onclick = () => safeRun(() => {
+        const box = document.getElementById("inlineMultiCalBox");
+        if (!box) return;
+        const curInp = document.getElementById("regDateInput").value;
+        if (/^\d{4}-\d{2}-\d{2}$/.test(curInp)) calViewYM = curInp.slice(0, 7);
+        box.classList.toggle("hidden");
+        renderInlineMultiCalendar();
+      });
+    }
+
+    document.getElementById("btnCalPrevMonth")?.addEventListener("click", () => {
+      const [yy, mm] = calViewYM.split("-").map(Number);
+      const dt = new Date(yy, mm - 2, 1);
+      calViewYM = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}`;
+      renderInlineMultiCalendar();
+    });
+
+    document.getElementById("btnCalNextMonth")?.addEventListener("click", () => {
+      const [yy, mm] = calViewYM.split("-").map(Number);
+      const dt = new Date(yy, mm, 1);
+      calViewYM = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}`;
+      renderInlineMultiCalendar();
+    });
+
+    document.getElementById("btnClearPickedDates")?.addEventListener("click", () => {
+      selectedRegDates = [];
+      renderMultiRegDatesChips();
+      renderInlineMultiCalendar();
+    });
+
+    document.getElementById("btnBulkAddFromCal")?.addEventListener("click", () => {
+      if (!selectedRegDates.length) {
+        const dVal = document.getElementById("regDateInput").value;
+        if (dVal && !selectedRegDates.includes(dVal)) selectedRegDates.push(dVal);
+      }
+      renderMultiRegDatesChips();
+      showModal("Đã Chọn Đồng Loạt", `<p style="margin:0;">Đã đưa <b>${selectedRegDates.length}</b> ngày vào danh sách chờ gửi (${selectedRegDates.map(formatVNDate).join(", ")}).</p>`);
+    });
+
     document.getElementById("btnSubmitReg").onclick = () => safeRun(() => {
       const staffId = document.getElementById("regStaffSelect").value;
       const singleDate = document.getElementById("regDateInput").value;
@@ -3894,31 +4060,61 @@
       }
 
       const workLocation = document.getElementById("regWorkLocSelect") ? document.getElementById("regWorkLocSelect").value : "";
-      targetDates.forEach((dIso, i) => {
-        state.registrations.push({
-          id: "reg_" + Date.now() + "_" + i + "_" + Math.random().toString(36).slice(2, 6),
-          staffId,
-          date: dIso,
-          session,
-          type,
-          workLocation,
-          note,
-          status: "pending",
-          createdAt: Date.now() + i
-        });
+      const conflictNotes = [];
+      targetDates.forEach(dIso => {
+        const dayEntry = state.schedule[dIso] || {};
+        const isDutyDay = [dayEntry.main1, dayEntry.main2, dayEntry.dyt2].includes(staffId);
+        if (isDutyDay && type !== "Trực điểm chính" && type !== "Trực ĐYT 2") {
+          conflictNotes.push(`Ngày ${formatVNDate(dIso)}: ${st ? st.name : ""} đang có tên trong ca trực.`);
+        }
       });
 
-      document.getElementById("regNoteInput").value = "";
-      selectedRegDates = [];
-      dispatchEmailChangeNotification(
-        "Đăng ký mới",
-        `${st ? st.name : "Nhân sự"} đăng ký "${type}" (${targetDates.length} ngày)`,
-        `Ngày: ${targetDates.map(formatVNDate).join(", ")} • Buổi: ${session}${note ? " • Ghi chú: " + note : ""}`,
-        targetDates
-      );
-      saveState();
-      renderAll();
-      showModal("Đã Gửi Đăng Ký", `<p>Đã gửi <b>${targetDates.length}</b> đăng ký cho <b>${escapeHtml(st ? st.name : "")}</b> (${targetDates.map(formatVNDate).join(", ")}) vào hàng chờ duyệt.</p>`);
+      showModal("Kiểm Tra Thông Tin Trước Khi Gửi", `
+        <p style="margin-top:0;font-size:12.5px;color:#475569;">Vui lòng kiểm tra lại toàn bộ thông tin bên dưới trước khi gửi đăng ký:</p>
+        <div style="background:#f8fafc;border:1px solid #cbd5e1;border-radius:10px;padding:10px;font-size:13px;margin-bottom:10px;">
+          <div><b>Nhân sự:</b> ${escapeHtml(st ? `${st.name} (${st.dept})` : "")}</div>
+          <div><b>Số lượng ngày (${targetDates.length}):</b> ${escapeHtml(targetDates.map(formatVNDate).join(", "))}</div>
+          <div><b>Buổi:</b> ${escapeHtml(session)}</div>
+          <div><b>Nội dung:</b> ${escapeHtml(type)}</div>
+          <div><b>Địa điểm:</b> ${escapeHtml(workLocation || "—")}</div>
+          <div><b>Ghi chú:</b> ${escapeHtml(note || "—")}</div>
+        </div>
+        ${conflictNotes.length ? `<div class="banner warn" style="margin-bottom:10px;">${conflictNotes.map(c => `<div>• ${escapeHtml(c)}</div>`).join("")}</div>` : ""}
+        <div class="row-2" style="gap:8px;">
+          <button type="button" class="btn btn-secondary" id="btnCancelPreSend">Sửa lại</button>
+          <button type="button" class="btn btn-primary" id="btnConfirmFinalSend">Xác nhận gửi đăng ký</button>
+        </div>
+      `);
+
+      document.getElementById("btnCancelPreSend").onclick = closeModal;
+      document.getElementById("btnConfirmFinalSend").onclick = () => safeRun(() => {
+        targetDates.forEach((dIso, i) => {
+          state.registrations.push({
+            id: "reg_" + Date.now() + "_" + i + "_" + Math.random().toString(36).slice(2, 6),
+            staffId,
+            date: dIso,
+            session,
+            type,
+            workLocation,
+            note,
+            status: "pending",
+            createdAt: Date.now() + i
+          });
+        });
+
+        document.getElementById("regNoteInput").value = "";
+        selectedRegDates = [];
+        dispatchEmailChangeNotification(
+          "Đăng ký mới",
+          `${st ? st.name : "Nhân sự"} đăng ký "${type}" (${targetDates.length} ngày)`,
+          `Ngày: ${targetDates.map(formatVNDate).join(", ")} • Buổi: ${session}${note ? " • Ghi chú: " + note : ""}`,
+          targetDates
+        );
+        saveState();
+        closeModal();
+        renderAll();
+        showModal("Đã Gửi Đăng Ký", `<p>Đã gửi <b>${targetDates.length}</b> đăng ký cho <b>${escapeHtml(st ? st.name : "")}</b> (${targetDates.map(formatVNDate).join(", ")}) vào hàng chờ duyệt.</p>`);
+      });
     });
 
     document.getElementById("btnAddStaff").onclick = () => safeRun(() => {
