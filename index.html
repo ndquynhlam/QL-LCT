@@ -438,30 +438,35 @@
 </header>
 
 <main class="container">
-  <!-- Cloud Sync Card (Admin Only) -->
+  <!-- Cloud Sync Card (Admin Only - Collapsible) -->
   <section class="card hidden no-print" id="cloudConfigCard">
-    <div class="card-title">
+    <div class="card-title" style="margin-bottom:0;cursor:pointer;" id="btnToggleCloudPanel">
       <span>Kết Nối Đồng Bộ Đám Mây Thời Gian Thực (Firebase)</span>
-      <span class="chip chip-teal" id="cloudRoomLabel">Phòng: tram-y-te</span>
-    </div>
-    <p class="card-desc">Dán Firebase Realtime Database URL để nhiều điện thoại/máy tính cùng đăng ký và đồng bộ tức thì mà không ghi đè chéo.</p>
-    <div class="row-2">
-      <div class="form-group">
-        <label class="form-label">Firebase Database URL *</label>
-        <input type="url" class="form-control" id="inputFirebaseUrl" placeholder="https://ten-du-an-default-rtdb.asia-southeast1.firebasedatabase.app" />
-      </div>
-      <div class="form-group">
-        <label class="form-label">Mã phòng dữ liệu (Room ID)</label>
-        <input type="text" class="form-control" id="inputRoomId" value="tram-y-te" placeholder="tram-y-te" />
+      <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+        <span class="chip chip-teal" id="cloudRoomLabel">Phòng: tram-y-te</span>
+        <button type="button" class="btn btn-secondary btn-sm" id="btnCloudExpandLabel">Mở rộng</button>
       </div>
     </div>
-    <div class="btn-toolbar">
-      <button type="button" class="btn btn-primary btn-sm" id="btnConnectCloud">Kết nối & Đồng bộ ngay</button>
-      <button type="button" class="btn btn-secondary btn-sm" id="btnCopyShareLink">Tạo link chia sẻ tự động kết nối</button>
-      <button type="button" class="btn btn-danger btn-sm hidden" id="btnDisconnectCloud">Ngắt kết nối Cloud</button>
-    </div>
-    <div id="shareLinkBox" class="hidden" style="margin-top:8px;">
-      <input type="text" class="form-control" id="outputShareLink" readonly />
+    <div id="cloudConfigBody" class="hidden" style="margin-top:10px;">
+      <p class="card-desc">Dán Firebase Realtime Database URL để nhiều điện thoại/máy tính cùng đăng ký và đồng bộ tức thì mà không ghi đè chéo.</p>
+      <div class="row-2">
+        <div class="form-group">
+          <label class="form-label">Firebase Database URL *</label>
+          <input type="url" class="form-control" id="inputFirebaseUrl" placeholder="https://ten-du-an-default-rtdb.asia-southeast1.firebasedatabase.app" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Mã phòng dữ liệu (Room ID)</label>
+          <input type="text" class="form-control" id="inputRoomId" value="tram-y-te" placeholder="tram-y-te" />
+        </div>
+      </div>
+      <div class="btn-toolbar" style="margin-bottom:0;">
+        <button type="button" class="btn btn-primary btn-sm" id="btnConnectCloud">Kết nối & Đồng bộ ngay</button>
+        <button type="button" class="btn btn-secondary btn-sm" id="btnCopyShareLink">Tạo link chia sẻ tự động kết nối</button>
+        <button type="button" class="btn btn-danger btn-sm hidden" id="btnDisconnectCloud">Ngắt kết nối Cloud</button>
+      </div>
+      <div id="shareLinkBox" class="hidden" style="margin-top:8px;">
+        <input type="text" class="form-control" id="outputShareLink" readonly />
+      </div>
     </div>
   </section>
 
@@ -489,8 +494,8 @@
     Hợp lệ: Không phát hiện trùng tua trực, vi phạm ra trực 24/24 hay thiếu Bác sĩ hành chính tại Điểm chính.
   </div>
 
-  <!-- Email Notification Subscription & Change Log Card (Admin Only) -->
-  <section class="card hidden no-print" id="emailNotifyCard">
+  <!-- Email Notification Subscription & Change Log Card -->
+  <section class="card no-print" id="emailNotifyCard">
     <div class="card-title">
       <span>Đăng Ký Nhận Thông Báo Thay Đổi Qua Email</span>
       <span class="chip chip-teal" id="emailSubCountBadge">0 email</span>
@@ -508,7 +513,7 @@
     </div>
     <div class="btn-toolbar" style="margin-bottom:8px;">
       <button type="button" class="btn btn-primary btn-sm" id="btnSubscribeEmail">Đăng ký nhận thông báo</button>
-      <button type="button" class="btn btn-secondary btn-sm" id="btnToggleEmailLog">Xem nhật ký thông báo email (<span id="emailLogCount">0</span>)</button>
+      <button type="button" class="btn btn-secondary btn-sm admin-col hidden" id="btnToggleEmailLog">Xem nhật ký gửi email (<span id="emailLogCount">0</span>)</button>
     </div>
     <div id="emailSubscribersList" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
     <div id="emailNotificationsLogBox" class="hidden" style="margin-top:10px;border-top:1px solid var(--slate-200);padding-top:8px;"></div>
@@ -1358,6 +1363,35 @@
     return record;
   }
 
+  function confirmActionWarningModal(options) {
+    const {
+      title,
+      warningText,
+      detailHtml,
+      confirmLabel,
+      cancelLabel,
+      confirmClass,
+      onConfirm
+    } = options;
+
+    showModal(title || "Xác Nhận Thao Tác", `
+      <div class="banner warn" style="margin-bottom:10px;">
+        ${escapeHtml(warningText || "Cảnh báo: Thao tác này sẽ thay đổi dữ liệu hiện tại.")}
+      </div>
+      ${detailHtml ? `<div style="font-size:12.5px;color:#334155;margin-bottom:12px;">${detailHtml}</div>` : ""}
+      <div class="row-2" style="gap:8px;">
+        <button type="button" class="btn btn-secondary btn-sm" id="btnWarnCancel">${escapeHtml(cancelLabel || "Huỷ bỏ")}</button>
+        <button type="button" class="btn ${confirmClass || "btn-primary"} btn-sm" id="btnWarnConfirm">${escapeHtml(confirmLabel || "Xác nhận thực hiện")}</button>
+      </div>
+    `);
+
+    document.getElementById("btnWarnCancel").onclick = closeModal;
+    document.getElementById("btnWarnConfirm").onclick = () => safeRun(() => {
+      closeModal();
+      if (typeof onConfirm === "function") onConfirm();
+    });
+  }
+
   function requestAdminConflictConfirmation(options) {
     const {
       modalTitle,
@@ -1397,7 +1431,6 @@
   }
 
   function renderEmailSubscribersUI() {
-    if (!state.isAdmin) return;
     const sel = document.getElementById("selectNotifyStaff");
     if (sel) {
       const cur = sel.value;
@@ -1476,7 +1509,6 @@
       badge.classList.add("admin-active");
       badge.innerHTML = `<span class="dot"></span> Quản trị viên (Admin)`;
       cloudCard.classList.remove("hidden");
-      emailNotifyCard.classList.remove("hidden");
       schedTools.classList.remove("hidden");
       addStaffCard.classList.remove("hidden");
       adminCols.forEach(el => el.classList.remove("hidden"));
@@ -1485,7 +1517,6 @@
       badge.classList.remove("admin-active");
       badge.innerHTML = `<span class="dot"></span> Cá nhân`;
       cloudCard.classList.add("hidden");
-      emailNotifyCard.classList.add("hidden");
       schedTools.classList.add("hidden");
       addStaffCard.classList.add("hidden");
       adminCols.forEach(el => el.classList.add("hidden"));
@@ -3005,6 +3036,14 @@
       openPinLoginModal();
     });
 
+    document.getElementById("btnToggleCloudPanel").onclick = () => safeRun(() => {
+      const body = document.getElementById("cloudConfigBody");
+      const btnLbl = document.getElementById("btnCloudExpandLabel");
+      const willOpen = body.classList.contains("hidden");
+      body.classList.toggle("hidden", !willOpen);
+      if (btnLbl) btnLbl.textContent = willOpen ? "Thu gọn" : "Mở rộng";
+    });
+
     document.getElementById("btnConnectCloud").onclick = () => safeRun(() => {
       const url = document.getElementById("inputFirebaseUrl").value.trim().replace(/\/+$/, "");
       const room = document.getElementById("inputRoomId").value.trim() || "tram-y-te";
@@ -3078,27 +3117,57 @@
     });
 
     document.getElementById("btnPrint").onclick = () => safeRun(() => window.print());
-    document.getElementById("btnAutoSchedule").onclick = () => safeRun(() => autoGenerateSchedule(false));
-    document.getElementById("btnFillEmpty").onclick = () => safeRun(() => autoGenerateSchedule(true));
+    document.getElementById("btnAutoSchedule").onclick = () => safeRun(() => {
+      if (!state.isAdmin) return;
+      confirmActionWarningModal({
+        title: "Cảnh Báo Xếp Lịch Tự Động Cả Tháng",
+        warningText: `Xếp lịch tự động sẽ ghi đè các ca trực hiện có trong tháng ${state.selectedMonth}.`,
+        detailHtml: "Vui lòng xác nhận nếu bạn chắc chắn muốn chạy xếp lịch lại toàn bộ tháng.",
+        confirmLabel: "Xác nhận xếp lại tháng",
+        cancelLabel: "Huỷ bỏ",
+        confirmClass: "btn-primary",
+        onConfirm: () => autoGenerateSchedule(false)
+      });
+    });
+
+    document.getElementById("btnFillEmpty").onclick = () => safeRun(() => {
+      if (!state.isAdmin) return;
+      confirmActionWarningModal({
+        title: "Xác Nhận Điền Ô Trống Trong Tháng",
+        warningText: `Hệ thống sẽ tự động điền các vị trí trực còn trống của tháng ${state.selectedMonth}.`,
+        detailHtml: "Các ô đã có người trực trước đó sẽ được giữ nguyên.",
+        confirmLabel: "Xác nhận điền ô trống",
+        cancelLabel: "Huỷ bỏ",
+        confirmClass: "btn-amber",
+        onConfirm: () => autoGenerateSchedule(true)
+      });
+    });
 
     document.getElementById("btnClearMonth").onclick = () => safeRun(() => {
+      if (!state.isAdmin) return;
       const mDates = getMonthDates(state.selectedMonth);
-      mDates.forEach(iso => { delete state.schedule[iso]; });
-      dispatchEmailChangeNotification(
-        "Xoá lịch tháng",
-        `Đã xoá lịch tháng ${state.selectedMonth}`,
-        `Xoá dữ liệu lịch của ${mDates.length} ngày trong tháng ${state.selectedMonth}.`,
-        mDates
-      );
-      saveState();
-      renderAll();
+      confirmActionWarningModal({
+        title: "Cảnh Báo Xoá Toàn Bộ Lịch Tháng",
+        warningText: `Bạn đang chuẩn bị xoá toàn bộ dữ liệu lịch trực và công tác của tháng ${state.selectedMonth} (${mDates.length} ngày).`,
+        detailHtml: "Hành động này sẽ xoá trắng lịch của tháng đang chọn.",
+        confirmLabel: "Xác nhận xoá lịch tháng",
+        cancelLabel: "Giữ nguyên lịch",
+        confirmClass: "btn-danger",
+        onConfirm: () => {
+          mDates.forEach(iso => { delete state.schedule[iso]; });
+          dispatchEmailChangeNotification(
+            "Xoá lịch tháng",
+            `Đã xoá lịch tháng ${state.selectedMonth}`,
+            `Xoá dữ liệu lịch của ${mDates.length} ngày trong tháng ${state.selectedMonth}.`,
+            mDates
+          );
+          saveState();
+          renderAll();
+        }
+      });
     });
 
     document.getElementById("btnSubscribeEmail").onclick = () => safeRun(() => {
-      if (!state.isAdmin) {
-        showModal("Yêu cầu quyền Admin", "<p style='margin:0;'>Chức năng quản lý và gửi thông báo email chỉ dành cho chế độ Admin.</p>");
-        return;
-      }
       const emailInput = document.getElementById("inputNotifyEmail");
       const staffSel = document.getElementById("selectNotifyStaff");
       const emailVal = emailInput.value.trim().toLowerCase();
@@ -3233,10 +3302,21 @@
     });
 
     document.getElementById("btnRestore29").onclick = () => safeRun(() => {
-      state.staff = normalizeStaffList(DEFAULT_STAFF);
-      saveState();
-      renderAll();
-      showModal("Đã khôi phục", "<p>Đã khôi phục đầy đủ danh sách chuẩn 29 nhân sự Trạm Y tế.</p>");
+      if (!state.isAdmin) return;
+      confirmActionWarningModal({
+        title: "Cảnh Báo Khôi Phục DS 29 Nhân Sự",
+        warningText: "Khôi phục danh sách chuẩn 29 nhân sự có thể ghi đè các chỉnh sửa hoặc nhân sự thêm mới hiện tại.",
+        detailHtml: "Hãy xác nhận nếu bạn muốn đưa danh sách nhân sự về mặc định 29 người.",
+        confirmLabel: "Xác nhận khôi phục",
+        cancelLabel: "Huỷ bỏ",
+        confirmClass: "btn-amber",
+        onConfirm: () => {
+          state.staff = normalizeStaffList(DEFAULT_STAFF);
+          saveState();
+          renderAll();
+          showModal("Đã khôi phục", "<p>Đã khôi phục đầy đủ danh sách chuẩn 29 nhân sự Trạm Y tế.</p>");
+        }
+      });
     });
   }
 
