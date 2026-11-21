@@ -576,9 +576,13 @@
         <select class="form-control" id="regTypeSelect">
           <option value="Trực điểm chính">Trực điểm chính</option>
           <option value="Trực ĐYT 2">Trực ĐYT 2</option>
-          <option value="Tập huấn / Họp">Tập huấn / Họp</option>
-          <option value="Khám sức khỏe / Công tác ngoài">Khám sức khỏe / Công tác ngoài</option>
-          <option value="Nghỉ phép / Nghỉ bù">Nghỉ phép / Nghỉ bù</option>
+          <option value="Tập huấn">Tập huấn</option>
+          <option value="Học">Học</option>
+          <option value="Tiêm ngừa">Tiêm ngừa</option>
+          <option value="Hỗ trợ tua trực">Hỗ trợ tua trực</option>
+          <option value="Hỗ trợ khác">Hỗ trợ khác</option>
+          <option value="Nghỉ phép">Nghỉ phép</option>
+          <option value="Nghỉ bù">Nghỉ bù</option>
           <option value="Khác">Khác</option>
         </select>
       </div>
@@ -764,11 +768,11 @@
   // Ưu tiên 1: Thứ tự Đơn vị công tác khớp với mẫu chuẩn Lich_Cong_Tac_TYT_Hung_Long
   const DEPT_ORDER = [
     "Ban Giám đốc",
+    "Phòng Hành chính",
+    "Phòng Dân số",
     "Khoa Dược",
     "Khoa Khám bệnh",
     "Khoa Phòng bệnh",
-    "Phòng Dân số",
-    "Phòng Hành chính",
     "Điểm Y tế 2"
   ];
 
@@ -1478,49 +1482,189 @@
   }
 
   /* Admin Interactive Actions */
+  const OTHER_SCHEDULE_TYPES = [
+    "Trực điểm chính",
+    "Trực ĐYT 2",
+    "Tập huấn",
+    "Học",
+    "Tiêm ngừa",
+    "Hỗ trợ tua trực",
+    "Hỗ trợ khác",
+    "Nghỉ phép",
+    "Nghỉ bù",
+    "Khác"
+  ];
+
   window.__openDayEditor = function(iso) {
     safeRun(() => {
       if (!state.isAdmin) return;
       const entry = state.schedule[iso] || {};
-      const eligible = state.staff.filter(s => !s.isAdminOnly);
-      const buildOpts = (selectedId) => {
+      const eligibleDuty = state.staff.filter(s => !s.isAdminOnly);
+      const leadCandidates = eligibleDuty.filter(s => isClinicalLeadTitle(s.title));
+      const nurseCandidates = eligibleDuty.filter(s => isNurseOrMidwifeTitle(s.title));
+
+      const buildOpts = (list, selectedId) => {
         let out = `<option value="">-- Trống --</option>`;
-        eligible.forEach(s => {
+        list.forEach(s => {
           out += `<option value="${s.id}" ${s.id === selectedId ? "selected" : ""}>${escapeHtml(s.name)} (${escapeHtml(s.title)})</option>`;
         });
+        if (selectedId && !list.some(s => s.id === selectedId)) {
+          const curSt = getStaffById(selectedId);
+          if (curSt) {
+            out += `<option value="${curSt.id}" selected>${escapeHtml(curSt.name)} (${escapeHtml(curSt.title)} - hiện tại)</option>`;
+          }
+        }
         return out;
       };
+
+      const staffCheckboxesHtml = state.staff.map(s => `
+        <label style="display:flex;align-items:center;gap:6px;padding:4px 6px;border-radius:6px;background:#fff;border:1px solid #e2e8f0;font-size:12px;cursor:pointer;">
+          <input type="checkbox" class="bulk-task-staff-chk" value="${s.id}" />
+          <span style="line-height:1.25;"><b>${escapeHtml(s.name)}</b> <span style="color:#64748b;">(${escapeHtml(s.title)} • ${escapeHtml(s.dept)})</span></span>
+        </label>
+      `).join("");
+
+      const typeOptsHtml = OTHER_SCHEDULE_TYPES.map(tp =>
+        `<option value="${escapeHtml(tp)}" ${tp === "Tiêm ngừa" ? "selected" : ""}>${escapeHtml(tp)}</option>`
+      ).join("");
 
       const tasks = Array.isArray(entry.tasks) ? entry.tasks : [];
       const tasksListHtml = tasks.length
         ? tasks.map((t, i) => {
             const st = getStaffById(t.staffId);
-            return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 8px;background:#f8fafc;border-radius:8px;margin-bottom:5px;">
-              <span><b>${escapeHtml(st ? st.name : "")}</b> (${escapeHtml(t.session)}): ${escapeHtml(t.type)}${t.note ? " - " + escapeHtml(t.note) : ""}</span>
+            return `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:7px 9px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;margin-bottom:6px;">
+              <span style="font-size:12.5px;"><b>${escapeHtml(st ? st.name : "Nhân sự")}</b> (${escapeHtml(t.session)}): ${escapeHtml(t.type)}${t.note ? " - " + escapeHtml(t.note) : ""}</span>
               <button type="button" class="btn btn-danger btn-sm" onclick="window.__removeDayTask('${iso}', ${i})">Xoá</button>
             </div>`;
           }).join("")
-        : `<p style="font-size:12px;color:#64748b;margin:4px 0;">Chưa có lịch công tác/nghỉ riêng.</p>`;
+        : `<p style="font-size:12px;color:#64748b;margin:4px 0 8px;">Chưa có lịch công tác/nghỉ riêng trong ngày.</p>`;
 
       showModal(`Xếp Lịch Ngày ${formatVNDate(iso)}`, `
         <div class="form-group">
-          <label class="form-label">Điểm chính 1 (BS / YS)</label>
-          <select class="form-control" id="editMain1">${buildOpts(entry.main1)}</select>
+          <label class="form-label">Điểm chính 1 (Chỉ chọn Bác sĩ / Y sĩ)</label>
+          <select class="form-control" id="editMain1">${buildOpts(leadCandidates, entry.main1)}</select>
         </div>
         <div class="form-group">
-          <label class="form-label">Điểm chính 2 (ĐD / HS)</label>
-          <select class="form-control" id="editMain2">${buildOpts(entry.main2)}</select>
+          <label class="form-label">Điểm chính 2 (Chỉ chọn Điều dưỡng / Hộ sinh)</label>
+          <select class="form-control" id="editMain2">${buildOpts(nurseCandidates, entry.main2)}</select>
         </div>
         <div class="form-group">
-          <label class="form-label">Điểm Y tế 2 (ĐD / HS)</label>
-          <select class="form-control" id="editDyt2">${buildOpts(entry.dyt2)}</select>
+          <label class="form-label">Điểm Y tế 2 (Chỉ chọn Điều dưỡng / Hộ sinh)</label>
+          <select class="form-control" id="editDyt2">${buildOpts(nurseCandidates, entry.dyt2)}</select>
         </div>
-        <div class="form-group">
-          <label class="form-label">Lịch công tác / Nghỉ trong ngày</label>
+
+        <div style="border-top:1px solid #e2e8f0;padding-top:10px;margin-top:10px;">
+          <label class="form-label" style="margin-bottom:6px;">Lịch công tác / Nghỉ trong ngày (${tasks.length})</label>
           ${tasksListHtml}
+
+          <div style="background:#f0fdfa;border:1px solid #99f6e4;border-radius:10px;padding:10px;margin-top:8px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;margin-bottom:6px;">
+              <span style="font-size:12.5px;font-weight:700;color:#0f3d3e;">+ Xếp lịch công tác hàng loạt cho nhiều người</span>
+              <div style="display:flex;gap:6px;">
+                <button type="button" class="link-btn" id="btnSelectAllBulkStaff">Chọn tất cả</button>
+                <button type="button" class="link-btn" id="btnClearBulkStaff">Bỏ chọn</button>
+              </div>
+            </div>
+            <div class="form-group" style="margin-bottom:8px;">
+              <label class="form-label">Chọn nhân sự áp dụng (<span id="bulkSelectedCount">0</span> đã chọn)</label>
+              <div style="max-height:150px;overflow-y:auto;display:grid;grid-template-columns:1fr;gap:4px;padding:6px;background:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;">
+                ${staffCheckboxesHtml}
+              </div>
+            </div>
+            <div class="row-2" style="margin-bottom:8px;">
+              <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label">Buổi</label>
+                <select class="form-control" id="addTaskSession">
+                  <option value="Cả ngày">Cả ngày</option>
+                  <option value="Buổi Sáng" selected>Buổi Sáng</option>
+                  <option value="Buổi Chiều">Buổi Chiều</option>
+                </select>
+              </div>
+              <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label">Loại lịch công tác</label>
+                <select class="form-control" id="addTaskType">${typeOptsHtml}</select>
+              </div>
+            </div>
+            <div class="form-group" style="margin-bottom:8px;">
+              <label class="form-label">Nội dung / Địa điểm / Ghi chú</label>
+              <input type="text" class="form-control" id="addTaskNote" placeholder="VD: Tiêm ngừa mở rộng, Tập huấn..." />
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm btn-block" id="btnAddDayTask">+ Áp dụng cho nhân sự đã chọn</button>
+          </div>
         </div>
-        <button type="button" class="btn btn-primary btn-block" id="btnSaveDayEdit">Lưu thay đổi ngày ${formatVNDate(iso)}</button>
+
+        <button type="button" class="btn btn-primary btn-block" style="margin-top:12px;" id="btnSaveDayEdit">Lưu thay đổi ngày ${formatVNDate(iso)}</button>
       `);
+
+      const updateBulkCount = () => {
+        const cnt = document.querySelectorAll(".bulk-task-staff-chk:checked").length;
+        const el = document.getElementById("bulkSelectedCount");
+        if (el) el.textContent = cnt;
+      };
+
+      document.querySelectorAll(".bulk-task-staff-chk").forEach(chk => {
+        chk.addEventListener("change", updateBulkCount);
+      });
+
+      document.getElementById("btnSelectAllBulkStaff").onclick = () => {
+        document.querySelectorAll(".bulk-task-staff-chk").forEach(chk => { chk.checked = true; });
+        updateBulkCount();
+      };
+
+      document.getElementById("btnClearBulkStaff").onclick = () => {
+        document.querySelectorAll(".bulk-task-staff-chk").forEach(chk => { chk.checked = false; });
+        updateBulkCount();
+      };
+
+      document.getElementById("btnAddDayTask").onclick = () => safeRun(() => {
+        const checkedIds = Array.from(document.querySelectorAll(".bulk-task-staff-chk:checked")).map(c => c.value);
+        if (!checkedIds.length) {
+          showModal("Chưa chọn nhân sự", "<p style='margin:0;'>Vui lòng tick chọn ít nhất một nhân sự để xếp lịch công tác hàng loạt.</p>");
+          return;
+        }
+        const session = document.getElementById("addTaskSession").value;
+        const type = document.getElementById("addTaskType").value;
+        const note = document.getElementById("addTaskNote").value.trim();
+
+        if (!state.schedule[iso]) {
+          state.schedule[iso] = { main1: "", main2: "", dyt2: "", tasks: [] };
+        }
+        if (!Array.isArray(state.schedule[iso].tasks)) {
+          state.schedule[iso].tasks = [];
+        }
+
+        checkedIds.forEach((staffId, idx) => {
+          if (type === "Trực điểm chính") {
+            const st = getStaffById(staffId);
+            if (st && isClinicalLeadTitle(st.title) && !state.schedule[iso].main1) {
+              state.schedule[iso].main1 = staffId;
+              return;
+            }
+            if (st && isNurseOrMidwifeTitle(st.title) && !state.schedule[iso].main2) {
+              state.schedule[iso].main2 = staffId;
+              return;
+            }
+          } else if (type === "Trực ĐYT 2") {
+            const st = getStaffById(staffId);
+            if (st && isNurseOrMidwifeTitle(st.title) && !state.schedule[iso].dyt2) {
+              state.schedule[iso].dyt2 = staffId;
+              return;
+            }
+          }
+
+          state.schedule[iso].tasks.push({
+            id: "t_" + Date.now() + "_" + idx + "_" + Math.random().toString(36).slice(2, 5),
+            staffId,
+            session,
+            type,
+            note
+          });
+        });
+
+        saveState();
+        window.__openDayEditor(iso);
+        renderAll();
+      });
 
       document.getElementById("btnSaveDayEdit").onclick = () => safeRun(() => {
         const cur = state.schedule[iso] || {};
@@ -1528,7 +1672,7 @@
           main1: document.getElementById("editMain1").value || "",
           main2: document.getElementById("editMain2").value || "",
           dyt2: document.getElementById("editDyt2").value || "",
-          tasks: cur.tasks || []
+          tasks: Array.isArray(cur.tasks) ? cur.tasks : []
         };
         saveState();
         closeModal();
