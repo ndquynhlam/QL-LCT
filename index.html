@@ -930,6 +930,7 @@
           <option value="Học">Học</option>
           <option value="Họp">Họp</option>
           <option value="Tiêm ngừa">Tiêm ngừa</option>
+          <option value="Tiêm ngừa dịch vụ">Tiêm ngừa dịch vụ</option>
           <option value="Hỗ trợ tua trực">Hỗ trợ tua trực</option>
           <option value="Hỗ trợ khác">Hỗ trợ khác</option>
           <option value="Nghỉ phép">Nghỉ phép</option>
@@ -3253,6 +3254,7 @@
     "Học",
     "Họp",
     "Tiêm ngừa",
+    "Tiêm ngừa dịch vụ",
     "Hỗ trợ tua trực",
     "Hỗ trợ khác",
     "Nghỉ phép",
@@ -3411,7 +3413,10 @@
           </div>
         </div>
 
-        <button type="button" class="btn btn-primary btn-block" style="margin-top:12px;" id="btnSaveDayEdit">Lưu thay đổi ngày ${formatVNDate(iso)}</button>
+        <div class="row-2" style="gap:8px;margin-top:12px;">
+          <button type="button" class="btn btn-danger" id="btnDeleteDaySchedule">Xoá lịch ngày này</button>
+          <button type="button" class="btn btn-primary" id="btnSaveDayEdit">Lưu thay đổi ngày ${formatVNDate(iso)}</button>
+        </div>
       `);
 
       const refreshFreeSwapCandidates = () => {
@@ -3529,6 +3534,33 @@
         renderAll();
       });
 
+      document.getElementById("btnDeleteDaySchedule").onclick = () => safeRun(() => {
+        if (!state.isAdmin) return;
+        const prevSnapshot = snapshotDay(iso);
+        confirmActionWarningModal({
+          title: `Xoá Lịch Ngày ${formatVNDate(iso)}`,
+          warningText: `Bạn có chắc chắn muốn xoá toàn bộ lịch trực và lịch công tác/nghỉ của ngày ${formatVNDate(iso)} không?`,
+          detailHtml: "Thao tác này sẽ xoá dữ liệu ngày này trên hệ thống và đồng bộ lên Firebase.",
+          confirmLabel: "Xác nhận xoá lịch ngày",
+          cancelLabel: "Huỷ bỏ",
+          confirmClass: "btn-danger",
+          onConfirm: () => {
+            delete state.schedule[iso];
+            if (hasDayChanged(prevSnapshot, { main1: "", main2: "", dyt2: "", tasks: [] })) {
+              dispatchEmailChangeNotification(
+                "Xoá lịch ngày",
+                `Đã xoá lịch ngày ${formatVNDate(iso)}`,
+                `Xoá toàn bộ ca trực và lịch công tác/nghỉ của ngày ${formatVNDate(iso)}.`,
+                [iso]
+              );
+            }
+            saveState(true);
+            closeModal();
+            renderAll();
+          }
+        });
+      });
+
       document.getElementById("btnSaveDayEdit").onclick = () => safeRun(() => {
         const prevSnapshot = snapshotDay(iso);
         const cur = state.schedule[iso] || {};
@@ -3545,16 +3577,21 @@
         const nextDayWarnings = state.schedule[nextDayIso] ? evaluateDayWarnings(nextDayIso).filter(w => w.includes("ra trực liền kề")) : [];
         const allConflicts = [...dayWarnings, ...nextDayWarnings.map(w => `Ngày ${formatVNDate(nextDayIso)}: ${w}`)];
 
-        const finalizeSave = () => {
-          if (hasDayChanged(prevSnapshot, state.schedule[iso])) {
+        const finalizeSave = (forceOverwrite = false) => {
+          const targetDay = Object.assign({}, nextCandidate);
+          state.schedule[iso] = targetDay;
+          if (forceOverwrite || hasDayChanged(prevSnapshot, targetDay)) {
             dispatchEmailChangeNotification(
               "Lịch trực & công tác ngày",
               `Cập nhật lịch ngày ${formatVNDate(iso)}`,
-              `Điểm chính 1: ${getStaffById(state.schedule[iso].main1)?.name || "Trống"} • Điểm chính 2: ${getStaffById(state.schedule[iso].main2)?.name || "Trống"} • ĐYT 2: ${getStaffById(state.schedule[iso].dyt2)?.name || "Trống"} • Số mục công tác/nghỉ: ${(state.schedule[iso].tasks || []).length}`,
+              `Điểm chính 1: ${getStaffById(targetDay.main1)?.name || "Trống"} • Điểm chính 2: ${getStaffById(targetDay.main2)?.name || "Trống"} • ĐYT 2: ${getStaffById(targetDay.dyt2)?.name || "Trống"} • Số mục công tác/nghỉ: ${(targetDay.tasks || []).length}`,
               [iso]
             );
           }
-          saveState();
+          saveState(true);
+          if (state.cloud && state.cloud.url) {
+            pushToFirebase();
+          }
           closeModal();
           renderAll();
         };
@@ -3571,7 +3608,7 @@
               renderAll();
               window.__openDayEditor(iso);
             },
-            onApplyAnyway: finalizeSave
+            onApplyAnyway: () => finalizeSave(true)
           });
           return;
         }
@@ -3771,13 +3808,18 @@
       });
 
       const commitApproval = () => {
+        reg.status = "approved";
+        reg.reviewedAt = Date.now();
         dispatchEmailChangeNotification(
           "Phê duyệt đăng ký",
           `Đã duyệt "${reg.type}" cho ${stName} (${formatVNDate(reg.date)})`,
           `Buổi: ${reg.session}${reg.note ? " • Ghi chú: " + reg.note : ""}`,
           [reg.date]
         );
-        saveState();
+        saveState(true);
+        if (state.cloud && state.cloud.url) {
+          pushToFirebase();
+        }
         renderAll();
       };
 
@@ -3951,6 +3993,27 @@
   /* =====================================================================
      EXCEL EXPORT (.XLSX) MATCHING LICH_CONG_TAC_TYT_HUNG_LONG FORMAT
      ===================================================================== */
+  function normalizeScheduleAbbr(rawType, iso) {
+    const t = String(rawType || "").trim();
+    const low = t.toLowerCase();
+    if (!t) return "";
+    if (low === "rt" || low === "ra trực") return "RT";
+    if (low === "h" || low === "họp") return "H";
+    if (low === "th" || low === "tập huấn") return "TH";
+    if (low === "p" || low === "nghỉ phép") return "P";
+    if (low === "nb" || low === "nghỉ bù") return "NB";
+    if (low === "tndv" || low.includes("tiêm ngừa dịch vụ")) return "TNDV";
+    if (low === "lễ" || low === "nghỉ lễ") return "Lễ";
+    if (low === "tết" || low === "nghỉ tết") return "Tết";
+    if (low.includes("lễ/tết") || low.includes("nghỉ lễ/tết")) {
+      const holLbl = iso ? getHolidayInfo(iso).label : "";
+      return String(holLbl).toLowerCase().includes("tết") ? "Tết" : "Lễ";
+    }
+    if (low.includes("trực đyt 2") || low.includes("trực dyt 2")) return "TRỰC ĐYT 2";
+    if (low.startsWith("trực") || low.includes("trực điểm chính")) return "TRỰC";
+    return t;
+  }
+
   function computeStaffSessionText(staffId, iso, sessionName) {
     const entry = state.schedule[iso] || {};
     const prevEntry = state.schedule[addDaysISO(iso, -1)] || {};
@@ -3962,30 +4025,37 @@
     tasks.forEach(t => {
       if (t.staffId !== staffId) return;
       if (t.session === "Cả ngày" || t.session === sessionName) {
-        const label = t.note ? `${t.type} - ${t.note}` : t.type;
-        if (!parts.includes(label)) parts.push(label);
+        const abbr = normalizeScheduleAbbr(t.type, iso);
+        const label = t.note ? `${abbr} - ${t.note}` : abbr;
+        if (label && !parts.includes(label)) parts.push(label);
       }
     });
 
     // 2. Trực 24/24 trong ngày
-    if (entry.main1 === staffId) parts.push("Trực Điểm chính 1");
-    if (entry.main2 === staffId) parts.push("Trực Điểm chính 2");
-    if (entry.dyt2 === staffId) parts.push("Trực ĐYT 2");
+    if (entry.main1 === staffId || entry.main2 === staffId) {
+      if (!parts.includes("TRỰC")) parts.push("TRỰC");
+    }
+    if (entry.dyt2 === staffId) {
+      if (!parts.includes("TRỰC ĐYT 2")) parts.push("TRỰC ĐYT 2");
+    }
 
     // 3. Ra trực (nếu hôm trước trực)
     const wasOnDutyYesterday = (prevEntry.main1 === staffId || prevEntry.main2 === staffId || prevEntry.dyt2 === staffId);
     if (wasOnDutyYesterday) {
-      parts.push("Ra trực");
+      if (!parts.includes("RT")) parts.push("RT");
     }
 
     if (parts.length > 0) {
       return parts.join(" / ");
     }
-    const dayHasHoliday = getHolidayInfo(iso).isHoliday || tasks.some(t => {
+    const holInfo = getHolidayInfo(iso);
+    const dayHasHoliday = holInfo.isHoliday || tasks.some(t => {
       const tp = String(t.type || "").toLowerCase();
-      return (tp.includes("lễ/tết") || tp.includes("nghỉ lễ")) && (t.session === "Cả ngày" || t.session === sessionName);
+      return (tp.includes("lễ/tết") || tp.includes("nghỉ lễ") || tp.includes("nghỉ tết") || tp === "lễ" || tp === "tết") && (t.session === "Cả ngày" || t.session === sessionName);
     });
-    if (dayHasHoliday) return "Nghỉ Lễ/Tết";
+    if (dayHasHoliday) {
+      return String(holInfo.label || "").toLowerCase().includes("tết") ? "Tết" : "Lễ";
+    }
     const stObj = getStaffById(staffId);
     if (stObj && stObj.name === "Bác sĩ Dung" && dow.dow !== 2 && dow.dow !== 4) {
       return "";
@@ -3996,9 +4066,11 @@
   function getCellStyleForValue(val, isAltRow, borderObj) {
     const baseFont = { name: "Times New Roman", sz: 9.5, color: { rgb: "0F172A" } };
     const baseAlign = { horizontal: "center", vertical: "center", wrapText: true };
-    let fillRgb = isAltRow ? "F8FAFC" : "FFFFFF";
+    const cleanBgRgb = isAltRow ? "F8FAFC" : "FFFFFF";
+    const tokens = String(val || "").split("/").map(s => s.trim()).filter(Boolean);
 
-    if (val && val.includes("Trực ĐYT 2")) {
+    // Chỉ tô màu đúng 3 loại ô: TRỰC ĐYT 2, TRỰC, RT
+    if (tokens.includes("TRỰC ĐYT 2") || String(val || "").includes("TRỰC ĐYT 2")) {
       return {
         font: { name: "Times New Roman", sz: 9.5, bold: true, color: { rgb: "991B1B" } },
         fill: { patternType: "solid", fgColor: { rgb: "FECACA" } },
@@ -4006,7 +4078,7 @@
         border: borderObj
       };
     }
-    if (val && (val.includes("Trực Điểm chính 1") || val.includes("Trực Điểm chính 2"))) {
+    if (tokens.includes("TRỰC") || String(val || "").includes("TRỰC")) {
       return {
         font: { name: "Times New Roman", sz: 9.5, bold: true, color: { rgb: "0F172A" } },
         fill: { patternType: "solid", fgColor: { rgb: "FEF3C7" } },
@@ -4014,25 +4086,18 @@
         border: borderObj
       };
     }
-    if (val === "Ra trực") {
+    if (tokens.includes("RT") || String(val || "") === "RT") {
       return {
-        font: baseFont,
-        fill: { patternType: "solid", fgColor: { rgb: "F1F5F9" } },
+        font: { name: "Times New Roman", sz: 9.5, bold: true, color: { rgb: "1E3A5F" } },
+        fill: { patternType: "solid", fgColor: { rgb: "E0F2FE" } },
         alignment: baseAlign,
         border: borderObj
       };
     }
-    if (val && val !== "HC") {
-      return {
-        font: { name: "Times New Roman", sz: 9.5, bold: true, color: { rgb: "0F172A" } },
-        fill: { patternType: "solid", fgColor: { rgb: "DCFCE7" } },
-        alignment: baseAlign,
-        border: borderObj
-      };
-    }
+
     return {
       font: baseFont,
-      fill: { patternType: "solid", fgColor: { rgb: fillRgb } },
+      fill: { patternType: "solid", fgColor: { rgb: cleanBgRgb } },
       alignment: baseAlign,
       border: borderObj
     };
@@ -4366,22 +4431,23 @@
     // Dòng trống sau bảng dữ liệu (curRow), dòng ký tên ở curRow + 1
     const sigRow = curRow + 1;
     const sigStyle = {
-      font: { name: "Times New Roman", sz: 10.5, bold: true, color: { rgb: "1E3A5F" } },
-      alignment: { horizontal: "center", vertical: "center" }
+      font: { name: "Times New Roman", sz: 10, bold: true, color: { rgb: "1E3A5F" } },
+      alignment: { horizontal: "center", vertical: "center", wrapText: true }
     };
-    const block1End = 10; // A..K
-    const block2Start = 11; // L
-    const block2End = Math.floor((11 + totalCols - 1) / 2); // ~X
-    const block3Start = block2End + 1; // ~Y
+    const c1Start = 0;
+    const c1End = Math.max(2, Math.floor((totalCols - 1) / 3));
+    const c2Start = c1End + 1;
+    const c2End = Math.max(c2Start, Math.floor((2 * (totalCols - 1)) / 3));
+    const c3Start = c2End + 1;
 
-    setCell(ws1, sigRow, 0, "NGƯỜI LẬP BẢNG", sigStyle);
-    merges1.push({ s: { r: sigRow, c: 0 }, e: { r: sigRow, c: block1End } });
+    setCell(ws1, sigRow, c1Start, "NGƯỜI LẬP BẢNG", sigStyle);
+    if (c1End > c1Start) merges1.push({ s: { r: sigRow, c: c1Start }, e: { r: sigRow, c: c1End } });
 
-    setCell(ws1, sigRow, block2Start, "TRƯỞNG PHC, TC, NS", sigStyle);
-    merges1.push({ s: { r: sigRow, c: block2Start }, e: { r: sigRow, c: block2End } });
+    setCell(ws1, sigRow, c2Start, "TRƯỞNG PHÒNG HC, TC, NS", sigStyle);
+    if (c2End > c2Start) merges1.push({ s: { r: sigRow, c: c2Start }, e: { r: sigRow, c: c2End } });
 
-    setCell(ws1, sigRow, block3Start, "Q. GIÁM ĐỐC", sigStyle);
-    merges1.push({ s: { r: sigRow, c: block3Start }, e: { r: sigRow, c: totalCols - 1 } });
+    setCell(ws1, sigRow, c3Start, "Q. GIÁM ĐỐC", sigStyle);
+    if (totalCols - 1 > c3Start) merges1.push({ s: { r: sigRow, c: c3Start }, e: { r: sigRow, c: totalCols - 1 } });
 
     ws1["!ref"] = XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: sigRow, c: totalCols - 1 } });
     ws1["!merges"] = merges1;
@@ -4408,7 +4474,7 @@
     ];
     for (let r = 7; r < curRow; r++) rowsCfg[r] = { hpt: 22 };
     rowsCfg[curRow] = { hpt: 14 };
-    rowsCfg[sigRow] = { hpt: 24 };
+    rowsCfg[sigRow] = { hpt: 30 };
     ws1["!rows"] = rowsCfg;
 
     ws1["!freeze"] = { xSplit: 6, ySplit: 7, topLeftCell: "G8", activePane: "bottomRight", state: "frozen" };
@@ -4467,13 +4533,30 @@
     const dayObj = state.schedule[iso];
     const parts = txt.split("/").map(p => p.trim()).filter(Boolean);
 
+    const expandAbbrType = (abbrStr) => {
+      const u = String(abbrStr || "").trim();
+      const up = u.toUpperCase();
+      if (up === "H") return "Họp";
+      if (up === "TH") return "Tập huấn";
+      if (up === "P") return "Nghỉ phép";
+      if (up === "NB") return "Nghỉ bù";
+      if (up === "TNDV") return "Tiêm ngừa dịch vụ";
+      if (up === "LỄ") return "Nghỉ Lễ/Tết";
+      if (up === "TẾT") return "Nghỉ Lễ/Tết";
+      return u;
+    };
+
     parts.forEach(part => {
-      if (part === "HC" || part === "Ra trực") return;
-      if (part.includes("Trực Điểm chính 1")) {
-        dayObj.main1 = staffId;
+      const pUp = part.toUpperCase();
+      if (part === "HC" || part === "Ra trực" || pUp === "RT") return;
+      if (part.includes("Trực Điểm chính 1") || pUp === "TRỰC") {
+        const st = getStaffById(staffId);
+        if (st && isClinicalLeadTitle(st.title) && !dayObj.main1) dayObj.main1 = staffId;
+        else if (!dayObj.main2) dayObj.main2 = staffId;
+        else dayObj.main1 = staffId;
       } else if (part.includes("Trực Điểm chính 2")) {
         dayObj.main2 = staffId;
-      } else if (part.includes("Trực ĐYT 2")) {
+      } else if (part.includes("Trực ĐYT 2") || pUp === "TRỰC ĐYT 2") {
         dayObj.dyt2 = staffId;
       } else if (part.includes("Trực Điểm chính")) {
         const st = getStaffById(staffId);
@@ -4485,8 +4568,10 @@
         let note = "";
         const dashIdx = part.indexOf(" - ");
         if (dashIdx !== -1) {
-          type = part.slice(0, dashIdx).trim();
+          type = expandAbbrType(part.slice(0, dashIdx).trim());
           note = part.slice(dashIdx + 3).trim();
+        } else {
+          type = expandAbbrType(part);
         }
         if (!Array.isArray(dayObj.tasks)) dayObj.tasks = [];
         const existing = dayObj.tasks.find(t => t.staffId === staffId && t.type === type && t.note === note);
