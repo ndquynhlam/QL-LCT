@@ -507,6 +507,29 @@
     word-break: normal;
     overflow-wrap: break-word;
   }
+  .vn-date-wrap {
+    position: relative;
+    display: block;
+    width: 100%;
+  }
+  .vn-date-wrap input[type="date"] {
+    color: transparent !important;
+    caret-color: transparent;
+  }
+  .vn-date-wrap input[type="date"]::-webkit-datetime-edit {
+    color: transparent !important;
+  }
+  .vn-date-overlay {
+    position: absolute;
+    left: 11px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--slate-900);
+    pointer-events: none;
+    letter-spacing: 0.2px;
+  }
   input[type="date"], input[type="month"] {
     display: block;
     width: 100%;
@@ -757,13 +780,7 @@
   <div class="header-top">
     <div>
       <h1 class="app-title">HỆ THỐNG QUẢN LÝ LỊCH TRỰC &amp; LỊCH CÔNG TÁC TRẠM Y TẾ XÃ HƯNG LONG</h1>
-      <p class="app-subtitle">Điểm chính (2 người: 1 BS/YS + 1 ĐD/HS) • ĐYT 2 (1 người: ĐD/HS) • Trực 24/24 &amp; Ra trực liền kề</p>
     </div>
-  </div>
-  <div class="header-badges">
-    <span class="badge-pill" id="roleBadge"><span class="dot"></span> Cá nhân</span>
-    <span class="badge-pill" id="cloudBadge"><span class="dot"></span> Lưu cục bộ (Offline)</span>
-    <button type="button" class="btn-header" id="btnToggleAdmin">Đăng nhập Admin</button>
   </div>
 </header>
 
@@ -1026,11 +1043,11 @@
           <label class="form-label">Đơn vị công tác</label>
           <select class="form-control" id="newStaffDept">
             <option value="Ban Giám đốc">Ban Giám đốc</option>
+            <option value="Phòng Hành chính">Phòng Hành chính</option>
+            <option value="Phòng Dân số">Phòng Dân số</option>
             <option value="Khoa Dược">Khoa Dược</option>
             <option value="Khoa Khám bệnh">Khoa Khám bệnh</option>
             <option value="Khoa Phòng bệnh">Khoa Phòng bệnh</option>
-            <option value="Phòng Dân số">Phòng Dân số</option>
-            <option value="Phòng Hành chính">Phòng Hành chính</option>
             <option value="Điểm Y tế 2">Điểm Y tế 2</option>
           </select>
         </div>
@@ -1136,12 +1153,12 @@
       <div style="display:grid;grid-template-columns:1fr;gap:12px;">
         <div class="info-address-box">
           <div class="info-address-label">Địa chỉ Trạm Y tế xã Hưng Long</div>
-          <div class="info-address-value">758 Đoàn Nguyễn Tuấn, xã Hưng Long, Thành phố Hồ Chí Minh</div>
+          <div class="info-address-value">758 Đoàn Nguyễn Tuấn, xã Hưng Long,<br><span style="white-space:nowrap;">Thành phố Hồ Chí Minh</span></div>
         </div>
 
         <div style="background:#fff;border:1px solid var(--slate-200);border-radius:12px;padding:12px;">
           <div style="display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
-            <span style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:0.3px;color:var(--teal-900);text-align:center;">Ban Lãnh Đạo &amp; Phụ Trách Các Khoa / Phòng / Điểm</span>
+            <span style="font-size:clamp(9.5px, 2.85vw, 12px);font-weight:800;text-transform:uppercase;letter-spacing:0.1px;color:var(--teal-900);text-align:center;white-space:nowrap;">Ban Lãnh Đạo &amp; Phụ Trách Các Khoa / Phòng / Điểm</span>
             <button type="button" class="btn btn-secondary btn-sm admin-col hidden" id="btnEditLeadersModal">Chỉnh sửa lãnh đạo</button>
           </div>
           <div id="leadersListContainer" style="display:flex;flex-direction:column;gap:8px;"></div>
@@ -1163,6 +1180,16 @@
         </div>
       </div>
     </div>
+  <!-- System Role & Cloud Status Bar (Tab 6) -->
+  <section class="card no-print" id="systemStatusCard" style="background:linear-gradient(135deg, #0b3335 0%, #0f5250 100%);border:1px solid #115e59;color:#fff;text-align:center;">
+    <div style="font-size:12px;font-weight:700;color:#ccfbf1;text-transform:uppercase;letter-spacing:0.3px;margin-bottom:8px;">Trạng Thái Kết Nối &amp; Quyền Quản Trị Hệ Thống</div>
+    <div class="header-badges" style="margin-top:0;">
+      <span class="badge-pill" id="roleBadge"><span class="dot"></span> Cá nhân</span>
+      <span class="badge-pill" id="cloudBadge"><span class="dot"></span> Lưu cục bộ (Offline)</span>
+      <button type="button" class="btn-header" id="btnToggleAdmin">Đăng nhập Admin</button>
+    </div>
+  </section>
+
   <!-- Cloud Sync Card (Admin Only - Collapsible) -->
   <section class="card hidden no-print" id="cloudConfigCard">
     <div class="card-title" style="margin-bottom:0;cursor:pointer;" id="btnToggleCloudPanel">
@@ -1362,8 +1389,15 @@
   }
 
   function formatVNDate(iso) {
+    if (!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return String(iso || "");
     const [y, m, d] = iso.split("-");
     return `${d}/${m}/${y}`;
+  }
+
+  function formatVNMonthYear(ym) {
+    if (!ym || !/^\d{4}-\d{2}$/.test(ym)) return String(ym || "");
+    const [y, m] = ym.split("-");
+    return `${m}/${y}`;
   }
 
   function formatDateTimeVN(ts) {
@@ -1669,10 +1703,36 @@
   }
 
   /* Modal Helpers */
+  function syncAllVNDateInputs() {
+    document.querySelectorAll('input[type="date"]').forEach(inp => {
+      let wrap = inp.parentElement;
+      if (!wrap || !wrap.classList.contains("vn-date-wrap")) {
+        wrap = document.createElement("div");
+        wrap.className = "vn-date-wrap";
+        inp.parentNode.insertBefore(wrap, inp);
+        wrap.appendChild(inp);
+        const span = document.createElement("span");
+        span.className = "vn-date-overlay";
+        wrap.appendChild(span);
+        inp.addEventListener("input", () => {
+          span.textContent = inp.value ? formatVNDate(inp.value) : "dd/mm/yyyy";
+        });
+        inp.addEventListener("change", () => {
+          span.textContent = inp.value ? formatVNDate(inp.value) : "dd/mm/yyyy";
+        });
+      }
+      const overlay = wrap.querySelector(".vn-date-overlay");
+      if (overlay) {
+        overlay.textContent = inp.value ? formatVNDate(inp.value) : "dd/mm/yyyy";
+      }
+    });
+  }
+
   function showModal(title, htmlContent) {
     document.getElementById("modalTitle").textContent = title;
     document.getElementById("modalBody").innerHTML = htmlContent;
     document.getElementById("customModal").classList.add("open");
+    syncAllVNDateInputs();
   }
 
   function closeModal() {
@@ -1799,6 +1859,7 @@
     "2026-08-31": "Nghỉ hoán đổi dịp Lễ Quốc khánh 02/9",
     "2026-09-01": "Nghỉ Lễ Quốc khánh (liền kề 02/9)",
     "2026-09-02": "Ngày Quốc khánh 02/9",
+    "2026-11-24": "Ngày Văn hóa Việt Nam 24/11",
 
     // 2027
     "2027-01-01": "Tết Dương lịch 2027",
@@ -1841,6 +1902,7 @@
     if (mmdd === "04-30") return "Ngày Chiến thắng 30/4";
     if (mmdd === "05-01") return "Ngày Quốc tế Lao động 01/5";
     if (mmdd === "09-02") return "Ngày Quốc khánh 02/9";
+    if (mmdd === "11-24" && Number(iso.slice(0, 4)) >= 2026) return "Ngày Văn hóa Việt Nam 24/11";
     return "";
   }
 
@@ -1927,11 +1989,11 @@
         <div class="row-2" style="margin-bottom:8px;">
           <div class="form-group" style="margin-bottom:0;">
             <label class="form-label">Từ ngày *</label>
-            <input type="date" class="form-control" id="holAddFromDate" value="${yearStr}-01-01" />
+            <input type="date" class="form-control" id="holAddFromDate" value="${yearStr}-11-24" />
           </div>
           <div class="form-group" style="margin-bottom:0;">
             <label class="form-label">Đến ngày (nếu nghỉ nhiều ngày)</label>
-            <input type="date" class="form-control" id="holAddToDate" value="${yearStr}-01-01" />
+            <input type="date" class="form-control" id="holAddToDate" value="${yearStr}-11-24" />
           </div>
         </div>
         <div class="form-group" style="margin-bottom:8px;">
@@ -2030,16 +2092,29 @@
       if (prevDutyIds.includes(s.id)) warnings.push(`${s.name} vi phạm ra trực liền kề`);
     });
 
-    if (s1 && s2) {
-      const hasLead = isClinicalLeadTitle(s1.title) || isClinicalLeadTitle(s2.title);
-      const hasNurse = isNurseOrMidwifeTitle(s1.title) || isNurseOrMidwifeTitle(s2.title);
-      if (!hasLead || !hasNurse) {
-        warnings.push("Điểm chính cần 1 BS/YS + 1 ĐD/HS");
+    const dayHol = getHolidayInfo(iso);
+    if (dayHol.isHoliday) {
+      const mainList = [s1, s2].filter(Boolean);
+      const hasLead = mainList.some(s => isClinicalLeadTitle(s.title));
+      const hasNurse = mainList.some(s => isNurseOrMidwifeTitle(s.title));
+      if (mainList.length < 2 || !hasLead || !hasNurse) {
+        warnings.push(`Trực Lễ/Tết (${dayHol.label}) tại Điểm chính cần đủ 2 người: ít nhất 1 BS/YS + 1 ĐD/HS`);
       }
-    }
+      if (!s3 || !isNurseOrMidwifeTitle(s3.title)) {
+        warnings.push(`Trực Lễ/Tết (${dayHol.label}) tại Điểm Y tế 2 cần đủ 1 người: 1 ĐD hoặc 1 HS`);
+      }
+    } else {
+      if (s1 && s2) {
+        const hasLead = isClinicalLeadTitle(s1.title) || isClinicalLeadTitle(s2.title);
+        const hasNurse = isNurseOrMidwifeTitle(s1.title) || isNurseOrMidwifeTitle(s2.title);
+        if (!hasLead || !hasNurse) {
+          warnings.push("Điểm chính cần 1 BS/YS + 1 ĐD/HS");
+        }
+      }
 
-    if (s3 && !isNurseOrMidwifeTitle(s3.title)) {
-      warnings.push("ĐYT 2 cần ĐD hoặc HS");
+      if (s3 && !isNurseOrMidwifeTitle(s3.title)) {
+        warnings.push("ĐYT 2 cần ĐD hoặc HS");
+      }
     }
 
     const tasks = Array.isArray(entry.tasks) ? entry.tasks : [];
@@ -2556,7 +2631,7 @@
     const banner = document.getElementById("globalBanner");
     if (totalWarnings > 0) {
       banner.className = "banner err no-print";
-      banner.textContent = `Cảnh báo: Phát hiện ${totalWarnings} lỗi / xung đột quy tắc trực trong tháng ${state.selectedMonth}. Vui lòng kiểm tra các dòng tô đỏ.`;
+      banner.textContent = `Cảnh báo: Phát hiện ${totalWarnings} lỗi / xung đột quy tắc trực trong tháng ${formatVNMonthYear(state.selectedMonth)}. Vui lòng kiểm tra các dòng tô đỏ.`;
     } else {
       banner.className = "banner ok no-print";
       banner.textContent = "Hợp lệ: Không phát hiện trùng tua trực, vi phạm ra trực 24/24 hay thiếu Bác sĩ hành chính tại Điểm chính.";
@@ -3053,6 +3128,7 @@
       saveState();
       closeModal();
       renderLeadersList();
+    syncAllVNDateInputs();
     });
 
     document.getElementById("btnSaveLeadersList").onclick = () => safeRun(() => {
@@ -3845,8 +3921,8 @@
     const finishAutoGen = () => {
       dispatchEmailChangeNotification(
         "Xếp lịch tự động tháng",
-        `${onlyEmpty ? "Điền ô trống" : "Tự động xếp lịch"} tháng ${state.selectedMonth}`,
-        `Đã xử lý ${dates.length} ngày trong tháng ${state.selectedMonth}.`,
+        `${onlyEmpty ? "Điền ô trống" : "Tự động xếp lịch"} tháng ${formatVNMonthYear(state.selectedMonth)}`,
+        `Đã xử lý ${dates.length} ngày trong tháng ${formatVNMonthYear(state.selectedMonth)}.`,
         dates
       );
       saveState();
@@ -3855,7 +3931,7 @@
 
     if (conflictDays.length > 0) {
       requestAdminConflictConfirmation({
-        modalTitle: `Cảnh Báo Khi Xếp Lịch Tháng ${state.selectedMonth}`,
+        modalTitle: `Cảnh Báo Khi Xếp Lịch Tháng ${formatVNMonthYear(state.selectedMonth)}`,
         conflictMessages: conflictDays.slice(0, 12),
         summaryHtml: `Tổng cộng có <b>${conflictDays.length}</b> ngày xuất hiện cảnh báo/xung đột quy tắc.`,
         keepOldLabel: "Giữ nguyên lịch cũ",
@@ -4507,7 +4583,7 @@
         }
         saveState();
         renderAll();
-        showModal("Nhập File Excel Thành Công", `<p>Đã đồng bộ dữ liệu nhân sự và lịch công tác tháng <b>${escapeHtml(state.selectedMonth)}</b> từ file Excel.</p>`);
+        showModal("Nhập File Excel Thành Công", `<p>Đã đồng bộ dữ liệu nhân sự và lịch công tác tháng <b>${escapeHtml(formatVNMonthYear(state.selectedMonth))}</b> từ file Excel.</p>`);
         return;
       }
 
@@ -4765,7 +4841,7 @@
       if (!state.isAdmin) return;
       confirmActionWarningModal({
         title: "Cảnh Báo Xếp Lịch Tự Động Cả Tháng",
-        warningText: `Xếp lịch tự động sẽ ghi đè các ca trực hiện có trong tháng ${state.selectedMonth}.`,
+        warningText: `Xếp lịch tự động sẽ ghi đè các ca trực hiện có trong tháng ${formatVNMonthYear(state.selectedMonth)}.`,
         detailHtml: "Vui lòng xác nhận nếu bạn chắc chắn muốn chạy xếp lịch lại toàn bộ tháng.",
         confirmLabel: "Xác nhận xếp lại tháng",
         cancelLabel: "Huỷ bỏ",
@@ -4778,7 +4854,7 @@
       if (!state.isAdmin) return;
       confirmActionWarningModal({
         title: "Xác Nhận Điền Ô Trống Trong Tháng",
-        warningText: `Hệ thống sẽ tự động điền các vị trí trực còn trống của tháng ${state.selectedMonth}.`,
+        warningText: `Hệ thống sẽ tự động điền các vị trí trực còn trống của tháng ${formatVNMonthYear(state.selectedMonth)}.`,
         detailHtml: "Các ô đã có người trực trước đó sẽ được giữ nguyên.",
         confirmLabel: "Xác nhận điền ô trống",
         cancelLabel: "Huỷ bỏ",
@@ -4819,7 +4895,7 @@
       const mDates = getMonthDates(state.selectedMonth);
       confirmActionWarningModal({
         title: "Cảnh Báo Xoá Toàn Bộ Lịch Tháng",
-        warningText: `Bạn đang chuẩn bị xoá toàn bộ dữ liệu lịch trực và công tác của tháng ${state.selectedMonth} (${mDates.length} ngày).`,
+        warningText: `Bạn đang chuẩn bị xoá toàn bộ dữ liệu lịch trực và công tác của tháng ${formatVNMonthYear(state.selectedMonth)} (${mDates.length} ngày).`,
         detailHtml: "Hành động này sẽ xoá trắng lịch của tháng đang chọn.",
         confirmLabel: "Xác nhận xoá lịch tháng",
         cancelLabel: "Giữ nguyên lịch",
@@ -4828,8 +4904,8 @@
           mDates.forEach(iso => { delete state.schedule[iso]; });
           dispatchEmailChangeNotification(
             "Xoá lịch tháng",
-            `Đã xoá lịch tháng ${state.selectedMonth}`,
-            `Xoá dữ liệu lịch của ${mDates.length} ngày trong tháng ${state.selectedMonth}.`,
+            `Đã xoá lịch tháng ${formatVNMonthYear(state.selectedMonth)}`,
+            `Xoá dữ liệu lịch của ${mDates.length} ngày trong tháng ${formatVNMonthYear(state.selectedMonth)}.`,
             mDates
           );
           saveState();
@@ -5014,10 +5090,10 @@
         });
       });
       const titleTxt = mode === "leave"
-        ? `Chi Tiết Nghỉ (${st.name} – ${state.selectedMonth})`
-        : `Chi Tiết Công Tác (${st.name} – ${state.selectedMonth})`;
+        ? `Chi Tiết Nghỉ (${st.name} – ${formatVNMonthYear(state.selectedMonth)})`
+        : `Chi Tiết Công Tác (${st.name} – ${formatVNMonthYear(state.selectedMonth)})`;
       if (!items.length) {
-        showModal(titleTxt, `<p style="margin:0;color:#64748b;">Không có bản ghi nào trong tháng ${escapeHtml(state.selectedMonth)}.</p>`);
+        showModal(titleTxt, `<p style="margin:0;color:#64748b;">Không có bản ghi nào trong tháng ${escapeHtml(formatVNMonthYear(state.selectedMonth))}.</p>`);
         return;
       }
       const listHtml = items.map(it => `
