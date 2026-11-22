@@ -815,7 +815,7 @@
   <section id="sheet-1" class="sheet-section">
     <div class="card">
       <div class="card-title">
-        <span>Bảng Lịch Trực 24/24 & Lịch Công Tác</span>
+        <span>Bảng Lịch Trực 24/24 &amp; Lịch Công Tác</span>
       </div>
       
 
@@ -1120,7 +1120,7 @@
     </div>
 
     <div class="card">
-      <div class="card-title" id="statsMonthTitle">Thống Kê Tua Trực & Công Tác Trong Tháng</div>
+      <div class="card-title" id="statsMonthTitle">Thống Kê Tua Trực &amp; Công Tác Trong Tháng</div>
       <p class="card-desc">Tổng hợp số tua trực Điểm chính, ĐYT 2, trực cuối tuần và lượt công tác đột xuất của từng nhân sự.</p>
       <div class="table-wrap">
         <table>
@@ -1212,9 +1212,11 @@
           <input type="text" class="form-control" id="inputRoomId" value="tram-y-te" placeholder="tram-y-te" />
         </div>
       </div>
+      <div id="cloudSyncStatusNote" style="font-size:11.5px;color:#0f766e;font-weight:600;margin-bottom:8px;">Chưa cấu hình Firebase Realtime Database</div>
       <div class="btn-toolbar" style="margin-bottom:0;">
-        <button type="button" class="btn btn-primary btn-sm" id="btnConnectCloud">Kết nối & Đồng bộ ngay</button>
+        <button type="button" class="btn btn-primary btn-sm" id="btnConnectCloud">Kết nối &amp; Đồng bộ ngay</button>
         <button type="button" class="btn btn-secondary btn-sm" id="btnCopyShareLink">Tạo link chia sẻ tự động kết nối</button>
+        <button type="button" class="btn btn-secondary btn-sm" id="btnShowFirebaseRules">Mẫu Rules bảo mật</button>
         <button type="button" class="btn btn-danger btn-sm hidden" id="btnDisconnectCloud">Ngắt kết nối Cloud</button>
       </div>
       <div id="shareLinkBox" class="hidden" style="margin-top:8px;">
@@ -1238,7 +1240,7 @@
   </button>
   <button type="button" class="nav-item" data-sheet="3">
     <span>✅</span>
-    <span>3. Duyệt & LS</span>
+    <span>3. Duyệt &amp; LS</span>
     <span class="nav-badge hidden" id="navPendingBadge">0</span>
   </button>
   <button type="button" class="nav-item" data-sheet="4">
@@ -1611,14 +1613,47 @@
     return `${base}/tyt_rooms/${room}${sub}.json`;
   }
 
+  function mergeArrayById(localArr, remoteArr) {
+    const map = new Map();
+    (Array.isArray(localArr) ? localArr : []).forEach(item => {
+      if (item && item.id) map.set(item.id, item);
+    });
+    (Array.isArray(remoteArr) ? remoteArr : []).forEach(item => {
+      if (item && item.id) {
+        const prev = map.get(item.id);
+        const prevTs = Number(prev?.reviewedAt || prev?.createdAt || 0);
+        const nextTs = Number(item?.reviewedAt || item?.createdAt || 0);
+        if (!prev || nextTs >= prevTs) {
+          map.set(item.id, item);
+        }
+      }
+    });
+    return Array.from(map.values());
+  }
+
+  let lastCloudSyncTs = 0;
+
+  function updateCloudSyncTimestampLabel() {
+    const el = document.getElementById("cloudSyncStatusNote");
+    if (!el) return;
+    if (state.cloud.connected && lastCloudSyncTs) {
+      el.textContent = "Đã đồng bộ lúc: " + formatDateTimeVN(lastCloudSyncTs);
+    } else if (state.cloud.url) {
+      el.textContent = "Đã cấu hình URL — đang chờ kết nối";
+    } else {
+      el.textContent = "Chưa cấu hình Firebase Realtime Database";
+    }
+  }
+
   async function pushToFirebase() {
     if (!state.cloud.url) return;
     try {
-      await fetch(getFirebaseEndpoint("shared"), {
+      const res = await fetch(getFirebaseEndpoint("shared"), {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          staff: state.staff,
+          staff: normalizeStaffList(state.staff),
+          leaders: state.leaders,
           schedule: state.schedule,
           registrations: state.registrations,
           emailSubscribers: state.emailSubscribers,
@@ -1628,6 +1663,12 @@
           updatedAt: Date.now()
         })
       });
+      if (res.ok) {
+        state.cloud.connected = true;
+        lastCloudSyncTs = Date.now();
+        updateCloudUI();
+        updateCloudSyncTimestampLabel();
+      }
     } catch (err) {
       console.warn("Firebase push error:", err);
     }
@@ -1652,14 +1693,17 @@
           state.schedule = data.schedule;
         }
         if (Array.isArray(data.registrations)) {
-          state.registrations = data.registrations;
+          state.registrations = mergeArrayById(state.registrations, data.registrations);
         }
         if (Array.isArray(data.emailSubscribers)) {
-          state.emailSubscribers = data.emailSubscribers;
+          state.emailSubscribers = mergeArrayById(state.emailSubscribers, data.emailSubscribers);
         }
         if (Array.isArray(data.emailNotifications)) {
-          state.emailNotifications = data.emailNotifications;
+          state.emailNotifications = mergeArrayById(state.emailNotifications, data.emailNotifications)
+            .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
         }
+        lastCloudSyncTs = Number(data.updatedAt) || Date.now();
+        updateCloudSyncTimestampLabel();
         if (data.customHolidays && typeof data.customHolidays === "object") {
           state.customHolidays = data.customHolidays;
         }
@@ -4814,6 +4858,29 @@
       saveState(false);
       updateCloudUI();
     });
+
+    document.getElementById("btnShowFirebaseRules")?.addEventListener("click", () => safeRun(() => {
+      const roomName = (document.getElementById("inputRoomId")?.value || state.cloud.room || "tram-y-te").trim();
+      const rulesJson = JSON.stringify({
+        rules: {
+          tyt_rooms: {
+            [roomName]: {
+              ".read": true,
+              ".write": true
+            }
+          }
+        }
+      }, null, 2);
+      showModal("Mẫu Firebase Realtime Database Rules", `
+        <p style="font-size:12.5px;color:#334155;margin-top:0;">Dán cấu hình Rules dưới đây vào tab <b>Rules</b> trong Firebase Realtime Database để giới hạn phạm vi dữ liệu theo phòng <b>${escapeHtml(roomName)}</b>:</p>
+        <pre style="background:#0f172a;color:#e2e8f0;padding:10px;border-radius:10px;font-size:12px;overflow-x:auto;margin:0 0 10px;">${escapeHtml(rulesJson)}</pre>
+        <button type="button" class="btn btn-primary btn-sm btn-block" id="btnCopyRulesJson">Sao chép Rules JSON</button>
+      `);
+      document.getElementById("btnCopyRulesJson")?.addEventListener("click", () => {
+        if (navigator.clipboard) navigator.clipboard.writeText(rulesJson).catch(() => {});
+      });
+    }));
+
 
     document.getElementById("btnCopyShareLink").onclick = () => safeRun(() => {
       const url = document.getElementById("inputFirebaseUrl").value.trim().replace(/\/+$/, "") || state.cloud.url;
