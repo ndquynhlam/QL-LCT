@@ -4216,13 +4216,15 @@
     // 1. TRỰC ĐYT 2: tone đỏ - nâu - hồng dễ nhìn, nổi bật
     if (tokens.includes("TRỰC ĐYT 2") || upperStr === "TRỰC ĐYT 2") {
       return {
-        font: { name: "Times New Roman", sz: 9.5, bold: true, italic: false, color: { rgb: "78281F" } },
-        fill: { patternType: "solid", fgColor: { rgb: "FADBD8" } },
+        font: { name: "Times New Roman", sz: 10, bold: true, italic: false, color: { rgb: "4A1512" } },
+        fill: { patternType: "solid", fgColor: { rgb: "FCE4E2" } },
         alignment: baseAlign,
-        border: Object.assign({}, borderObj, {
-          top: { style: "medium", color: { rgb: "943126" } },
-          bottom: { style: "medium", color: { rgb: "943126" } }
-        })
+        border: {
+          top: { style: "medium", color: { rgb: "4A1512" } },
+          bottom: { style: "medium", color: { rgb: "4A1512" } },
+          left: { style: "thin", color: { rgb: "4A1512" } },
+          right: { style: "thin", color: { rgb: "4A1512" } }
+        }
       };
     }
     // 2. TRỰC (Điểm chính): tone xanh ngọc dịu mắt, chữ đứng in đậm
@@ -4263,7 +4265,7 @@
       }
       return Promise.all([sheetFile.async("string"), stylesFile.async("string")]).then(([sheetXml, stylesXml]) => {
         let dxfId = 0;
-        const dxfEntry = `<dxf><font><b/><color rgb="FF78281F"/></font><fill><patternFill patternType="solid"><fgColor rgb="FFFADBD8"/><bgColor indexed="64"/></patternFill></fill></dxf>`;
+        const dxfEntry = `<dxf><font><b/><color rgb="FF4A1512"/></font><fill><patternFill patternType="solid"><fgColor rgb="FFFCE4E2"/><bgColor indexed="64"/></patternFill></fill><border><top style="medium"><color rgb="FF4A1512"/></top><bottom style="medium"><color rgb="FF4A1512"/></bottom><left style="thin"><color rgb="FF4A1512"/></left><right style="thin"><color rgb="FF4A1512"/></right></border></dxf>`;
         if (/<dxfs\b[^>]*\/>/.test(stylesXml)) {
           dxfId = 0;
           stylesXml = stylesXml.replace(/<dxfs\b[^>]*\/>/, `<dxfs count="1">${dxfEntry}</dxfs>`);
