@@ -1115,8 +1115,8 @@
         <div class="form-group" style="margin-bottom:0;">
           <label class="form-label">Buổi trong ngày</label>
           <select class="form-control" id="presenceSessionSelect">
-            <option value="Buổi Sáng">Buổi Sáng (&le; 12:00)</option>
-            <option value="Buổi Chiều">Buổi Chiều (&gt; 12:00)</option>
+            <option value="Buổi Sáng">Buổi Sáng</option>
+            <option value="Buổi Chiều">Buổi Chiều</option>
           </select>
         </div>
       </div>
@@ -4065,6 +4065,7 @@
       const holLbl = iso ? getHolidayInfo(iso).label : "";
       return String(holLbl).toLowerCase().includes("tết") ? "Tết" : "Lễ";
     }
+    if (low === "hỗ trợ tua trực" || low.includes("hỗ trợ tua trực")) return t.toUpperCase();
     if (low.includes("trực đyt 2") || low.includes("trực dyt 2")) return "TRỰC ĐYT 2";
     if (low.startsWith("trực") || low.includes("trực điểm chính")) return "TRỰC";
     return t;
@@ -4131,42 +4132,81 @@
   }
 
   function getCellStyleForValue(val, isWeekendCol, borderObj) {
-    const baseFont = { name: "Times New Roman", sz: 9.5, color: { rgb: "0F172A" } };
+    const rawStr = String(val || "").trim();
+    const upperStr = rawStr.toUpperCase();
     const baseAlign = { horizontal: "center", vertical: "center", wrapText: true };
-    const cleanBgRgb = isWeekendCol ? "E2E8F0" : "FFFFFF";
-    const tokens = String(val || "").split("/").map(s => s.trim()).filter(Boolean);
+    const cleanBgRgb = isWeekendCol ? "F1F5F9" : "FFFFFF";
+    const tokens = rawStr.split("/").map(s => s.trim()).filter(Boolean);
 
-    // Nổi bật 3 loại ô (TRỰC ĐYT 2, TRỰC, RT) cả khi xem màu lẫn khi in trắng đen
-    if (tokens.includes("TRỰC ĐYT 2") || String(val || "").includes("TRỰC ĐYT 2")) {
+    // Đồng bộ: tất cả lịch công tác dùng chữ đứng (italic: false), font Times New Roman cỡ 9.5
+    // 1. TRỰC ĐYT 2: tone đỏ - nâu - hồng dễ nhìn, nổi bật
+    if (tokens.includes("TRỰC ĐYT 2") || upperStr.includes("TRỰC ĐYT 2")) {
       return {
-        font: { name: "Times New Roman", sz: 9.5, bold: true, color: { rgb: "000000" } },
-        fill: { patternType: "solid", fgColor: { rgb: "CBD5E1" } },
+        font: { name: "Times New Roman", sz: 9.5, bold: true, italic: false, color: { rgb: "78281F" } },
+        fill: { patternType: "solid", fgColor: { rgb: "FADBD8" } },
         alignment: baseAlign,
         border: Object.assign({}, borderObj, {
-          top: { style: "medium", color: { rgb: "0F172A" } },
-          bottom: { style: "medium", color: { rgb: "0F172A" } }
+          top: { style: "medium", color: { rgb: "943126" } },
+          bottom: { style: "medium", color: { rgb: "943126" } }
         })
       };
     }
-    if (tokens.includes("TRỰC") || String(val || "").includes("TRỰC")) {
+    // 2. TRỰC (Điểm chính): tone xanh ngọc dịu mắt, chữ đứng in đậm
+    if (tokens.includes("TRỰC") || upperStr.includes("TRỰC")) {
       return {
-        font: { name: "Times New Roman", sz: 9.5, bold: true, color: { rgb: "000000" } },
-        fill: { patternType: "solid", fgColor: { rgb: "E2E8F0" } },
+        font: { name: "Times New Roman", sz: 9.5, bold: true, italic: false, color: { rgb: "065F46" } },
+        fill: { patternType: "solid", fgColor: { rgb: "D1FAE5" } },
         alignment: baseAlign,
         border: borderObj
       };
     }
-    if (tokens.includes("RT") || String(val || "") === "RT") {
+    // 3. RT (Ra trực): tone vàng hổ phách nhạt, chữ đứng in đậm (không chữ nghiêng)
+    if (tokens.includes("RT") || upperStr === "RT") {
       return {
-        font: { name: "Times New Roman", sz: 9.5, bold: true, italic: true, color: { rgb: "0F172A" } },
-        fill: { patternType: "solid", fgColor: { rgb: "F1F5F9" } },
+        font: { name: "Times New Roman", sz: 9.5, bold: true, italic: false, color: { rgb: "92400E" } },
+        fill: { patternType: "solid", fgColor: { rgb: "FEF3C7" } },
+        alignment: baseAlign,
+        border: borderObj
+      };
+    }
+    // 4. HỖ TRỢ TUA TRỰC: in hoa toàn bộ, đồng bộ tone xanh dương nhạt
+    if (upperStr.includes("HỖ TRỢ TUA TRỰC")) {
+      return {
+        font: { name: "Times New Roman", sz: 9.5, bold: true, italic: false, color: { rgb: "1E40AF" } },
+        fill: { patternType: "solid", fgColor: { rgb: "DBEAFE" } },
+        alignment: baseAlign,
+        border: borderObj
+      };
+    }
+    // 5. Đồng bộ định dạng cho các nội dung công tác / nghỉ giống nhau (chữ đứng, cỡ 9.5)
+    if (upperStr.startsWith("TIÊM NGỪA") || upperStr.startsWith("HỖ TRỢ TIÊM NGỪA") || upperStr === "TNDV") {
+      return {
+        font: { name: "Times New Roman", sz: 9.5, bold: true, italic: false, color: { rgb: "075985" } },
+        fill: { patternType: "solid", fgColor: { rgb: "E0F2FE" } },
+        alignment: baseAlign,
+        border: borderObj
+      };
+    }
+    if (upperStr === "P" || upperStr === "NB" || upperStr.startsWith("NGHỈ") || upperStr === "LỄ" || upperStr === "TẾT") {
+      return {
+        font: { name: "Times New Roman", sz: 9.5, bold: false, italic: false, color: { rgb: "6B21A8" } },
+        fill: { patternType: "solid", fgColor: { rgb: "F3E8FF" } },
+        alignment: baseAlign,
+        border: borderObj
+      };
+    }
+    if (upperStr === "TH" || upperStr === "H" || upperStr.startsWith("TẬP HUẤN") || upperStr.startsWith("HỌP") || upperStr.startsWith("HỌC")) {
+      return {
+        font: { name: "Times New Roman", sz: 9.5, bold: false, italic: false, color: { rgb: "1E3A8A" } },
+        fill: { patternType: "solid", fgColor: { rgb: "EFF6FF" } },
         alignment: baseAlign,
         border: borderObj
       };
     }
 
+    // Mặc định (HC hoặc ô trống cuối tuần): chữ đứng, đồng bộ font/size/màu
     return {
-      font: baseFont,
+      font: { name: "Times New Roman", sz: 9.5, bold: false, italic: false, color: { rgb: "0F172A" } },
       fill: { patternType: "solid", fgColor: { rgb: cleanBgRgb } },
       alignment: baseAlign,
       border: borderObj
@@ -4182,9 +4222,9 @@
         return new Blob([arrayBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
       }
       return Promise.all([sheetFile.async("string"), stylesFile.async("string")]).then(([sheetXml, stylesXml]) => {
-        // Thêm dxf style cho Conditional Formatting (nền #FECACA, chữ đậm #991B1B)
+        // Thêm dxf style cho Conditional Formatting TRỰC ĐYT 2 (nền hồng #FADBD8, chữ đỏ nâu đậm #78281F)
         let dxfId = 0;
-        const dxfEntry = `<dxf><font><b/><color rgb="FF991B1B"/></font><fill><patternFill patternType="solid"><fgColor rgb="FFFECACA"/><bgColor indexed="64"/></patternFill></fill></dxf>`;
+        const dxfEntry = `<dxf><font><b/><color rgb="FF78281F"/></font><fill><patternFill patternType="solid"><fgColor rgb="FFFADBD8"/><bgColor indexed="64"/></patternFill></fill></dxf>`;
         if (stylesXml.includes("<dxfs")) {
           const matchCount = stylesXml.match(/<dxfs count="(\d+)">/);
           if (matchCount) {
@@ -4195,7 +4235,7 @@
           stylesXml = stylesXml.replace("</styleSheet>", `<dxfs count="1">${dxfEntry}</dxfs></styleSheet>`);
         }
 
-        const cfXml = `<conditionalFormatting sqref="${sheet1RangeRef}"><cfRule type="containsText" dxfId="${dxfId}" priority="1" operator="containsText" text="Trực ĐYT 2"><formula>NOT(ISERROR(SEARCH("Trực ĐYT 2",G8)))</formula></cfRule></conditionalFormatting>`;
+        const cfXml = `<conditionalFormatting sqref="${sheet1RangeRef}"><cfRule type="containsText" dxfId="${dxfId}" priority="1" operator="containsText" text="TRỰC ĐYT 2"><formula>NOT(ISERROR(SEARCH("TRỰC ĐYT 2",G8)))</formula></cfRule></conditionalFormatting>`;
         if (sheetXml.includes("<pageMargins")) {
           sheetXml = sheetXml.replace("<pageMargins", `${cfXml}<pageMargins`);
         } else {
@@ -4320,7 +4360,10 @@
     const totalCols = 6 + numDays; // A..F (6) + days
     const lastColLetter = XLSX.utils.encode_col(totalCols - 1);
 
-    const sortedStaff = normalizeStaffList(state.staff);
+    const sortedStaff = normalizeStaffList(state.staff).filter(st => {
+      const c = String(st.contract || "Viên chức").trim().toUpperCase();
+      return c !== "HĐ NQ73" && !c.includes("NQ73");
+    });
     const thinBorder = {
       top: { style: "thin", color: { rgb: "94A3B8" } },
       bottom: { style: "thin", color: { rgb: "94A3B8" } },
@@ -4558,15 +4601,47 @@
       left: 0.3, right: 0.3, top: 0.4, bottom: 0.4, header: 0.2, footer: 0.2
     };
 
-    // Sheet 2: Import_Export
+    // Sheet 2: Import_Export (đồng bộ font đứng Times New Roman)
     const ws2 = XLSX.utils.aoa_to_sheet(importExportRows);
+    for (let r = 0; r < importExportRows.length; r++) {
+      for (let c = 0; c < importExportRows[r].length; c++) {
+        const addr = XLSX.utils.encode_cell({ r, c });
+        if (!ws2[addr]) continue;
+        if (r === 0) {
+          ws2[addr].s = headerDarkStyle;
+        } else if (c === 9 || c === 10) {
+          ws2[addr].s = getCellStyleForValue(importExportRows[r][c], false, thinBorder);
+        } else {
+          ws2[addr].s = {
+            font: { name: "Times New Roman", sz: 9.5, bold: c === 1, italic: false, color: { rgb: "0F172A" } },
+            alignment: { horizontal: c === 1 ? "left" : "center", vertical: "center", wrapText: true },
+            border: thinBorder
+          };
+        }
+      }
+    }
     ws2["!cols"] = [
       { wch: 6 }, { wch: 20 }, { wch: 22 }, { wch: 18 }, { wch: 18 },
       { wch: 14 }, { wch: 16 }, { wch: 13 }, { wch: 11 }, { wch: 24 }, { wch: 24 }
     ];
 
-    // Sheet 3: DS_Nhan_Su
+    // Sheet 3: DS_Nhan_Su (đồng bộ font đứng Times New Roman)
     const ws3 = XLSX.utils.aoa_to_sheet(dsNhanSuRows);
+    for (let r = 0; r < dsNhanSuRows.length; r++) {
+      for (let c = 0; c < dsNhanSuRows[r].length; c++) {
+        const addr = XLSX.utils.encode_cell({ r, c });
+        if (!ws3[addr]) continue;
+        if (r === 0) {
+          ws3[addr].s = headerDarkStyle;
+        } else {
+          ws3[addr].s = {
+            font: { name: "Times New Roman", sz: 9.5, bold: c === 1, italic: false, color: { rgb: "0F172A" } },
+            alignment: { horizontal: c === 1 ? "left" : "center", vertical: "center", wrapText: true },
+            border: thinBorder
+          };
+        }
+      }
+    }
     ws3["!cols"] = [
       { wch: 6 }, { wch: 20 }, { wch: 22 }, { wch: 18 }, { wch: 18 }, { wch: 14 }, { wch: 16 }
     ];
