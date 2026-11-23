@@ -815,7 +815,7 @@
   <section id="sheet-1" class="sheet-section">
     <div class="card">
       <div class="card-title">
-        <span>Bảng Lịch Trực 24/24 &amp; Lịch Công Tác</span>
+        <span>Bảng Lịch Trực 24/24 & Lịch Công Tác</span>
       </div>
       
 
@@ -1113,14 +1113,21 @@
           <input type="date" class="form-control" id="presenceDatePicker" />
         </div>
         <div class="form-group" style="margin-bottom:0;">
-          <button type="button" class="btn btn-secondary btn-sm btn-block" id="btnPresenceToday">Về ngày Hôm nay</button>
+          <label class="form-label">Buổi trong ngày</label>
+          <select class="form-control" id="presenceSessionSelect">
+            <option value="Buổi Sáng">Buổi Sáng (&le; 12:00)</option>
+            <option value="Buổi Chiều">Buổi Chiều (&gt; 12:00)</option>
+          </select>
         </div>
+      </div>
+      <div class="no-print" style="margin-bottom:10px;">
+        <button type="button" class="btn btn-secondary btn-sm btn-block" id="btnPresenceToday">Về thời điểm Hôm nay</button>
       </div>
       <div id="todayPresenceContent"></div>
     </div>
 
     <div class="card">
-      <div class="card-title" id="statsMonthTitle">Thống Kê Tua Trực &amp; Công Tác Trong Tháng</div>
+      <div class="card-title" id="statsMonthTitle">Thống Kê Tua Trực & Công Tác Trong Tháng</div>
       <p class="card-desc">Tổng hợp số tua trực Điểm chính, ĐYT 2, trực cuối tuần và lượt công tác đột xuất của từng nhân sự.</p>
       <div class="table-wrap">
         <table>
@@ -1212,11 +1219,9 @@
           <input type="text" class="form-control" id="inputRoomId" value="tram-y-te" placeholder="tram-y-te" />
         </div>
       </div>
-      <div id="cloudSyncStatusNote" style="font-size:11.5px;color:#0f766e;font-weight:600;margin-bottom:8px;">Chưa cấu hình Firebase Realtime Database</div>
       <div class="btn-toolbar" style="margin-bottom:0;">
-        <button type="button" class="btn btn-primary btn-sm" id="btnConnectCloud">Kết nối &amp; Đồng bộ ngay</button>
+        <button type="button" class="btn btn-primary btn-sm" id="btnConnectCloud">Kết nối & Đồng bộ ngay</button>
         <button type="button" class="btn btn-secondary btn-sm" id="btnCopyShareLink">Tạo link chia sẻ tự động kết nối</button>
-        <button type="button" class="btn btn-secondary btn-sm" id="btnShowFirebaseRules">Mẫu Rules bảo mật</button>
         <button type="button" class="btn btn-danger btn-sm hidden" id="btnDisconnectCloud">Ngắt kết nối Cloud</button>
       </div>
       <div id="shareLinkBox" class="hidden" style="margin-top:8px;">
@@ -1240,7 +1245,7 @@
   </button>
   <button type="button" class="nav-item" data-sheet="3">
     <span>✅</span>
-    <span>3. Duyệt &amp; LS</span>
+    <span>3. Duyệt & LS</span>
     <span class="nav-badge hidden" id="navPendingBadge">0</span>
   </button>
   <button type="button" class="nav-item" data-sheet="4">
@@ -1347,6 +1352,7 @@
     activeSheet: "1",
     selectedMonth: getTodayISO().slice(0, 7),
     presenceDateISO: getTodayISO(),
+    presenceSession: getCurrentSessionLabel(),
     filterStaffId: "ALL",
     onlyWarnings: false,
     staff: JSON.parse(JSON.stringify(DEFAULT_STAFF)),
@@ -1363,6 +1369,42 @@
     customHolidays: {},
     disabledHolidays: {}
   };
+
+  function getCurrentSessionLabel() {
+    const now = new Date();
+    const mins = now.getHours() * 60 + now.getMinutes();
+    return mins <= 12 * 60 ? "Buổi Sáng" : "Buổi Chiều";
+  }
+
+  function hasApprovedOrAdminDungOverride(iso) {
+    const entry = state.schedule[iso] || {};
+    const bsDung = state.staff.find(s => s.name === "Bác sĩ Dung");
+    if (!bsDung) return false;
+
+    const isScheduledByAdmin = [entry.main1, entry.main2, entry.dyt2].includes(bsDung.id) ||
+      (Array.isArray(entry.tasks) && entry.tasks.some(t => t && t.staffId === bsDung.id));
+
+    const hasApprovedReg = (state.registrations || []).some(r =>
+      r && r.staffId === bsDung.id && r.date === iso && r.status === "approved"
+    );
+
+    return isScheduledByAdmin || hasApprovedReg;
+  }
+
+  function getFixedVaccinationBranch(iso) {
+    const dayNum = Number((iso || "").slice(8, 10));
+    if (dayNum === 14 || dayNum === 22) return "Điểm chính";
+    if (dayNum === 15 || dayNum === 25) return "Điểm Y tế 2";
+    return "";
+  }
+
+  function getStaffBaseBranch(st) {
+    if (!st) return "Điểm chính";
+    if (st.workLocation === "Điểm Y tế 2" || st.workLocation === "Điểm chính") {
+      return st.workLocation;
+    }
+    return st.dept === "Điểm Y tế 2" ? "Điểm Y tế 2" : "Điểm chính";
+  }
 
   let cloudPollTimer = null;
 
@@ -1613,47 +1655,14 @@
     return `${base}/tyt_rooms/${room}${sub}.json`;
   }
 
-  function mergeArrayById(localArr, remoteArr) {
-    const map = new Map();
-    (Array.isArray(localArr) ? localArr : []).forEach(item => {
-      if (item && item.id) map.set(item.id, item);
-    });
-    (Array.isArray(remoteArr) ? remoteArr : []).forEach(item => {
-      if (item && item.id) {
-        const prev = map.get(item.id);
-        const prevTs = Number(prev?.reviewedAt || prev?.createdAt || 0);
-        const nextTs = Number(item?.reviewedAt || item?.createdAt || 0);
-        if (!prev || nextTs >= prevTs) {
-          map.set(item.id, item);
-        }
-      }
-    });
-    return Array.from(map.values());
-  }
-
-  let lastCloudSyncTs = 0;
-
-  function updateCloudSyncTimestampLabel() {
-    const el = document.getElementById("cloudSyncStatusNote");
-    if (!el) return;
-    if (state.cloud.connected && lastCloudSyncTs) {
-      el.textContent = "Đã đồng bộ lúc: " + formatDateTimeVN(lastCloudSyncTs);
-    } else if (state.cloud.url) {
-      el.textContent = "Đã cấu hình URL — đang chờ kết nối";
-    } else {
-      el.textContent = "Chưa cấu hình Firebase Realtime Database";
-    }
-  }
-
   async function pushToFirebase() {
     if (!state.cloud.url) return;
     try {
-      const res = await fetch(getFirebaseEndpoint("shared"), {
+      await fetch(getFirebaseEndpoint("shared"), {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          staff: normalizeStaffList(state.staff),
-          leaders: state.leaders,
+          staff: state.staff,
           schedule: state.schedule,
           registrations: state.registrations,
           emailSubscribers: state.emailSubscribers,
@@ -1663,12 +1672,6 @@
           updatedAt: Date.now()
         })
       });
-      if (res.ok) {
-        state.cloud.connected = true;
-        lastCloudSyncTs = Date.now();
-        updateCloudUI();
-        updateCloudSyncTimestampLabel();
-      }
     } catch (err) {
       console.warn("Firebase push error:", err);
     }
@@ -1693,17 +1696,14 @@
           state.schedule = data.schedule;
         }
         if (Array.isArray(data.registrations)) {
-          state.registrations = mergeArrayById(state.registrations, data.registrations);
+          state.registrations = data.registrations;
         }
         if (Array.isArray(data.emailSubscribers)) {
-          state.emailSubscribers = mergeArrayById(state.emailSubscribers, data.emailSubscribers);
+          state.emailSubscribers = data.emailSubscribers;
         }
         if (Array.isArray(data.emailNotifications)) {
-          state.emailNotifications = mergeArrayById(state.emailNotifications, data.emailNotifications)
-            .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+          state.emailNotifications = data.emailNotifications;
         }
-        lastCloudSyncTs = Number(data.updatedAt) || Date.now();
-        updateCloudSyncTimestampLabel();
         if (data.customHolidays && typeof data.customHolidays === "object") {
           state.customHolidays = data.customHolidays;
         }
@@ -2183,10 +2183,11 @@
       });
     }
 
-    // Quy tắc riêng Bác sĩ Dung: chỉ làm việc Thứ 3 (dow=2) và Thứ 5 (dow=4) hàng tuần
+    // Quy tắc riêng Bác sĩ Dung: chỉ làm việc Thứ 3 (dow=2) và Thứ 5 (dow=4) hàng tuần, trừ khi Admin sắp xếp hoặc duyệt đăng ký
     const dowInfo = getDayOfWeekInfo(iso);
     const bsDung = state.staff.find(s => s.name === "Bác sĩ Dung");
-    if (bsDung && dowInfo.dow !== 2 && dowInfo.dow !== 4) {
+    const dungOverride = hasApprovedOrAdminDungOverride(iso);
+    if (bsDung && dowInfo.dow !== 2 && dowInfo.dow !== 4 && !dungOverride) {
       const dungInDuty = [entry.main1, entry.main2, entry.dyt2].includes(bsDung.id);
       const dungInTask = tasks.some(t => t && t.staffId === bsDung.id && !String(t.type || "").toLowerCase().includes("nghỉ"));
       if (dungInDuty || dungInTask) {
@@ -2201,7 +2202,7 @@
       const prevDutySet = new Set(prevDutyIds);
       const presentDoctorsMain = state.staff.filter(st => {
         if (st.title !== "Bác sĩ") return false;
-        if (st.name === "Bác sĩ Dung" && dowInfo.dow !== 2 && dowInfo.dow !== 4) return false;
+        if (st.name === "Bác sĩ Dung" && dowInfo.dow !== 2 && dowInfo.dow !== 4 && !hasApprovedOrAdminDungOverride(iso)) return false;
 
         const stTasks = tasks.filter(t => t && t.staffId === st.id);
         const hasLeaveAllDay = stTasks.some(t => {
@@ -2890,38 +2891,48 @@
     const badge = document.getElementById("todayPresenceDateBadge");
     const box = document.getElementById("todayPresenceContent");
     const picker = document.getElementById("presenceDatePicker");
+    const sessSel = document.getElementById("presenceSessionSelect");
     if (!box) return;
 
     const todayIso = getTodayISO();
     const targetIso = /^\d{4}-\d{2}-\d{2}$/.test(state.presenceDateISO || "") ? state.presenceDateISO : todayIso;
+    const targetSession = (state.presenceSession === "Buổi Sáng" || state.presenceSession === "Buổi Chiều")
+      ? state.presenceSession
+      : getCurrentSessionLabel();
     if (picker && picker.value !== targetIso) {
       picker.value = targetIso;
+    }
+    if (sessSel && sessSel.value !== targetSession) {
+      sessSel.value = targetSession;
     }
 
     const dow = getDayOfWeekInfo(targetIso);
     const dayTag = targetIso === todayIso ? " • Hôm nay" : "";
-    if (badge) badge.textContent = `${formatVNDate(targetIso)} (${dow.shortLabel})${dayTag}`;
+    if (badge) badge.textContent = `${formatVNDate(targetIso)} (${dow.shortLabel}) • ${targetSession}${dayTag}`;
+
+    const matchesSession = (t) => !t || !t.session || t.session === "Cả ngày" || t.session === targetSession;
 
     const entry = state.schedule[targetIso] || {};
     const prevEntry = state.schedule[addDaysISO(targetIso, -1)] || {};
-    const tasks = Array.isArray(entry.tasks) ? entry.tasks : [];
+    const allTasks = Array.isArray(entry.tasks) ? entry.tasks : [];
+    const tasks = allTasks.filter(matchesSession);
 
     const sMain1 = getStaffById(entry.main1);
     const sMain2 = getStaffById(entry.main2);
     const sDyt2 = getStaffById(entry.dyt2);
 
-    const offAllDayIds = new Set();
+    const offSessionIds = new Set();
     const targetHolInfo = getHolidayInfo(targetIso);
     let isHolidayDay = targetHolInfo.isHoliday;
     tasks.forEach(t => {
       if (!t || !t.staffId) return;
       const tp = String(t.type || "").toLowerCase();
-      if ((tp.includes("lễ/tết") || tp.includes("nghỉ lễ")) && (!t.session || t.session === "Cả ngày")) {
+      if (tp.includes("lễ/tết") || tp.includes("nghỉ lễ")) {
         isHolidayDay = true;
       }
       const isLeave = tp.includes("nghỉ") || tp.includes("vắng");
-      if (isLeave && (!t.session || t.session === "Cả ngày")) {
-        offAllDayIds.add(t.staffId);
+      if (isLeave) {
+        offSessionIds.add(t.staffId);
       }
     });
 
@@ -2938,7 +2949,7 @@
     const mainPresent = [];
     const mainSeen = new Set();
     [sMain1, sMain2].filter(Boolean).forEach(st => {
-      if (!mainSeen.has(st.id) && !offAllDayIds.has(st.id)) {
+      if (!mainSeen.has(st.id) && !offSessionIds.has(st.id)) {
         mainSeen.add(st.id);
         mainPresent.push({ staff: st, roleLabel: "Trực 24/24 Điểm chính", isDuty: true });
       }
@@ -2946,17 +2957,18 @@
 
     const dyt2Present = [];
     const dyt2Seen = new Set();
-    if (sDyt2 && !offAllDayIds.has(sDyt2.id)) {
+    if (sDyt2 && !offSessionIds.has(sDyt2.id)) {
       dyt2Seen.add(sDyt2.id);
       dyt2Present.push({ staff: sDyt2, roleLabel: "Trực 24/24 ĐYT 2", isDuty: true });
     }
 
     const isWeekdayMonToFri = dow.dow >= 1 && dow.dow <= 5;
+    const dungOverride = hasApprovedOrAdminDungOverride(targetIso);
 
     state.staff.forEach(st => {
       if (isHolidayDay) return;
-      if (st.name === "Bác sĩ Dung" && dow.dow !== 2 && dow.dow !== 4) return;
-      if (mainSeen.has(st.id) || dyt2Seen.has(st.id) || offAllDayIds.has(st.id)) return;
+      if (st.name === "Bác sĩ Dung" && dow.dow !== 2 && dow.dow !== 4 && !dungOverride) return;
+      if (mainSeen.has(st.id) || dyt2Seen.has(st.id) || offSessionIds.has(st.id)) return;
       const matchedTasks = tasks.filter(t => t.staffId === st.id);
       const hasAbsentTask = matchedTasks.some(t => t.workLocation === "Không có mặt tại đơn vị");
       if (hasAbsentTask) return;
@@ -4069,7 +4081,18 @@
     tasks.forEach(t => {
       if (t.staffId !== staffId) return;
       if (t.session === "Cả ngày" || t.session === sessionName) {
-        const abbr = normalizeScheduleAbbr(t.type, iso);
+        let abbr = normalizeScheduleAbbr(t.type, iso);
+        const lowType = String(t.type || "").trim().toLowerCase();
+        if (lowType === "tiêm ngừa") {
+          const fixedBranch = getFixedVaccinationBranch(iso);
+          const stObj = getStaffById(staffId);
+          const staffBranch = getStaffBaseBranch(stObj);
+          if (fixedBranch) {
+            abbr = (staffBranch === fixedBranch) ? "TIÊM NGỪA" : "HỖ TRỢ TIÊM NGỪA";
+          } else {
+            abbr = "TIÊM NGỪA";
+          }
+        }
         const label = t.note ? `${abbr} - ${t.note}` : abbr;
         if (label && !parts.includes(label)) parts.push(label);
       }
@@ -4101,39 +4124,42 @@
       return String(holInfo.label || "").toLowerCase().includes("tết") ? "Tết" : "Lễ";
     }
     const stObj = getStaffById(staffId);
-    if (stObj && stObj.name === "Bác sĩ Dung" && dow.dow !== 2 && dow.dow !== 4) {
+    if (stObj && stObj.name === "Bác sĩ Dung" && dow.dow !== 2 && dow.dow !== 4 && !hasApprovedOrAdminDungOverride(iso)) {
       return "";
     }
     return dow.isWeekend ? "" : "HC";
   }
 
-  function getCellStyleForValue(val, isAltRow, borderObj) {
+  function getCellStyleForValue(val, isWeekendCol, borderObj) {
     const baseFont = { name: "Times New Roman", sz: 9.5, color: { rgb: "0F172A" } };
     const baseAlign = { horizontal: "center", vertical: "center", wrapText: true };
-    const cleanBgRgb = isAltRow ? "F8FAFC" : "FFFFFF";
+    const cleanBgRgb = isWeekendCol ? "E2E8F0" : "FFFFFF";
     const tokens = String(val || "").split("/").map(s => s.trim()).filter(Boolean);
 
-    // Chỉ tô màu đúng 3 loại ô: TRỰC ĐYT 2, TRỰC, RT
+    // Nổi bật 3 loại ô (TRỰC ĐYT 2, TRỰC, RT) cả khi xem màu lẫn khi in trắng đen
     if (tokens.includes("TRỰC ĐYT 2") || String(val || "").includes("TRỰC ĐYT 2")) {
       return {
-        font: { name: "Times New Roman", sz: 9.5, bold: true, color: { rgb: "991B1B" } },
-        fill: { patternType: "solid", fgColor: { rgb: "FECACA" } },
+        font: { name: "Times New Roman", sz: 9.5, bold: true, color: { rgb: "000000" } },
+        fill: { patternType: "solid", fgColor: { rgb: "CBD5E1" } },
         alignment: baseAlign,
-        border: borderObj
+        border: Object.assign({}, borderObj, {
+          top: { style: "medium", color: { rgb: "0F172A" } },
+          bottom: { style: "medium", color: { rgb: "0F172A" } }
+        })
       };
     }
     if (tokens.includes("TRỰC") || String(val || "").includes("TRỰC")) {
       return {
-        font: { name: "Times New Roman", sz: 9.5, bold: true, color: { rgb: "0F172A" } },
-        fill: { patternType: "solid", fgColor: { rgb: "FEF3C7" } },
+        font: { name: "Times New Roman", sz: 9.5, bold: true, color: { rgb: "000000" } },
+        fill: { patternType: "solid", fgColor: { rgb: "E2E8F0" } },
         alignment: baseAlign,
         border: borderObj
       };
     }
     if (tokens.includes("RT") || String(val || "") === "RT") {
       return {
-        font: { name: "Times New Roman", sz: 9.5, bold: true, color: { rgb: "1E3A5F" } },
-        fill: { patternType: "solid", fgColor: { rgb: "E0F2FE" } },
+        font: { name: "Times New Roman", sz: 9.5, bold: true, italic: true, color: { rgb: "0F172A" } },
+        fill: { patternType: "solid", fgColor: { rgb: "F1F5F9" } },
         alignment: baseAlign,
         border: borderObj
       };
@@ -4384,8 +4410,7 @@
     let ieCounter = 1;
 
     sortedStaff.forEach((st, sIdx) => {
-      const isAlt = sIdx % 2 === 1;
-      const bgRgb = isAlt ? "F8FAFC" : "FFFFFF";
+      const bgRgb = "FFFFFF";
       const metaCenterStyle = {
         font: { name: "Times New Roman", sz: 9.5, color: { rgb: "0F172A" } },
         fill: { patternType: "solid", fgColor: { rgb: bgRgb } },
@@ -4455,8 +4480,8 @@
           valA
         ]);
 
-        const styleM = getCellStyleForValue(valM, isAlt, thinBorder);
-        const styleA = getCellStyleForValue(valA, isAlt, thinBorder);
+        const styleM = getCellStyleForValue(valM, !!dow.isWeekend, thinBorder);
+        const styleA = getCellStyleForValue(valA, !!dow.isWeekend, thinBorder);
 
         if (valM === valA) {
           setCell(ws1, rMorning, cIdx, valM, styleM);
@@ -4522,6 +4547,16 @@
     ws1["!rows"] = rowsCfg;
 
     ws1["!freeze"] = { xSplit: 6, ySplit: 7, topLeftCell: "G8", activePane: "bottomRight", state: "frozen" };
+    ws1["!pageSetup"] = {
+      paperSize: 9,
+      orientation: "landscape",
+      fitToWidth: 1,
+      fitToHeight: 0,
+      scale: 100
+    };
+    ws1["!margins"] = {
+      left: 0.3, right: 0.3, top: 0.4, bottom: 0.4, header: 0.2, footer: 0.2
+    };
 
     // Sheet 2: Import_Export
     const ws2 = XLSX.utils.aoa_to_sheet(importExportRows);
@@ -4585,6 +4620,7 @@
       if (up === "P") return "Nghỉ phép";
       if (up === "NB") return "Nghỉ bù";
       if (up === "TNDV") return "Tiêm ngừa dịch vụ";
+      if (up === "TIÊM NGỪA" || up === "HỖ TRỢ TIÊM NGỪA") return "Tiêm ngừa";
       if (up === "LỄ") return "Nghỉ Lễ/Tết";
       if (up === "TẾT") return "Nghỉ Lễ/Tết";
       return u;
@@ -4859,29 +4895,6 @@
       updateCloudUI();
     });
 
-    document.getElementById("btnShowFirebaseRules")?.addEventListener("click", () => safeRun(() => {
-      const roomName = (document.getElementById("inputRoomId")?.value || state.cloud.room || "tram-y-te").trim();
-      const rulesJson = JSON.stringify({
-        rules: {
-          tyt_rooms: {
-            [roomName]: {
-              ".read": true,
-              ".write": true
-            }
-          }
-        }
-      }, null, 2);
-      showModal("Mẫu Firebase Realtime Database Rules", `
-        <p style="font-size:12.5px;color:#334155;margin-top:0;">Dán cấu hình Rules dưới đây vào tab <b>Rules</b> trong Firebase Realtime Database để giới hạn phạm vi dữ liệu theo phòng <b>${escapeHtml(roomName)}</b>:</p>
-        <pre style="background:#0f172a;color:#e2e8f0;padding:10px;border-radius:10px;font-size:12px;overflow-x:auto;margin:0 0 10px;">${escapeHtml(rulesJson)}</pre>
-        <button type="button" class="btn btn-primary btn-sm btn-block" id="btnCopyRulesJson">Sao chép Rules JSON</button>
-      `);
-      document.getElementById("btnCopyRulesJson")?.addEventListener("click", () => {
-        if (navigator.clipboard) navigator.clipboard.writeText(rulesJson).catch(() => {});
-      });
-    }));
-
-
     document.getElementById("btnCopyShareLink").onclick = () => safeRun(() => {
       const url = document.getElementById("inputFirebaseUrl").value.trim().replace(/\/+$/, "") || state.cloud.url;
       const room = document.getElementById("inputRoomId").value.trim() || state.cloud.room || "tram-y-te";
@@ -4971,6 +4984,7 @@
     });
 
     const presencePicker = document.getElementById("presenceDatePicker");
+    const presenceSessionSel = document.getElementById("presenceSessionSelect");
     if (presencePicker) {
       presencePicker.value = state.presenceDateISO || getTodayISO();
       presencePicker.onchange = (e) => safeRun(() => {
@@ -4981,10 +4995,20 @@
         }
       });
     }
+    if (presenceSessionSel) {
+      presenceSessionSel.value = state.presenceSession || getCurrentSessionLabel();
+      presenceSessionSel.onchange = (e) => safeRun(() => {
+        state.presenceSession = e.target.value || getCurrentSessionLabel();
+        renderTodayPresence();
+      });
+    }
     document.getElementById("btnPresenceToday").onclick = () => safeRun(() => {
       const tIso = getTodayISO();
+      const curSess = getCurrentSessionLabel();
       state.presenceDateISO = tIso;
+      state.presenceSession = curSess;
       if (presencePicker) presencePicker.value = tIso;
+      if (presenceSessionSel) presenceSessionSel.value = curSess;
       renderTodayPresence();
     });
 
