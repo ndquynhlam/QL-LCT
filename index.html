@@ -882,7 +882,7 @@
   <section id="sheet-2" class="sheet-section hidden">
     <div class="card">
       <div class="card-title">Đăng Ký Lịch Trực & Lịch Công Tác Đột Xuất</div>
-      <p class="card-desc">Hỗ trợ đăng ký theo Cả ngày, Buổi sáng hoặc Buổi chiều. Người gửi sớm hơn được ưu tiên xếp lịch trước; Admin phê duyệt sẽ tự động cập nhật vào bảng lịch.</p>
+      <p class="card-desc">Hỗ trợ đăng ký theo Cả ngày, Buổi Sáng hoặc Buổi Chiều. Người gửi sớm hơn được ưu tiên xếp lịch trước; Admin phê duyệt sẽ tự động cập nhật vào bảng lịch.</p>
 
       <div class="form-group">
         <label class="form-label">Nhân sự đăng ký * (chọn từ danh sách hoặc gõ tên để lọc)</label>
@@ -916,8 +916,8 @@
         <label class="form-label">Thời gian / Buổi *</label>
         <select class="form-control" id="regSessionSelect">
           <option value="Cả ngày">Cả ngày</option>
-          <option value="Buổi sáng">Buổi sáng</option>
-          <option value="Buổi chiều">Buổi chiều</option>
+          <option value="Buổi Sáng">Buổi Sáng</option>
+          <option value="Buổi Chiều">Buổi Chiều</option>
         </select>
       </div>
 
@@ -1115,8 +1115,8 @@
         <div class="form-group" style="margin-bottom:0;">
           <label class="form-label">Buổi trong ngày</label>
           <select class="form-control" id="presenceSessionSelect">
-            <option value="Buổi sáng">Buổi sáng (&le; 12:00)</option>
-            <option value="Buổi chiều">Buổi chiều (&gt; 12:00)</option>
+            <option value="Buổi Sáng">Buổi Sáng (&le; 12:00)</option>
+            <option value="Buổi Chiều">Buổi Chiều (&gt; 12:00)</option>
           </select>
         </div>
       </div>
@@ -1233,7 +1233,7 @@
   </section>
 </main>
 
-<!-- Bottom 6-Sheet Navigation -->
+<!-- Bottom 5-Sheet Navigation -->
 <nav class="bottom-nav no-print">
   <button type="button" class="nav-item active" data-sheet="1">
     <span>📅</span>
@@ -1278,6 +1278,7 @@
   const STORAGE_KEY = "tyt_schedule_app_v6_2026";
   const DEFAULT_PIN = "2026";
 
+  // Ưu tiên 1: Thứ tự Đơn vị công tác khớp với mẫu chuẩn Lich_Cong_Tac_TYT_Hung_Long
   const DEPT_ORDER = [
     "Ban Giám đốc",
     "Phòng Hành chính",
@@ -1288,6 +1289,7 @@
     "Điểm Y tế 2"
   ];
 
+  // Ưu tiên 2: Thứ tự Chức vụ lãnh đạo/phụ trách trước, Nhân viên sau
   const POS_ORDER = {
     "Quyền Giám đốc": 1,
     "Phó Giám đốc": 2,
@@ -1299,6 +1301,7 @@
     "Nhân viên": 8
   };
 
+  
   const RECOVERY_ADMIN_EMAIL = "ndquynhlam@gmail.com";
   const DEFAULT_LEADERS = [
     { id: "l01", role: "Quyền Giám đốc", name: "ĐD. CKI. Lê Quốc Bình" },
@@ -1367,18 +1370,10 @@
     disabledHolidays: {}
   };
 
-  function normalizeSessionLabel(val) {
-    const s = String(val || "").trim().toLowerCase();
-    if (s === "buổi sáng" || s === "sáng") return "Buổi sáng";
-    if (s === "buổi chiều" || s === "chiều") return "Buổi chiều";
-    if (s === "cả ngày") return "Cả ngày";
-    return String(val || "").trim();
-  }
-
   function getCurrentSessionLabel() {
     const now = new Date();
     const mins = now.getHours() * 60 + now.getMinutes();
-    return mins <= 12 * 60 ? "Buổi sáng" : "Buổi chiều";
+    return mins <= 12 * 60 ? "Buổi Sáng" : "Buổi Chiều";
   }
 
   function hasApprovedOrAdminDungOverride(iso) {
@@ -1483,7 +1478,7 @@
       `).join("");
 
       const tasksInfo = tasks.length
-        ? tasks.map(t => `<li><b>${escapeHtml(getStaffById(t.staffId)?.name || "Nhân sự")}</b>: ${escapeHtml(t.type)} (${escapeHtml(normalizeSessionLabel(t.session))})${t.workLocation ? ` • Trụ sở: ${escapeHtml(t.workLocation)}` : ""}${t.note ? ` — ${escapeHtml(t.note)}` : ""}</li>`).join("")
+        ? tasks.map(t => `<li><b>${escapeHtml(getStaffById(t.staffId)?.name || "Nhân sự")}</b>: ${escapeHtml(t.type)} (${escapeHtml(t.session)})${t.workLocation ? ` • Trụ sở: ${escapeHtml(t.workLocation)}` : ""}${t.note ? ` — ${escapeHtml(t.note)}` : ""}</li>`).join("")
         : "<li>Không có lịch công tác/nghỉ riêng</li>";
 
       showModal(`Chi Tiết Cảnh Báo Ngày ${formatVNDate(iso)} (${dow.label})`, `
@@ -1522,7 +1517,7 @@
       }
       const tasks = Array.isArray(entry.tasks) ? entry.tasks.filter(t => t.staffId === staffId) : [];
       tasks.forEach(t => {
-        reasons.push(`Có lịch "${t.type}" (${normalizeSessionLabel(t.session)})${t.workLocation ? ` tại ${t.workLocation}` : ""}.`);
+        reasons.push(`Có lịch "${t.type}" (${t.session})${t.workLocation ? ` tại ${t.workLocation}` : ""}.`);
       });
 
       showModal(`Thông Tin Lịch Liên Quan: ${st.name}`, `
@@ -1652,6 +1647,7 @@
     }
   }
 
+  /* Firebase REST Sync */
   function getFirebaseEndpoint(subpath = "") {
     const base = state.cloud.url.replace(/\/+$/, "");
     const room = encodeURIComponent(state.cloud.room || "tram-y-te");
@@ -1751,6 +1747,7 @@
     }
   }
 
+  /* Modal Helpers */
   function syncAllVNDateInputs() {
     document.querySelectorAll('input[type="date"]').forEach(inp => {
       let wrap = inp.parentElement;
@@ -1853,6 +1850,7 @@
     });
   }
 
+  /* Business Logic & Validation */
   function getStaffById(id) {
     return state.staff.find(s => s.id === id) || null;
   }
@@ -1875,7 +1873,9 @@
     return arr;
   }
 
+  /* Quy định ngày nghỉ Lễ, Tết đối với viên chức/người lao động Việt Nam (có hỗ trợ Admin rà soát/điều chỉnh theo thực tế) */
   const STATUTORY_VN_HOLIDAYS = {
+    // 2025
     "2025-01-01": "Tết Dương lịch 2025",
     "2025-01-27": "Nghỉ Tết Nguyên đán Ất Tỵ (28 Tết)",
     "2025-01-28": "Nghỉ Tết Nguyên đán Ất Tỵ (29 Tết)",
@@ -1889,6 +1889,7 @@
     "2025-09-01": "Nghỉ Lễ Quốc khánh (liền kề 02/9)",
     "2025-09-02": "Ngày Quốc khánh 02/9",
 
+    // 2026
     "2026-01-01": "Tết Dương lịch 2026",
     "2026-01-02": "Nghỉ hoán đổi Tết Dương lịch 2026",
     "2026-02-16": "Nghỉ Tết Nguyên đán Bính Ngọ (29 Tết)",
@@ -1905,6 +1906,7 @@
     "2026-09-02": "Ngày Quốc khánh 02/9",
     "2026-11-24": "Ngày Văn hóa Việt Nam 24/11",
 
+    // 2027
     "2027-01-01": "Tết Dương lịch 2027",
     "2027-02-05": "Nghỉ Tết Nguyên đán Đinh Mùi (29 Tết)",
     "2027-02-06": "Tết Nguyên đán Đinh Mùi (Mùng 1 Tết)",
@@ -1920,6 +1922,7 @@
     "2027-09-02": "Ngày Quốc khánh 02/9",
     "2027-09-03": "Nghỉ Lễ Quốc khánh (liền kề 02/9)",
 
+    // 2028
     "2028-01-01": "Tết Dương lịch 2028",
     "2028-01-03": "Nghỉ bù Tết Dương lịch (do 01/01 trùng Thứ 7)",
     "2028-01-25": "Nghỉ Tết Nguyên đán Mậu Thân (29 Tết)",
@@ -1965,7 +1968,7 @@
     const tasks = Array.isArray(entry.tasks) ? entry.tasks : [];
     const manualHoliday = tasks.find(t => {
       const tp = String(t.type || "").toLowerCase();
-      return (tp.includes("lễ/tết") || tp.includes("nghỉ lễ")) && (!t.session || normalizeSessionLabel(t.session) === "Cả ngày");
+      return (tp.includes("lễ/tết") || tp.includes("nghỉ lễ")) && (!t.session || t.session === "Cả ngày");
     });
     if (manualHoliday) {
       return { isHoliday: true, label: manualHoliday.note || manualHoliday.type || "Nghỉ Lễ/Tết", source: "task" };
@@ -2170,7 +2173,7 @@
         const tName = String(t.type || "").trim();
         const isDutyType = tName === "Trực điểm chính" || tName === "Trực ĐYT 2";
         if (isDutyType) return;
-        const sessLabel = t.session ? ` (${normalizeSessionLabel(t.session)})` : "";
+        const sessLabel = t.session ? ` (${t.session})` : "";
         const locLabel = t.workLocation ? ` [${t.workLocation}]` : "";
         const msg = `${st.name} có ${tName || "lịch công tác/nghỉ"}${sessLabel}${locLabel} nhưng vẫn đang có tên trong ca trực cùng ngày [#${idx + 1}]`;
         if (!seenConflict.has(msg)) {
@@ -2180,6 +2183,7 @@
       });
     }
 
+    // Quy tắc riêng Bác sĩ Dung: chỉ làm việc Thứ 3 (dow=2) và Thứ 5 (dow=4) hàng tuần, trừ khi Admin sắp xếp hoặc duyệt đăng ký
     const dowInfo = getDayOfWeekInfo(iso);
     const bsDung = state.staff.find(s => s.name === "Bác sĩ Dung");
     const dungOverride = hasApprovedOrAdminDungOverride(iso);
@@ -2191,6 +2195,7 @@
       }
     }
 
+    // Quy tắc đảm bảo có ít nhất 1 Bác sĩ có mặt ở Điểm chính vào các ngày hành chính (Thứ 2 - Thứ 6)
     const isWeekdayMonFri = dowInfo.dow >= 1 && dowInfo.dow <= 5;
     const isHolidayAllDay = getHolidayInfo(iso).isHoliday;
     if (isWeekdayMonFri && !isHolidayAllDay) {
@@ -2202,7 +2207,7 @@
         const stTasks = tasks.filter(t => t && t.staffId === st.id);
         const hasLeaveAllDay = stTasks.some(t => {
           const tp = String(t.type || "").toLowerCase();
-          return (tp.includes("nghỉ") || tp.includes("vắng")) && (!t.session || normalizeSessionLabel(t.session) === "Cả ngày");
+          return (tp.includes("nghỉ") || tp.includes("vắng")) && (!t.session || t.session === "Cả ngày");
         });
         if (hasLeaveAllDay) return false;
         if (stTasks.some(t => t.workLocation === "Không có mặt tại đơn vị")) return false;
@@ -2285,6 +2290,8 @@
         monthCount: dutyCounts[s.id] || 0
       }));
   }
+
+
 
   function isValidEmailAddress(email) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || "").trim());
@@ -2472,6 +2479,7 @@
     }
   }
 
+  /* Rendering */
   function renderRoleUI() {
     const btn = document.getElementById("btnToggleAdmin");
     const badge = document.getElementById("roleBadge");
@@ -2745,7 +2753,7 @@
           const chipHtml = isStaffWarned(st)
             ? `<span class="chip chip-rose" style="font-weight:700;">⚠️ ${escapeHtml(nm)}</span>`
             : `<span class="chip chip-amber">${escapeHtml(nm)}</span>`;
-          return `<div>${chipHtml} <b>${escapeHtml(normalizeSessionLabel(t.session))}</b>: ${escapeHtml(t.type)}${locStr}${noteStr}</div>`;
+          return `<div>${chipHtml} <b>${escapeHtml(t.session)}</b>: ${escapeHtml(t.type)}${locStr}${noteStr}</div>`;
         }).join("");
       } else if (!holInfo.isHoliday) {
         tasksHtml = dowInfo.isWeekend ? "" : `<span style="color:#64748b;">Hành chính</span>`;
@@ -2820,7 +2828,7 @@
             ${statusChip}
           </div>
           <div style="font-size:12.5px;color:#334155;margin-top:4px;">
-            Ngày: <b>${formatVNDate(r.date)}</b> • Buổi: <b>${escapeHtml(normalizeSessionLabel(r.session))}</b> • Nội dung: <b>${escapeHtml(r.type)}</b>${r.workLocation ? ` • Trụ sở: <b>${escapeHtml(r.workLocation)}</b>` : ""}
+            Ngày: <b>${formatVNDate(r.date)}</b> • Buổi: <b>${escapeHtml(r.session)}</b> • Nội dung: <b>${escapeHtml(r.type)}</b>${r.workLocation ? ` • Trụ sở: <b>${escapeHtml(r.workLocation)}</b>` : ""}
           </div>
           <div style="font-size:11.5px;color:#475569;margin-top:3px;display:flex;flex-wrap:wrap;gap:8px;">
             <span>🕒 Đăng ký lúc: <b>${escapeHtml(formatDateTimeVN(r.createdAt))}</b></span>
@@ -2888,7 +2896,7 @@
 
     const todayIso = getTodayISO();
     const targetIso = /^\d{4}-\d{2}-\d{2}$/.test(state.presenceDateISO || "") ? state.presenceDateISO : todayIso;
-    const targetSession = (state.presenceSession === "Buổi sáng" || state.presenceSession === "Buổi chiều")
+    const targetSession = (state.presenceSession === "Buổi Sáng" || state.presenceSession === "Buổi Chiều")
       ? state.presenceSession
       : getCurrentSessionLabel();
     if (picker && picker.value !== targetIso) {
@@ -2902,7 +2910,7 @@
     const dayTag = targetIso === todayIso ? " • Hôm nay" : "";
     if (badge) badge.textContent = `${formatVNDate(targetIso)} (${dow.shortLabel}) • ${targetSession}${dayTag}`;
 
-    const matchesSession = (t) => !t || !t.session || normalizeSessionLabel(t.session) === "Cả ngày" || normalizeSessionLabel(t.session) === normalizeSessionLabel(targetSession);
+    const matchesSession = (t) => !t || !t.session || t.session === "Cả ngày" || t.session === targetSession;
 
     const entry = state.schedule[targetIso] || {};
     const prevEntry = state.schedule[addDaysISO(targetIso, -1)] || {};
@@ -2979,7 +2987,7 @@
 
       let label = "";
       if (hasTaskDay) {
-        label = matchedTasks.map(t => `${t.type} (${normalizeSessionLabel(t.session)})`).join(", ");
+        label = matchedTasks.map(t => `${t.type} (${t.session})`).join(", ");
       } else if (isWeekdayMonToFri && !st.isAdminOnly && !isDutyAny && !isRaTruc) {
         label = "Hành chính";
       } else if (!dow.isWeekend && !isRaTruc) {
@@ -3092,7 +3100,7 @@
     const dates = getMonthDates(state.selectedMonth);
     let html = "";
     state.staff.forEach((s, idx) => {
-      let mainCnt = 0, dyt2Cnt = 0, wkndCnt = 0;
+      let mainCnt = 0, dyt2Cnt = 0, wkndCnt = 0, taskCnt = 0;
       let workTripCnt = 0, leaveCnt = 0;
       dates.forEach(iso => {
         const e = state.schedule[iso] || {};
@@ -3108,6 +3116,7 @@
             if (tp.includes("lễ/tết") || tp.includes("nghỉ lễ")) {
               return;
             }
+            taskCnt++;
             if (tp.includes("nghỉ phép") || tp.includes("nghỉ bù") || tp.includes("nghỉ")) {
               leaveCnt++;
             } else {
@@ -3133,6 +3142,7 @@
     tbody.innerHTML = html;
   }
 
+  
   function renderLeadersList() {
     const container = document.getElementById("leadersListContainer");
     if (!container) return;
@@ -3175,7 +3185,7 @@
       saveState();
       closeModal();
       renderLeadersList();
-      syncAllVNDateInputs();
+    syncAllVNDateInputs();
     });
 
     document.getElementById("btnSaveLeadersList").onclick = () => safeRun(() => {
@@ -3203,10 +3213,14 @@
     const recoveryCode = String(Math.floor(100000 + Math.random() * 900000));
     const mailSubject = encodeURIComponent("[Trạm Y Tế Hưng Long] Khôi phục quyền Admin & xác thực hệ thống");
     const mailBody = encodeURIComponent(
-      `Yêu cầu khôi phục quyền quản trị hệ thống Trạm Y tế xã Hưng Long.\n` +
-      `Email khôi phục chính thức: ${RECOVERY_ADMIN_EMAIL}\n` +
-      `Mã xác thực khôi phục (6 số): ${recoveryCode}\n` +
-      `Mã PIN hiện tại lưu trên trình duyệt: ${state.adminPin}\n` +
+      `Yêu cầu khôi phục quyền quản trị hệ thống Trạm Y tế xã Hưng Long.
+` +
+      `Email khôi phục chính thức: ${RECOVERY_ADMIN_EMAIL}
+` +
+      `Mã xác thực khôi phục (6 số): ${recoveryCode}
+` +
+      `Mã PIN hiện tại lưu trên trình duyệt: ${state.adminPin}
+` +
       `Thời điểm yêu cầu: ${new Date().toLocaleString("vi-VN")}`
     );
     const mailtoUrl = `mailto:${RECOVERY_ADMIN_EMAIL}?subject=${mailSubject}&body=${mailBody}`;
@@ -3288,6 +3302,7 @@
     renderLeadersList();
   }
 
+  /* Admin Interactive Actions */
   const OTHER_SCHEDULE_TYPES = [
     "Trực điểm chính",
     "Trực ĐYT 2",
@@ -3334,6 +3349,15 @@
         return out;
       };
 
+      const renderFreeChipsHtml = (suggestions, targetSelectId) => {
+        const freeItems = suggestions.filter(it => it.isFree).slice(0, 6);
+        if (!freeItems.length) return `<div style="font-size:11.5px;color:#b45309;margin-top:4px;">Không có nhân sự rảnh tuyệt đối; đang ưu tiên người ít tua nhất.</div>`;
+        return `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:5px;">
+          <span style="font-size:11.5px;color:#0f766e;font-weight:600;align-self:center;">Gợi ý rảnh:</span>
+          ${freeItems.map(it => `<button type="button" class="btn btn-secondary btn-sm" style="padding:3px 7px;font-size:11.5px;" onclick="document.getElementById('${targetSelectId}').value='${it.staff.id}'">${escapeHtml(it.staff.name)} (${it.monthCount} tua)</button>`).join("")}
+        </div>`;
+      };
+
       const staffCheckboxesHtml = state.staff.map(s => {
         const bTag = blockedIds.has(s.id) ? ` <span style="color:#b45309;font-weight:700;text-decoration:underline;cursor:pointer;" onclick="event.preventDefault();event.stopPropagation();window.__showStaffDayConflictInfo('${iso}','${s.id}')">[Có lịch trực/liền kề]</span>` : "";
         return `
@@ -3354,7 +3378,7 @@
             const st = getStaffById(t.staffId);
             const isDutyConflict = st && [curM1, curM2, curD2].includes(st.id) && !["Trực điểm chính", "Trực ĐYT 2"].includes(t.type);
             return `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:7px 9px;background:${isDutyConflict ? "#fff1f2" : "#f8fafc"};border:1px solid ${isDutyConflict ? "#fecdd3" : "#e2e8f0"};border-radius:8px;margin-bottom:6px;">
-              <span style="font-size:12.5px;"><b>${escapeHtml(st ? st.name : "Nhân sự")}</b> (${escapeHtml(normalizeSessionLabel(t.session))}): ${escapeHtml(t.type)}${t.workLocation ? ` [${escapeHtml(t.workLocation)}]` : ""}${t.note ? " - " + escapeHtml(t.note) : ""}${isDutyConflict ? ' <b style="color:#9f1239;">[Đang giữ ca trực cùng ngày]</b>' : ""}</span>
+              <span style="font-size:12.5px;"><b>${escapeHtml(st ? st.name : "Nhân sự")}</b> (${escapeHtml(t.session)}): ${escapeHtml(t.type)}${t.workLocation ? ` [${escapeHtml(t.workLocation)}]` : ""}${t.note ? " - " + escapeHtml(t.note) : ""}${isDutyConflict ? ' <b style="color:#9f1239;">[Đang giữ ca trực cùng ngày]</b>' : ""}</span>
               <button type="button" class="btn btn-danger btn-sm" onclick="window.__removeDayTask('${iso}', ${i})">Xoá</button>
             </div>`;
           }).join("")
@@ -3364,14 +3388,17 @@
         <div class="form-group">
           <label class="form-label">Điểm chính 1 (Bác sĩ / Y sĩ)</label>
           <select class="form-control" id="editMain1">${buildSmartOpts(leadSuggestions, curM1)}</select>
+
         </div>
         <div class="form-group">
           <label class="form-label">Điểm chính 2 (Điều dưỡng / Hộ sinh)</label>
           <select class="form-control" id="editMain2">${buildSmartOpts(nurseSuggestionsM2, curM2)}</select>
+
         </div>
         <div class="form-group">
           <label class="form-label">Điểm Y tế 2 (Điều dưỡng / Hộ sinh)</label>
           <select class="form-control" id="editDyt2">${buildSmartOpts(nurseSuggestionsD2, curD2)}</select>
+
         </div>
 
         <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:10px;margin-bottom:10px;">
@@ -3417,8 +3444,8 @@
                 <label class="form-label">Buổi</label>
                 <select class="form-control" id="addTaskSession">
                   <option value="Cả ngày">Cả ngày</option>
-                  <option value="Buổi sáng" selected>Buổi sáng</option>
-                  <option value="Buổi chiều">Buổi chiều</option>
+                  <option value="Buổi Sáng" selected>Buổi Sáng</option>
+                  <option value="Buổi Chiều">Buổi Chiều</option>
                 </select>
               </div>
               <div class="form-group" style="margin-bottom:0;">
@@ -3466,7 +3493,7 @@
           return;
         }
         candEl.innerHTML = candidates.map(it =>
-          `<option value="${it.staff.id}">${escapeHtml(it.staff.name)} (${escapeHtml(it.staff.title)}) • ${item.monthCount} tua • Rảnh</option>`
+          `<option value="${it.staff.id}">${escapeHtml(it.staff.name)} (${escapeHtml(it.staff.title)}) • ${it.monthCount} tua • Rảnh</option>`
         ).join("");
       };
 
@@ -3517,7 +3544,7 @@
           showModal("Chưa chọn nhân sự", "<p style='margin:0;'>Vui lòng tick chọn ít nhất một nhân sự để xếp lịch công tác hàng loạt.</p>");
           return;
         }
-        const session = normalizeSessionLabel(document.getElementById("addTaskSession").value);
+        const session = document.getElementById("addTaskSession").value;
         const type = document.getElementById("addTaskType").value;
         const workLocation = document.getElementById("addTaskWorkLoc") ? document.getElementById("addTaskWorkLoc").value : "";
         const note = document.getElementById("addTaskNote").value.trim();
@@ -3656,7 +3683,7 @@
       dispatchEmailChangeNotification(
         "Lịch công tác / nghỉ đột xuất",
         `Xoá mục ${removed?.type || "công tác/nghỉ"} ngày ${formatVNDate(iso)}`,
-        `Nhân sự: ${stName} (${normalizeSessionLabel(removed?.session) || ""})`,
+        `Nhân sự: ${stName} (${removed?.session || ""})`,
         [iso]
       );
       saveState();
@@ -3790,7 +3817,6 @@
       if (!reg) return;
       const prevSnap = snapshotDay(reg.date);
       const prevStatus = reg.status;
-      const normSess = normalizeSessionLabel(reg.session);
 
       if (!state.schedule[reg.date]) {
         state.schedule[reg.date] = { main1: "", main2: "", dyt2: "", tasks: [] };
@@ -3809,7 +3835,7 @@
         dayObj.tasks.push({
           id: "t_" + Date.now(),
           staffId: reg.staffId,
-          session: normSess,
+          session: reg.session,
           type: reg.type,
           workLocation: reg.workLocation || "",
           note: reg.note
@@ -3843,7 +3869,7 @@
         dispatchEmailChangeNotification(
           "Phê duyệt đăng ký",
           `Đã duyệt "${reg.type}" cho ${stName} (${formatVNDate(reg.date)})`,
-          `Buổi: ${normSess}${reg.note ? " • Ghi chú: " + reg.note : ""}`,
+          `Buổi: ${reg.session}${reg.note ? " • Ghi chú: " + reg.note : ""}`,
           [reg.date]
         );
         saveState(true);
@@ -3857,7 +3883,7 @@
         requestAdminConflictConfirmation({
           modalTitle: `Cảnh Báo Khi Duyệt Đăng Ký (${formatVNDate(reg.date)})`,
           conflictMessages: warningsAfter,
-          summaryHtml: `Đăng ký của <b>${escapeHtml(stName)}</b> (${escapeHtml(reg.type)} - ${escapeHtml(normSess)}) phát sinh cảnh báo/xung đột liên quan.`,
+          summaryHtml: `Đăng ký của <b>${escapeHtml(stName)}</b> (${escapeHtml(reg.type)} - ${escapeHtml(reg.session)}) phát sinh cảnh báo/xung đột liên quan.`,
           keepOldLabel: "Giữ nguyên lịch cũ",
           applyAnywayLabel: "Vẫn duyệt & cập nhật",
           onKeepOld: () => {
@@ -3885,7 +3911,7 @@
       dispatchEmailChangeNotification(
         "Phê duyệt đăng ký",
         `Từ chối đăng ký "${reg.type}" của ${stName} (${formatVNDate(reg.date)})`,
-        `Buổi: ${normalizeSessionLabel(reg.session)}${reg.note ? " • Ghi chú: " + reg.note : ""}`,
+        `Buổi: ${reg.session}${reg.note ? " • Ghi chú: " + reg.note : ""}`,
         [reg.date]
       );
       saveState();
@@ -3936,6 +3962,7 @@
 
         const pick1 = candLeads.find(s => {
           if (blocked.has(s.id)) return false;
+          // Nếu ngày mai (T2-T6) s là Bác sĩ trực hôm nay thì ngày mai ra trực, kiểm tra xem ngày mai Điểm chính còn ít nhất 1 Bác sĩ hành chính không
           if (s.title === "Bác sĩ" && nextDowAuto.dow >= 1 && nextDowAuto.dow <= 5) {
             const nextTasks = Array.isArray((state.schedule[nextIsoAuto] || {}).tasks) ? state.schedule[nextIsoAuto].tasks : [];
             const otherDoctorsNextDay = state.staff.filter(doc => {
@@ -4047,14 +4074,13 @@
     const entry = state.schedule[iso] || {};
     const prevEntry = state.schedule[addDaysISO(iso, -1)] || {};
     const dow = getDayOfWeekInfo(iso);
-    const normSession = normalizeSessionLabel(sessionName);
 
     const parts = [];
+    // 1. Công tác / Nghỉ theo buổi
     const tasks = Array.isArray(entry.tasks) ? entry.tasks : [];
     tasks.forEach(t => {
       if (t.staffId !== staffId) return;
-      const tSess = normalizeSessionLabel(t.session);
-      if (tSess === "Cả ngày" || tSess === normSession) {
+      if (t.session === "Cả ngày" || t.session === sessionName) {
         let abbr = normalizeScheduleAbbr(t.type, iso);
         const lowType = String(t.type || "").trim().toLowerCase();
         if (lowType === "tiêm ngừa") {
@@ -4072,6 +4098,7 @@
       }
     });
 
+    // 2. Trực 24/24 trong ngày
     if (entry.main1 === staffId || entry.main2 === staffId) {
       if (!parts.includes("TRỰC")) parts.push("TRỰC");
     }
@@ -4079,6 +4106,7 @@
       if (!parts.includes("TRỰC ĐYT 2")) parts.push("TRỰC ĐYT 2");
     }
 
+    // 3. Ra trực (nếu hôm trước trực)
     const wasOnDutyYesterday = (prevEntry.main1 === staffId || prevEntry.main2 === staffId || prevEntry.dyt2 === staffId);
     if (wasOnDutyYesterday) {
       if (!parts.includes("RT")) parts.push("RT");
@@ -4090,8 +4118,7 @@
     const holInfo = getHolidayInfo(iso);
     const dayHasHoliday = holInfo.isHoliday || tasks.some(t => {
       const tp = String(t.type || "").toLowerCase();
-      const tSess = normalizeSessionLabel(t.session);
-      return (tp.includes("lễ/tết") || tp.includes("nghỉ lễ") || tp.includes("nghỉ tết") || tp === "lễ" || tp === "tết") && (tSess === "Cả ngày" || tSess === normSession);
+      return (tp.includes("lễ/tết") || tp.includes("nghỉ lễ") || tp.includes("nghỉ tết") || tp === "lễ" || tp === "tết") && (t.session === "Cả ngày" || t.session === sessionName);
     });
     if (dayHasHoliday) {
       return String(holInfo.label || "").toLowerCase().includes("tết") ? "Tết" : "Lễ";
@@ -4103,120 +4130,47 @@
     return dow.isWeekend ? "" : "HC";
   }
 
-  function getCanonicalTaskStyleKey(val) {
-    const raw = String(val || "").trim();
-    if (!raw) return "EMPTY";
-    const upper = raw.toUpperCase();
-    if (upper.includes("TRỰC ĐYT 2") || upper.includes("TRỰC DYT 2")) return "TRUC_DYT2";
-    if (upper === "TRỰC" || upper.split("/").map(s => s.trim().toUpperCase()).includes("TRỰC")) return "TRUC";
-    if (upper === "RT" || upper.split("/").map(s => s.trim().toUpperCase()).includes("RT")) return "RT";
-    if (upper === "HC") return "HC";
-    if (upper === "LỄ" || upper === "TẾT" || upper.includes("LỄ") || upper.includes("TẾT")) return "HOLIDAY";
-    if (upper === "P" || upper === "NB" || upper.includes("NGHỈ")) return "LEAVE";
-    const normKey = raw
-      .replace(/\s*-\s*.+$/, "")
-      .replace(/\s*\(.+\)$/, "")
-      .trim()
-      .toUpperCase();
-    return "TASK:" + (normKey || upper);
-  }
-
-  function getStyleSpecForCanonicalKey(key, isWeekendCol, borderObj) {
-    const FONT_NAME = "Times New Roman";
-    const FONT_SIZE = 10;
+  function getCellStyleForValue(val, isWeekendCol, borderObj) {
+    const baseFont = { name: "Times New Roman", sz: 9.5, color: { rgb: "0F172A" } };
     const baseAlign = { horizontal: "center", vertical: "center", wrapText: true };
-    const cleanBgRgb = isWeekendCol ? "F1F5F9" : "FFFFFF";
+    const cleanBgRgb = isWeekendCol ? "E2E8F0" : "FFFFFF";
+    const tokens = String(val || "").split("/").map(s => s.trim()).filter(Boolean);
 
-    // 1. TRỰC ĐYT 2: Nền đỏ hồng nhạt nổi bật, chữ đứng đậm màu đỏ nâu trầm dễ nhìn
-    if (key === "TRUC_DYT2") {
+    // Nổi bật 3 loại ô (TRỰC ĐYT 2, TRỰC, RT) cả khi xem màu lẫn khi in trắng đen
+    if (tokens.includes("TRỰC ĐYT 2") || String(val || "").includes("TRỰC ĐYT 2")) {
       return {
-        font: { name: FONT_NAME, sz: FONT_SIZE, bold: true, italic: false, color: { rgb: "7F1D1D" } },
-        fill: { patternType: "solid", fgColor: { rgb: "FECDD3" } },
+        font: { name: "Times New Roman", sz: 9.5, bold: true, color: { rgb: "000000" } },
+        fill: { patternType: "solid", fgColor: { rgb: "CBD5E1" } },
         alignment: baseAlign,
         border: Object.assign({}, borderObj, {
-          top: { style: "thin", color: { rgb: "E11D48" } },
-          bottom: { style: "thin", color: { rgb: "E11D48" } }
+          top: { style: "medium", color: { rgb: "0F172A" } },
+          bottom: { style: "medium", color: { rgb: "0F172A" } }
         })
       };
     }
-
-    // 2. TRỰC (Điểm chính): Nền xanh bạc hà sáng, chữ đứng đậm màu xanh lục đậm
-    if (key === "TRUC") {
+    if (tokens.includes("TRỰC") || String(val || "").includes("TRỰC")) {
       return {
-        font: { name: FONT_NAME, sz: FONT_SIZE, bold: true, italic: false, color: { rgb: "065F46" } },
-        fill: { patternType: "solid", fgColor: { rgb: "A7F3D0" } },
+        font: { name: "Times New Roman", sz: 9.5, bold: true, color: { rgb: "000000" } },
+        fill: { patternType: "solid", fgColor: { rgb: "E2E8F0" } },
         alignment: baseAlign,
-        border: Object.assign({}, borderObj, {
-          top: { style: "thin", color: { rgb: "059669" } },
-          bottom: { style: "thin", color: { rgb: "059669" } }
-        })
+        border: borderObj
       };
     }
-
-    // 3. RT (Ra trực): Nền vàng hổ phách sáng, chữ đứng đậm màu nâu/cam đậm (không dùng chữ nghiêng)
-    if (key === "RT") {
+    if (tokens.includes("RT") || String(val || "") === "RT") {
       return {
-        font: { name: FONT_NAME, sz: FONT_SIZE, bold: true, italic: false, color: { rgb: "92400E" } },
-        fill: { patternType: "solid", fgColor: { rgb: "FDE68A" } },
-        alignment: baseAlign,
-        border: Object.assign({}, borderObj, {
-          top: { style: "thin", color: { rgb: "D97706" } },
-          bottom: { style: "thin", color: { rgb: "D97706" } }
-        })
-      };
-    }
-
-    if (key === "HC") {
-      return {
-        font: { name: FONT_NAME, sz: FONT_SIZE, bold: false, italic: false, color: { rgb: "334155" } },
-        fill: { patternType: "solid", fgColor: { rgb: cleanBgRgb } },
+        font: { name: "Times New Roman", sz: 9.5, bold: true, italic: true, color: { rgb: "0F172A" } },
+        fill: { patternType: "solid", fgColor: { rgb: "F1F5F9" } },
         alignment: baseAlign,
         border: borderObj
       };
     }
 
-    if (key === "HOLIDAY" || key === "LEAVE") {
-      return {
-        font: { name: FONT_NAME, sz: FONT_SIZE, bold: true, italic: false, color: { rgb: "9F1239" } },
-        fill: { patternType: "solid", fgColor: { rgb: "FFE4E6" } },
-        alignment: baseAlign,
-        border: borderObj
-      };
-    }
-
-    if (key === "EMPTY") {
-      return {
-        font: { name: FONT_NAME, sz: FONT_SIZE, bold: false, italic: false, color: { rgb: "64748B" } },
-        fill: { patternType: "solid", fgColor: { rgb: isWeekendCol ? "E2E8F0" : "FFFFFF" } },
-        alignment: baseAlign,
-        border: borderObj
-      };
-    }
-
-    const palette = [
-      { bg: "E0E7FF", fg: "3730A3" },
-      { bg: "F3E8FF", fg: "6B21A8" },
-      { bg: "CCFBF1", fg: "115E59" },
-      { bg: "FFEDD5", fg: "9A3412" },
-      { bg: "FCE7F3", fg: "9D174D" },
-      { bg: "DCFCE7", fg: "166534" }
-    ];
-    let hash = 0;
-    for (let i = 0; i < key.length; i++) {
-      hash = ((hash << 5) - hash + key.charCodeAt(i)) | 0;
-    }
-    const pair = palette[Math.abs(hash) % palette.length];
     return {
-      font: { name: FONT_NAME, sz: FONT_SIZE, bold: true, italic: false, color: { rgb: pair.fg } },
-      fill: { patternType: "solid", fgColor: { rgb: pair.bg } },
+      font: baseFont,
+      fill: { patternType: "solid", fgColor: { rgb: cleanBgRgb } },
       alignment: baseAlign,
       border: borderObj
     };
-  }
-
-  function getCellStyleForValue(val, isWeekendCol, borderObj) {
-    const key = getCanonicalTaskStyleKey(val);
-    return getStyleSpecForCanonicalKey(key, isWeekendCol, borderObj);
   }
 
   function injectConditionalFormattingToXlsx(arrayBuffer, sheet1RangeRef) {
@@ -4228,8 +4182,9 @@
         return new Blob([arrayBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
       }
       return Promise.all([sheetFile.async("string"), stylesFile.async("string")]).then(([sheetXml, stylesXml]) => {
+        // Thêm dxf style cho Conditional Formatting (nền #FECACA, chữ đậm #991B1B)
         let dxfId = 0;
-        const dxfEntry = `<dxf><font><b/><color rgb="FF7F1D1D"/></font><fill><patternFill patternType="solid"><fgColor rgb="FFFECDD3"/><bgColor indexed="64"/></patternFill></fill></dxf>`;
+        const dxfEntry = `<dxf><font><b/><color rgb="FF991B1B"/></font><fill><patternFill patternType="solid"><fgColor rgb="FFFECACA"/><bgColor indexed="64"/></patternFill></fill></dxf>`;
         if (stylesXml.includes("<dxfs")) {
           const matchCount = stylesXml.match(/<dxfs count="(\d+)">/);
           if (matchCount) {
@@ -4240,7 +4195,7 @@
           stylesXml = stylesXml.replace("</styleSheet>", `<dxfs count="1">${dxfEntry}</dxfs></styleSheet>`);
         }
 
-        const cfXml = `<conditionalFormatting sqref="${sheet1RangeRef}"><cfRule type="containsText" dxfId="${dxfId}" priority="1" operator="containsText" text="TRỰC ĐYT 2"><formula>NOT(ISERROR(SEARCH("TRỰC ĐYT 2",G8)))</formula></cfRule></conditionalFormatting>`;
+        const cfXml = `<conditionalFormatting sqref="${sheet1RangeRef}"><cfRule type="containsText" dxfId="${dxfId}" priority="1" operator="containsText" text="Trực ĐYT 2"><formula>NOT(ISERROR(SEARCH("Trực ĐYT 2",G8)))</formula></cfRule></conditionalFormatting>`;
         if (sheetXml.includes("<pageMargins")) {
           sheetXml = sheetXml.replace("<pageMargins", `${cfXml}<pageMargins`);
         } else {
@@ -4257,7 +4212,7 @@
   function getMondayToSundayDates(anchorIso) {
     const [y, m, d] = anchorIso.split("-").map(Number);
     const dt = new Date(y, m - 1, d);
-    const dow = dt.getDay();
+    const dow = dt.getDay(); // 0=CN, 1=T2..6=T7
     const diffToMon = dow === 0 ? -6 : (1 - dow);
     const monIso = addDaysISO(anchorIso, diffToMon);
     const arr = [];
@@ -4362,7 +4317,7 @@
     const titleBannerText = (opts && opts.titleText) ? opts.titleText : `LỊCH CÔNG TÁC THÁNG ${defM} NĂM ${defY}`;
     const downloadFileName = (opts && opts.fileName) ? opts.fileName : `Lich_Cong_Tac_TYT_Hung_Long_Thang_${defM}_${defY}.xlsx`;
     const numDays = dates.length;
-    const totalCols = 6 + numDays;
+    const totalCols = 6 + numDays; // A..F (6) + days
     const lastColLetter = XLSX.utils.encode_col(totalCols - 1);
 
     const sortedStaff = normalizeStaffList(state.staff);
@@ -4382,37 +4337,44 @@
       if (style) ws[addr].s = style;
     }
 
+    // Dòng 1: Quốc hiệu & Đơn vị chủ quản
     setCell(ws1, 0, 0, "UBND XÃ HƯNG LONG", {
-      font: { name: "Times New Roman", sz: 11, bold: true, italic: false, color: { rgb: "1E3A5F" } },
+      font: { name: "Times New Roman", sz: 11, bold: true, color: { rgb: "1E3A5F" } },
       alignment: { horizontal: "center", vertical: "center" }
     });
     setCell(ws1, 0, 6, "CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM", {
-      font: { name: "Times New Roman", sz: 11, bold: true, italic: false, color: { rgb: "1E3A5F" } },
+      font: { name: "Times New Roman", sz: 11, bold: true, color: { rgb: "1E3A5F" } },
       alignment: { horizontal: "center", vertical: "center" }
     });
     merges1.push({ s: { r: 0, c: 0 }, e: { r: 0, c: 4 } });
     merges1.push({ s: { r: 0, c: 6 }, e: { r: 0, c: totalCols - 1 } });
 
+    // Dòng 2: TRẠM Y TẾ & Độc lập - Tự do - Hạnh phúc
     setCell(ws1, 1, 0, "TRẠM Y TẾ", {
-      font: { name: "Times New Roman", sz: 11, bold: true, italic: false, color: { rgb: "0F172A" } },
+      font: { name: "Times New Roman", sz: 11, bold: true, color: { rgb: "0F172A" } },
       alignment: { horizontal: "center", vertical: "center" }
     });
     setCell(ws1, 1, 6, "Độc lập - Tự do - Hạnh phúc", {
-      font: { name: "Times New Roman", sz: 11, bold: true, italic: false, color: { rgb: "0F172A" } },
+      font: { name: "Times New Roman", sz: 11, bold: true, color: { rgb: "0F172A" } },
       alignment: { horizontal: "center", vertical: "center" }
     });
     merges1.push({ s: { r: 1, c: 0 }, e: { r: 1, c: 4 } });
     merges1.push({ s: { r: 1, c: 6 }, e: { r: 1, c: totalCols - 1 } });
 
+    // Dòng 3: Trống hoàn toàn
+    // Dòng 4: Tên bảng LỊCH CÔNG TÁC THÁNG [MM] NĂM [YYYY]
     setCell(ws1, 3, 0, titleBannerText, {
-      font: { name: "Times New Roman", sz: 15, bold: true, italic: false, color: { rgb: "1E3A5F" } },
+      font: { name: "Times New Roman", sz: 15, bold: true, color: { rgb: "1E3A5F" } },
       alignment: { horizontal: "center", vertical: "center" }
     });
     merges1.push({ s: { r: 3, c: 0 }, e: { r: 3, c: totalCols - 1 } });
 
+    // Dòng 5: Trống hoàn toàn
+
+    // Dòng 6-7: Tiêu đề cột
     const fixedHeaders = ["STT", "Họ và tên", "Đơn vị công tác", "Chức vụ", "Chức danh", "Buổi"];
     const headerDarkStyle = {
-      font: { name: "Times New Roman", sz: 10, bold: true, italic: false, color: { rgb: "FFFFFF" } },
+      font: { name: "Times New Roman", sz: 10, bold: true, color: { rgb: "FFFFFF" } },
       fill: { patternType: "solid", fgColor: { rgb: "1E3A5F" } },
       alignment: { horizontal: "center", vertical: "center", wrapText: true },
       border: thinBorder
@@ -4428,7 +4390,7 @@
       const dow = getDayOfWeekInfo(iso);
       const ddmm = `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
       const dayHeaderStyle = {
-        font: { name: "Times New Roman", sz: 10, bold: true, italic: false, color: { rgb: dow.isWeekend ? "991B1B" : "1E3A5F" } },
+        font: { name: "Times New Roman", sz: 9, bold: true, color: { rgb: dow.isWeekend ? "991B1B" : "1E3A5F" } },
         fill: { patternType: "solid", fgColor: { rgb: dow.isWeekend ? "FEE2E2" : "E2E8F0" } },
         alignment: { horizontal: "center", vertical: "center", wrapText: true },
         border: thinBorder
@@ -4437,6 +4399,7 @@
       setCell(ws1, 6, cIdx, ddmm, dayHeaderStyle);
     });
 
+    // Dữ liệu từng nhân sự (mỗi người 2 hàng: Sáng & Chiều, bắt đầu từ row index 7 = dòng 8)
     let curRow = 7;
     const importExportRows = [
       ["STT", "Họ và tên", "Đơn vị công tác", "Chức danh", "Chức vụ", "Loại hợp đồng", "Chế độ trực", "Ngày", "Thứ", "Sáng", "Chiều"]
@@ -4449,13 +4412,13 @@
     sortedStaff.forEach((st, sIdx) => {
       const bgRgb = "FFFFFF";
       const metaCenterStyle = {
-        font: { name: "Times New Roman", sz: 10, bold: false, italic: false, color: { rgb: "0F172A" } },
+        font: { name: "Times New Roman", sz: 9.5, color: { rgb: "0F172A" } },
         fill: { patternType: "solid", fgColor: { rgb: bgRgb } },
         alignment: { horizontal: "center", vertical: "center", wrapText: true },
         border: thinBorder
       };
       const metaLeftStyle = {
-        font: { name: "Times New Roman", sz: 10, bold: true, italic: false, color: { rgb: "0F172A" } },
+        font: { name: "Times New Roman", sz: 9.5, bold: true, color: { rgb: "0F172A" } },
         fill: { patternType: "solid", fgColor: { rgb: bgRgb } },
         alignment: { horizontal: "left", vertical: "center", wrapText: true },
         border: thinBorder
@@ -4500,8 +4463,8 @@
       dates.forEach((iso, dIdx) => {
         const cIdx = 6 + dIdx;
         const dow = getDayOfWeekInfo(iso);
-        const valM = computeStaffSessionText(st.id, iso, "Buổi sáng");
-        const valA = computeStaffSessionText(st.id, iso, "Buổi chiều");
+        const valM = computeStaffSessionText(st.id, iso, "Buổi Sáng");
+        const valA = computeStaffSessionText(st.id, iso, "Buổi Chiều");
 
         importExportRows.push([
           ieCounter++,
@@ -4533,10 +4496,11 @@
       curRow += 2;
     });
 
-    const lastDataRow1Based = curRow;
+    const lastDataRow1Based = curRow; // curRow is 0-indexed next empty row (e.g. 65 -> Excel row 66)
+    // Dòng trống sau bảng dữ liệu (curRow), dòng ký tên ở curRow + 1
     const sigRow = curRow + 1;
     const sigStyle = {
-      font: { name: "Times New Roman", sz: 10, bold: true, italic: false, color: { rgb: "1E3A5F" } },
+      font: { name: "Times New Roman", sz: 10, bold: true, color: { rgb: "1E3A5F" } },
       alignment: { horizontal: "center", vertical: "center", wrapText: true }
     };
     const c1Start = 0;
@@ -4594,50 +4558,18 @@
       left: 0.3, right: 0.3, top: 0.4, bottom: 0.4, header: 0.2, footer: 0.2
     };
 
+    // Sheet 2: Import_Export
     const ws2 = XLSX.utils.aoa_to_sheet(importExportRows);
     ws2["!cols"] = [
       { wch: 6 }, { wch: 20 }, { wch: 22 }, { wch: 18 }, { wch: 18 },
       { wch: 14 }, { wch: 16 }, { wch: 13 }, { wch: 11 }, { wch: 24 }, { wch: 24 }
     ];
-    for (let r = 0; r < importExportRows.length; r++) {
-      for (let c = 0; c < importExportRows[r].length; c++) {
-        const cellAddr = XLSX.utils.encode_cell({ r, c });
-        if (!ws2[cellAddr]) continue;
-        if (r === 0) {
-          ws2[cellAddr].s = headerDarkStyle;
-        } else if (c === 9 || c === 10) {
-          ws2[cellAddr].s = getCellStyleForValue(importExportRows[r][c], false, thinBorder);
-        } else {
-          ws2[cellAddr].s = {
-            font: { name: "Times New Roman", sz: 10, bold: c === 1, italic: false, color: { rgb: "0F172A" } },
-            fill: { patternType: "solid", fgColor: { rgb: "FFFFFF" } },
-            alignment: { horizontal: c === 1 ? "left" : "center", vertical: "center", wrapText: true },
-            border: thinBorder
-          };
-        }
-      }
-    }
 
+    // Sheet 3: DS_Nhan_Su
     const ws3 = XLSX.utils.aoa_to_sheet(dsNhanSuRows);
     ws3["!cols"] = [
       { wch: 6 }, { wch: 20 }, { wch: 22 }, { wch: 18 }, { wch: 18 }, { wch: 14 }, { wch: 16 }
     ];
-    for (let r = 0; r < dsNhanSuRows.length; r++) {
-      for (let c = 0; c < dsNhanSuRows[r].length; c++) {
-        const cellAddr = XLSX.utils.encode_cell({ r, c });
-        if (!ws3[cellAddr]) continue;
-        if (r === 0) {
-          ws3[cellAddr].s = headerDarkStyle;
-        } else {
-          ws3[cellAddr].s = {
-            font: { name: "Times New Roman", sz: 10, bold: c === 1, italic: false, color: { rgb: "0F172A" } },
-            fill: { patternType: "solid", fgColor: { rgb: "FFFFFF" } },
-            alignment: { horizontal: c === 1 ? "left" : "center", vertical: "center", wrapText: true },
-            border: thinBorder
-          };
-        }
-      }
-    }
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws1, "Lich_Cong_Tac_Thang");
@@ -4652,759 +4584,583 @@
       const a = document.createElement("a");
       a.href = url;
       a.download = downloadFileName;
-      document.body.appendChild(a);
       a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-    }).catch(() => {
-      const fallbackBlob = new Blob([wbOut], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-      const url = URL.createObjectURL(fallbackBlob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = downloadFileName;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      URL.revokeObjectURL(url);
     });
   }
 
-  function parseVNDateToISO(val, fallbackYm) {
-    if (!val) return "";
-    if (val instanceof Date && !isNaN(val.getTime())) {
-      const y = val.getFullYear();
-      const m = String(val.getMonth() + 1).padStart(2, "0");
-      const d = String(val.getDate()).padStart(2, "0");
-      return `${y}-${m}-${d}`;
+  /* =====================================================================
+     EXCEL IMPORT (.XLSX) SUPPORTING BOTH 3-SHEET & Lich_Cong_Tac_Thang
+     ===================================================================== */
+  function parseVNDateToISO(str) {
+    const s = String(str || "").trim();
+    const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (m) {
+      return `${m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`;
     }
-    const s = String(val).trim();
     if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
-    const m1 = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-    if (m1) {
-      return `${m1[3]}-${m1[2].padStart(2, "0")}-${m1[1].padStart(2, "0")}`;
-    }
-    const m2 = s.match(/^(\d{1,2})\/(\d{1,2})$/) && fallbackYm;
-    if (m2) {
-      const [fy, fm] = fallbackYm.split("-");
-      const dd = m2[1].padStart(2, "0");
-      const mm = m2[2].padStart(2, "0");
-      return `${fy}-${mm || fm}-${dd}`;
-    }
     return "";
   }
 
-  function mapImportedCodeToType(codeStr) {
-    const c = String(codeStr || "").trim();
-    const low = c.toLowerCase();
-    if (!c || low === "hc" || low === "rt" || low === "ra trực" || low === "lễ" || low === "tết" || low === "nghỉ lễ/tết") return null;
-    if (low.includes("trực đyt 2") || low.includes("trực dyt 2")) return "Trực ĐYT 2";
-    if (low.startsWith("trực") || low.includes("trực điểm chính")) return "Trực điểm chính";
-    if (low === "h" || low.startsWith("họp")) return "Họp";
-    if (low === "th" || low.startsWith("tập huấn")) return "Tập huấn";
-    if (low === "p" || low.startsWith("nghỉ phép")) return "Nghỉ phép";
-    if (low === "nb" || low.startsWith("nghỉ bù")) return "Nghỉ bù";
-    if (low === "tndv" || low.includes("tiêm ngừa dịch vụ")) return "Tiêm ngừa dịch vụ";
-    if (low.includes("tiêm ngừa")) return "Tiêm ngừa";
-    if (low.startsWith("học")) return "Học";
-    return c;
-  }
-
-  function applyCellTokensToSchedule(staffId, iso, sessionName, cellText) {
-    const raw = String(cellText || "").trim();
-    if (!raw) return;
+  function applyCellTokensToSchedule(staffId, iso, sessionLabel, rawText) {
+    const txt = String(rawText || "").trim();
+    if (!txt || txt === "HC" || txt === "Ra trực") return;
 
     if (!state.schedule[iso]) {
       state.schedule[iso] = { main1: "", main2: "", dyt2: "", tasks: [] };
     }
     const dayObj = state.schedule[iso];
-    if (!Array.isArray(dayObj.tasks)) dayObj.tasks = [];
+    const parts = txt.split("/").map(p => p.trim()).filter(Boolean);
 
-    const tokens = raw.split("/").map(t => t.trim()).filter(Boolean);
-    const st = getStaffById(staffId);
+    const expandAbbrType = (abbrStr) => {
+      const u = String(abbrStr || "").trim();
+      const up = u.toUpperCase();
+      if (up === "H") return "Họp";
+      if (up === "TH") return "Tập huấn";
+      if (up === "P") return "Nghỉ phép";
+      if (up === "NB") return "Nghỉ bù";
+      if (up === "TNDV") return "Tiêm ngừa dịch vụ";
+      if (up === "TIÊM NGỪA" || up === "HỖ TRỢ TIÊM NGỪA") return "Tiêm ngừa";
+      if (up === "LỄ") return "Nghỉ Lễ/Tết";
+      if (up === "TẾT") return "Nghỉ Lễ/Tết";
+      return u;
+    };
 
-    tokens.forEach(tok => {
-      const low = tok.toLowerCase();
-      if (low === "hc" || low === "rt" || low === "ra trực") return;
-
-      const dashIdx = tok.indexOf(" - ");
-      const mainPart = dashIdx >= 0 ? tok.slice(0, dashIdx).trim() : tok;
-      const notePart = dashIdx >= 0 ? tok.slice(dashIdx + 3).trim() : "";
-
-      const mappedType = mapImportedCodeToType(mainPart);
-      if (!mappedType) return;
-
-      if (mappedType === "Trực điểm chính") {
-        if (st && isClinicalLeadTitle(st.title)) {
-          if (!dayObj.main1) dayObj.main1 = staffId;
-          else if (!dayObj.main2) dayObj.main2 = staffId;
-        } else {
-          if (!dayObj.main2) dayObj.main2 = staffId;
-          else if (!dayObj.main1) dayObj.main1 = staffId;
-        }
-      } else if (mappedType === "Trực ĐYT 2") {
-        if (!dayObj.dyt2) dayObj.dyt2 = staffId;
+    parts.forEach(part => {
+      const pUp = part.toUpperCase();
+      if (part === "HC" || part === "Ra trực" || pUp === "RT") return;
+      if (part.includes("Trực Điểm chính 1") || pUp === "TRỰC") {
+        const st = getStaffById(staffId);
+        if (st && isClinicalLeadTitle(st.title) && !dayObj.main1) dayObj.main1 = staffId;
+        else if (!dayObj.main2) dayObj.main2 = staffId;
+        else dayObj.main1 = staffId;
+      } else if (part.includes("Trực Điểm chính 2")) {
+        dayObj.main2 = staffId;
+      } else if (part.includes("Trực ĐYT 2") || pUp === "TRỰC ĐYT 2") {
+        dayObj.dyt2 = staffId;
+      } else if (part.includes("Trực Điểm chính")) {
+        const st = getStaffById(staffId);
+        if (st && isClinicalLeadTitle(st.title)) dayObj.main1 = staffId;
+        else dayObj.main2 = staffId;
       } else {
-        const exists = dayObj.tasks.some(x =>
-          x.staffId === staffId &&
-          normalizeSessionLabel(x.session) === normalizeSessionLabel(sessionName) &&
-          x.type === mappedType &&
-          (x.note || "") === notePart
-        );
-        if (!exists) {
+        // Công tác / Tập huấn / Nghỉ / Khác
+        let type = part;
+        let note = "";
+        const dashIdx = part.indexOf(" - ");
+        if (dashIdx !== -1) {
+          type = expandAbbrType(part.slice(0, dashIdx).trim());
+          note = part.slice(dashIdx + 3).trim();
+        } else {
+          type = expandAbbrType(part);
+        }
+        if (!Array.isArray(dayObj.tasks)) dayObj.tasks = [];
+        const existing = dayObj.tasks.find(t => t.staffId === staffId && t.type === type && t.note === note);
+        if (existing) {
+          if (existing.session !== sessionLabel) existing.session = "Cả ngày";
+        } else {
           dayObj.tasks.push({
-            id: "imp_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6),
+            id: "t_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6),
             staffId,
-            session: normalizeSessionLabel(sessionName),
-            type: mappedType,
-            note: notePart
+            session: sessionLabel,
+            type,
+            note
           });
         }
       }
     });
   }
 
-  function importFormattedExcelFile(file) {
-    if (!state.isAdmin) return;
+  function importFromExcelFile(file) {
     if (typeof XLSX === "undefined") {
-      showModal("Lỗi thư viện Excel", "<p>Chưa tải được thư viện đọc Excel.</p>");
+      showModal("Lỗi thư viện Excel", "<p>Chưa tải được thư viện đọc file Excel. Vui lòng kiểm tra kết nối mạng.</p>");
       return;
     }
 
     const reader = new FileReader();
-    reader.onload = function(evt) {
-      safeRun(() => {
-        const data = new Uint8Array(evt.target.result);
-        const wb = XLSX.read(data, { type: "array", cellDates: true });
+    reader.onload = (ev) => safeRun(() => {
+      const data = new Uint8Array(ev.target.result);
+      const wb = XLSX.read(data, { type: "array" });
 
-        if (wb.Sheets["DS_Nhan_Su"]) {
-          const nsRows = XLSX.utils.sheet_to_json(wb.Sheets["DS_Nhan_Su"], { defval: "" });
-          if (nsRows.length > 0) {
-            const importedStaff = nsRows
-              .filter(r => String(r["Họ và tên"] || "").trim())
-              .map((r, idx) => {
-                const name = String(r["Họ và tên"]).trim();
-                const existing = state.staff.find(s => s.name.toLowerCase() === name.toLowerCase());
-                const modeStr = String(r["Chế độ trực"] || "").toLowerCase();
-                return {
-                  id: existing ? existing.id : ("s_imp_" + (idx + 1) + "_" + Date.now().toString(36)),
-                  name,
-                  dept: String(r["Đơn vị công tác"] || (existing && existing.dept) || "Khoa Khám bệnh").trim(),
-                  workLocation: existing ? existing.workLocation : (String(r["Đơn vị công tác"] || "").includes("2") ? "Điểm Y tế 2" : "Điểm chính"),
-                  title: String(r["Chức danh"] || (existing && existing.title) || "Điều dưỡng").trim(),
-                  position: String(r["Chức vụ"] || (existing && existing.position) || "Nhân viên").trim(),
-                  contract: String(r["Loại hợp đồng"] || (existing && existing.contract) || "Viên chức").trim(),
-                  isAdminOnly: modeStr.includes("hành chính") || modeStr.includes("không trực")
-                };
-              });
-            if (importedStaff.length > 0) {
-              state.staff = normalizeStaffList(importedStaff);
-            }
-          }
-        }
-
-        let targetYm = state.selectedMonth;
-        let importedCount = 0;
-
-        if (wb.Sheets["Import_Export"]) {
-          const ieRows = XLSX.utils.sheet_to_json(wb.Sheets["Import_Export"], { defval: "" });
-          ieRows.forEach(r => {
+      // 1. Cập nhật DS_Nhan_Su nếu có sheet DS_Nhan_Su
+      if (wb.SheetNames.includes("DS_Nhan_Su")) {
+        const rowsDS = XLSX.utils.sheet_to_json(wb.Sheets["DS_Nhan_Su"], { defval: "" });
+        if (rowsDS.length > 0 && rowsDS[0]["Họ và tên"]) {
+          const importedStaff = [];
+          rowsDS.forEach((r, idx) => {
             const name = String(r["Họ và tên"] || "").trim();
             if (!name) return;
-            let st = state.staff.find(s => s.name.toLowerCase() === name.toLowerCase());
-            if (!st) {
-              st = {
-                id: "s_imp_" + Math.random().toString(36).slice(2, 7),
-                name,
-                dept: String(r["Đơn vị công tác"] || "Khoa Khám bệnh").trim(),
-                workLocation: String(r["Đơn vị công tác"] || "").includes("2") ? "Điểm Y tế 2" : "Điểm chính",
-                title: String(r["Chức danh"] || "Điều dưỡng").trim(),
-                position: String(r["Chức vụ"] || "Nhân viên").trim(),
-                contract: String(r["Loại hợp đồng"] || "Viên chức").trim(),
-                isAdminOnly: String(r["Chế độ trực"] || "").toLowerCase().includes("hành chính")
-              };
-              state.staff.push(st);
-              state.staff = normalizeStaffList(state.staff);
-            }
-            const iso = parseVNDateToISO(r["Ngày"], targetYm);
-            if (!iso) return;
-            targetYm = iso.slice(0, 7);
-            applyCellTokensToSchedule(st.id, iso, "Buổi sáng", r["Sáng"]);
-            applyCellTokensToSchedule(st.id, iso, "Buổi chiều", r["Chiều"]);
-            importedCount++;
+            const existing = state.staff.find(s => s.name === name);
+            importedStaff.push({
+              id: existing ? existing.id : ("s_imp_" + (idx + 1) + "_" + Date.now()),
+              name,
+              dept: String(r["Đơn vị công tác"] || "Khoa Phòng bệnh").trim(),
+              title: String(r["Chức danh"] || "Điều dưỡng").trim(),
+              position: String(r["Chức vụ"] || "Nhân viên").trim(),
+              contract: String(r["Loại hợp đồng"] || "Viên chức").trim(),
+              isAdminOnly: String(r["Chế độ trực"] || "").trim() === "Hành chính"
+            });
           });
-        } else {
-          const firstSheetName = wb.SheetNames[0];
-          const ws = wb.Sheets[firstSheetName];
-          const aoa = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
-          if (aoa.length >= 8) {
-            const titleCell = String((aoa[3] && aoa[3][0]) || "");
-            const tm = titleCell.match(/THÁNG\s+(\d{1,2})\s+NĂM\s+(\d{4})/i);
-            if (tm) {
-              targetYm = `${tm[2]}-${String(tm[1]).padStart(2, "0")}`;
-            }
-            const dateRow = aoa[6] || [];
-            const dayCols = [];
-            for (let c = 6; c < dateRow.length; c++) {
-              const iso = parseVNDateToISO(dateRow[c], targetYm);
-              if (iso) {
-                dayCols.push({ colIdx: c, iso });
-                targetYm = iso.slice(0, 7);
-              }
-            }
-            for (let r = 7; r < aoa.length; r += 2) {
-              const rowM = aoa[r] || [];
-              const rowA = aoa[r + 1] || [];
-              const name = String(rowM[1] || "").trim();
-              if (!name) continue;
-              let st = state.staff.find(s => s.name.toLowerCase() === name.toLowerCase());
-              if (!st) {
-                st = {
-                  id: "s_imp_" + Math.random().toString(36).slice(2, 7),
-                  name,
-                  dept: String(rowM[2] || "Khoa Khám bệnh").trim(),
-                  workLocation: String(rowM[2] || "").includes("2") ? "Điểm Y tế 2" : "Điểm chính",
-                  position: String(rowM[3] || "Nhân viên").trim(),
-                  title: String(rowM[4] || "Điều dưỡng").trim(),
-                  contract: "Viên chức",
-                  isAdminOnly: false
-                };
-                state.staff.push(st);
-                state.staff = normalizeStaffList(state.staff);
-              }
-              dayCols.forEach(dc => {
-                const valM = rowM[dc.colIdx];
-                const valA = (String(rowA[5] || "").toLowerCase().includes("chiều")) ? rowA[dc.colIdx] : valM;
-                applyCellTokensToSchedule(st.id, dc.iso, "Buổi sáng", valM);
-                applyCellTokensToSchedule(st.id, dc.iso, "Buổi chiều", valA);
-                importedCount++;
-              });
-            }
+          if (importedStaff.length > 0) {
+            state.staff = normalizeStaffList(importedStaff);
           }
         }
+      }
 
-        state.selectedMonth = targetYm;
-        document.getElementById("monthPicker").value = targetYm;
+      // 2. Ưu tiên đọc dữ liệu chi tiết từ sheet Import_Export nếu có
+      if (wb.SheetNames.includes("Import_Export")) {
+        const rowsIE = XLSX.utils.sheet_to_json(wb.Sheets["Import_Export"], { defval: "" });
+        const datesCleared = new Set();
+        let detectedMonth = "";
+
+        rowsIE.forEach(r => {
+          const name = String(r["Họ và tên"] || "").trim();
+          const iso = parseVNDateToISO(r["Ngày"]);
+          if (!name || !iso) return;
+
+          if (!detectedMonth) detectedMonth = iso.slice(0, 7);
+          if (!datesCleared.has(iso)) {
+            state.schedule[iso] = { main1: "", main2: "", dyt2: "", tasks: [] };
+            datesCleared.add(iso);
+          }
+
+          let st = state.staff.find(s => s.name === name);
+          if (!st) {
+            st = {
+              id: "s_ie_" + Date.now() + "_" + Math.random().toString(36).slice(2, 5),
+              name,
+              dept: String(r["Đơn vị công tác"] || "Khoa Phòng bệnh").trim(),
+              title: String(r["Chức danh"] || "Điều dưỡng").trim(),
+              position: String(r["Chức vụ"] || "Nhân viên").trim(),
+              contract: String(r["Loại hợp đồng"] || "Viên chức").trim(),
+              isAdminOnly: String(r["Chế độ trực"] || "").trim() === "Hành chính"
+            };
+            state.staff.push(st);
+          }
+
+          applyCellTokensToSchedule(st.id, iso, "Buổi Sáng", r["Sáng"]);
+          applyCellTokensToSchedule(st.id, iso, "Buổi Chiều", r["Chiều"]);
+        });
+
+        state.staff = normalizeStaffList(state.staff);
+        if (detectedMonth) {
+          state.selectedMonth = detectedMonth;
+          document.getElementById("monthPicker").value = detectedMonth;
+        }
         saveState();
         renderAll();
-        showModal("Nhập Excel Thành Công", `<p>Đã đồng bộ dữ liệu từ file <b>${escapeHtml(file.name)}</b> cho tháng <b>${formatVNMonthYear(targetYm)}</b> (${importedCount} lượt cập nhật).</p>`);
-      });
-    };
+        showModal("Nhập File Excel Thành Công", `<p>Đã đồng bộ dữ liệu nhân sự và lịch công tác tháng <b>${escapeHtml(formatVNMonthYear(state.selectedMonth))}</b> từ file Excel.</p>`);
+        return;
+      }
+
+      // 3. Nếu chỉ có sheet Lich_Cong_Tac_Thang (định dạng bảng ngang gộp ô)
+      const mainSheetName = wb.SheetNames.includes("Lich_Cong_Tac_Thang") ? "Lich_Cong_Tac_Thang" : wb.SheetNames[0];
+      const ws = wb.Sheets[mainSheetName];
+      const matrix = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
+      const merges = ws["!merges"] || [];
+
+      // Tìm năm và tháng từ dòng tiêu đề (dòng 4)
+      let monthStr = state.selectedMonth.slice(5, 7);
+      let yearStr = state.selectedMonth.slice(0, 4);
+      for (let r = 0; r < Math.min(6, matrix.length); r++) {
+        const line = (matrix[r] || []).join(" ");
+        const mTitle = line.match(/THÁNG\s*(\d{1,2})\s*NĂM\s*(\d{4})/i);
+        if (mTitle) {
+          monthStr = mTitle[1].padStart(2, "0");
+          yearStr = mTitle[2];
+          break;
+        }
+      }
+
+      // Dòng 7 (index 6) chứa DD/MM từ cột G (index 6)
+      const dateRow = matrix[6] || [];
+      const colDates = {};
+      for (let c = 6; c < dateRow.length; c++) {
+        const cellTxt = String(dateRow[c] || "").trim();
+        const mDay = cellTxt.match(/^(\d{1,2})\/(\d{1,2})$/);
+        if (mDay) {
+          const iso = `${yearStr}-${mDay[2].padStart(2, "0")}-${mDay[1].padStart(2, "0")}`;
+          colDates[c] = iso;
+          state.schedule[iso] = { main1: "", main2: "", dyt2: "", tasks: [] };
+        }
+      }
+
+      // Đọc từng cặp dòng Sáng / Chiều bắt đầu từ index 7
+      for (let r = 7; r < matrix.length - 1; r += 2) {
+        const rowM = matrix[r] || [];
+        const rowA = matrix[r + 1] || [];
+        const name = String(rowM[1] || "").trim();
+        if (!name || name === "NGƯỜI LẬP BẢNG") break;
+
+        let st = state.staff.find(s => s.name === name);
+        if (!st) {
+          st = {
+            id: "s_m_" + Date.now() + "_" + r,
+            name,
+            dept: String(rowM[2] || "Khoa Phòng bệnh").trim(),
+            position: String(rowM[3] || "Nhân viên").trim(),
+            title: String(rowM[4] || "Điều dưỡng").trim(),
+            contract: "Viên chức",
+            isAdminOnly: false
+          };
+          state.staff.push(st);
+        }
+
+        Object.keys(colDates).forEach(cStr => {
+          const c = Number(cStr);
+          const iso = colDates[c];
+          const valM = String(rowM[c] || "").trim();
+          let valA = String(rowA[c] || "").trim();
+          const isVerticalMerged = merges.some(mg => mg.s.r === r && mg.e.r === r + 1 && mg.s.c === c && mg.e.c === c);
+          if (isVerticalMerged) valA = valM;
+
+          applyCellTokensToSchedule(st.id, iso, "Buổi Sáng", valM);
+          applyCellTokensToSchedule(st.id, iso, "Buổi Chiều", valA);
+        });
+      }
+
+      state.staff = normalizeStaffList(state.staff);
+      state.selectedMonth = `${yearStr}-${monthStr}`;
+      document.getElementById("monthPicker").value = state.selectedMonth;
+      saveState();
+      renderAll();
+      showModal("Nhập File Excel Thành Công", `<p>Đã nạp lịch công tác tháng <b>${monthStr}/${yearStr}</b> từ bảng lịch Excel.</p>`);
+    });
     reader.readAsArrayBuffer(file);
   }
 
-  /* Navigation & Event Listeners */
-  function switchSheet(sheetId) {
-    state.activeSheet = sheetId;
-    document.querySelectorAll(".sheet-section").forEach(sec => {
-      sec.classList.toggle("hidden", sec.id !== `sheet-${sheetId}`);
-    });
-    document.querySelectorAll(".nav-item").forEach(btn => {
-      btn.classList.toggle("active", btn.dataset.sheet === sheetId);
-    });
-    const overviewBlock = document.getElementById("topOverviewBlock");
-    if (overviewBlock) {
-      overviewBlock.classList.toggle("hidden", sheetId === "4" || sheetId === "5" || sheetId === "6");
-    }
-    const cloudCard = document.getElementById("cloudConfigCard");
-    if (cloudCard) {
-      cloudCard.classList.toggle("hidden", !(state.isAdmin && sheetId === "6"));
-    }
-    if (sheetId === "5") {
-      renderTodayPresence();
-      renderStatsTable();
-    }
-    if (sheetId === "6") {
-      renderLeadersList();
-      renderEmailSubscribersUI();
-    }
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }
-
+  /* Bind Events */
   function bindEvents() {
-    document.querySelectorAll(".nav-item").forEach(btn => {
-      btn.addEventListener("click", () => safeRun(() => switchSheet(btn.dataset.sheet)));
-    });
-
-    document.getElementById("modalCloseBtn").addEventListener("click", closeModal);
-    document.getElementById("customModal").addEventListener("click", (e) => {
+    document.getElementById("modalCloseBtn").onclick = closeModal;
+    document.getElementById("customModal").onclick = (e) => {
       if (e.target.id === "customModal") closeModal();
+    };
+
+    document.querySelectorAll(".nav-item").forEach(btn => {
+      btn.onclick = () => safeRun(() => {
+        const sheet = btn.getAttribute("data-sheet");
+        state.activeSheet = sheet;
+        document.querySelectorAll(".nav-item").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        document.querySelectorAll(".sheet-section").forEach(sec => sec.classList.add("hidden"));
+        document.getElementById(`sheet-${sheet}`).classList.remove("hidden");
+        const topOv = document.getElementById("topOverviewBlock");
+        if (topOv) {
+          topOv.classList.toggle("hidden", sheet === "4" || sheet === "5" || sheet === "6");
+        }
+        const cloudCard = document.getElementById("cloudConfigCard");
+        if (cloudCard) {
+          cloudCard.classList.toggle("hidden", !(state.isAdmin && sheet === "6"));
+        }
+        if (sheet === "2") {
+          renderInlineMultiCalendar();
+        }
+      });
     });
 
-    document.getElementById("btnToggleAdmin").addEventListener("click", () => safeRun(() => {
+    document.getElementById("btnToggleAdmin").onclick = () => safeRun(() => {
       if (state.isAdmin) {
         state.isAdmin = false;
         renderAll();
-      } else {
-        openPinLoginModal();
-      }
-    }));
-
-    const btnEditLeaders = document.getElementById("btnEditLeadersModal");
-    if (btnEditLeaders) {
-      btnEditLeaders.addEventListener("click", () => safeRun(openLeadersEditorModal));
-    }
-
-    const btnOpenRec6 = document.getElementById("btnOpenEmailRecoveryFromSheet6");
-    if (btnOpenRec6) {
-      btnOpenRec6.addEventListener("click", () => safeRun(openAdminEmailRecoveryModal));
-    }
-
-    const btnSendRecNow = document.getElementById("btnSendRecoveryEmailNow");
-    if (btnSendRecNow) {
-      btnSendRecNow.addEventListener("click", () => safeRun(() => {
-        const subject = encodeURIComponent("[Trạm Y Tế Hưng Long] Mã xác thực & khôi phục hệ thống");
-        const body = encodeURIComponent(
-          `Thông tin khôi phục hệ thống Trạm Y tế xã Hưng Long:\n` +
-          `Email khôi phục: ${RECOVERY_ADMIN_EMAIL}\n` +
-          `Mã PIN hiện tại: ${state.adminPin}\n` +
-          `Thời gian: ${new Date().toLocaleString("vi-VN")}`
-        );
-        window.location.href = `mailto:${RECOVERY_ADMIN_EMAIL}?subject=${subject}&body=${body}`;
-      }));
-    }
-
-    const btnToggleCloud = document.getElementById("btnToggleCloudPanel");
-    if (btnToggleCloud) {
-      btnToggleCloud.addEventListener("click", () => safeRun(() => {
-        const body = document.getElementById("cloudConfigBody");
-        const lbl = document.getElementById("btnCloudExpandLabel");
-        if (!body) return;
-        const willOpen = body.classList.contains("hidden");
-        body.classList.toggle("hidden", !willOpen);
-        if (lbl) lbl.textContent = willOpen ? "Thu gọn" : "Mở rộng";
-      }));
-    }
-
-    document.getElementById("btnConnectCloud").addEventListener("click", () => safeRun(() => {
-      const urlVal = document.getElementById("inputFirebaseUrl").value.trim().replace(/\/+$/, "");
-      const roomVal = document.getElementById("inputRoomId").value.trim() || "tram-y-te";
-      if (!urlVal.startsWith("https://")) {
-        showModal("Thiếu Firebase URL", "<p>Vui lòng nhập đúng đường dẫn Firebase Realtime Database bắt đầu bằng <b>https://</b>.</p>");
         return;
       }
-      state.cloud.url = urlVal;
-      state.cloud.room = roomVal;
+      openPinLoginModal();
+    });
+
+    document.getElementById("btnToggleCloudPanel").onclick = () => safeRun(() => {
+      const body = document.getElementById("cloudConfigBody");
+      const btnLbl = document.getElementById("btnCloudExpandLabel");
+      const willOpen = body.classList.contains("hidden");
+      body.classList.toggle("hidden", !willOpen);
+      if (btnLbl) btnLbl.textContent = willOpen ? "Thu gọn" : "Mở rộng";
+    });
+
+    document.getElementById("btnConnectCloud").onclick = () => safeRun(() => {
+      const url = document.getElementById("inputFirebaseUrl").value.trim().replace(/\/+$/, "");
+      const room = document.getElementById("inputRoomId").value.trim() || "tram-y-te";
+      if (!url || !url.startsWith("https://")) {
+        showModal("Thiếu đường dẫn Firebase", "<p>Vui lòng nhập đúng Firebase Realtime Database URL bắt đầu bằng <code>https://</code>.</p>");
+        return;
+      }
+      state.cloud.url = url;
+      state.cloud.room = room;
       saveState(false);
       startCloudSync();
-    }));
+    });
 
-    document.getElementById("btnDisconnectCloud").addEventListener("click", () => safeRun(() => {
+    document.getElementById("btnDisconnectCloud").onclick = () => safeRun(() => {
       if (cloudPollTimer) clearInterval(cloudPollTimer);
       state.cloud.connected = false;
       state.cloud.url = "";
       saveState(false);
       updateCloudUI();
-    }));
+    });
 
-    document.getElementById("btnCopyShareLink").addEventListener("click", () => safeRun(() => {
-      const urlVal = document.getElementById("inputFirebaseUrl").value.trim().replace(/\/+$/, "");
-      const roomVal = encodeURIComponent(document.getElementById("inputRoomId").value.trim() || "tram-y-te");
-      if (!urlVal) {
-        showModal("Chưa có Firebase URL", "<p>Vui lòng nhập Firebase Database URL trước khi tạo link chia sẻ.</p>");
+    document.getElementById("btnCopyShareLink").onclick = () => safeRun(() => {
+      const url = document.getElementById("inputFirebaseUrl").value.trim().replace(/\/+$/, "") || state.cloud.url;
+      const room = document.getElementById("inputRoomId").value.trim() || state.cloud.room || "tram-y-te";
+      if (!url) {
+        showModal("Chưa có URL Firebase", "<p>Hãy dán Firebase Database URL và bấm Kết nối trước khi tạo link chia sẻ.</p>");
         return;
       }
-      const base = window.location.href.split("?")[0];
-      const shareUrl = `${base}?db=${encodeURIComponent(urlVal)}&room=${roomVal}`;
+      const baseLoc = window.location.href.split("?")[0];
+      const shareUrl = `${baseLoc}?db=${encodeURIComponent(url)}&room=${encodeURIComponent(room)}`;
       const box = document.getElementById("shareLinkBox");
       const out = document.getElementById("outputShareLink");
-      out.value = shareUrl;
       box.classList.remove("hidden");
+      out.value = shareUrl;
       out.select();
-      if (navigator.clipboard) {
-        navigator.clipboard.writeText(shareUrl).catch(() => {});
-      }
-    }));
+      if (navigator.clipboard) navigator.clipboard.writeText(shareUrl).catch(() => {});
+      showModal("Đã Tạo Link Chia Sẻ", `<p>Link tự động kết nối phòng <b>${escapeHtml(room)}</b> đã sẵn sàng. Hãy sao chép đường link bên dưới gửi cho nhân viên:</p><input type="text" class="form-control" value="${escapeHtml(shareUrl)}" readonly onclick="this.select()" />`);
+    });
 
     const monthPicker = document.getElementById("monthPicker");
     monthPicker.value = state.selectedMonth;
-    monthPicker.addEventListener("change", () => safeRun(() => {
-      if (monthPicker.value) {
-        state.selectedMonth = monthPicker.value;
-        saveState();
-        renderSummaryAndBanner();
-        renderScheduleTable();
-        renderTodayPresence();
-        renderStatsTable();
-      }
-    }));
+    monthPicker.onchange = () => safeRun(() => {
+      state.selectedMonth = monthPicker.value || getTodayISO().slice(0, 7);
+      saveState(false);
+      renderAll();
+    });
 
-    const presencePicker = document.getElementById("presenceDatePicker");
-    if (presencePicker) {
-      presencePicker.value = state.presenceDateISO || getTodayISO();
-      presencePicker.addEventListener("change", () => safeRun(() => {
-        if (presencePicker.value) {
-          state.presenceDateISO = presencePicker.value;
-          renderTodayPresence();
-        }
-      }));
-    }
-
-    const presenceSessSel = document.getElementById("presenceSessionSelect");
-    if (presenceSessSel) {
-      presenceSessSel.value = normalizeSessionLabel(state.presenceSession) || getCurrentSessionLabel();
-      presenceSessSel.addEventListener("change", () => safeRun(() => {
-        state.presenceSession = normalizeSessionLabel(presenceSessSel.value);
-        renderTodayPresence();
-      }));
-    }
-
-    const btnPresenceToday = document.getElementById("btnPresenceToday");
-    if (btnPresenceToday) {
-      btnPresenceToday.addEventListener("click", () => safeRun(() => {
-        const nowIso = getTodayISO();
-        const nowSess = getCurrentSessionLabel();
-        state.presenceDateISO = nowIso;
-        state.presenceSession = nowSess;
-        if (presencePicker) presencePicker.value = nowIso;
-        if (presenceSessSel) presenceSessSel.value = nowSess;
-        renderTodayPresence();
-      }));
-    }
+    document.getElementById("filterStaffSelect").onchange = (e) => safeRun(() => {
+      state.filterStaffId = e.target.value;
+      renderScheduleTable();
+    });
 
     const filterSearchInp = document.getElementById("filterStaffSearchInput");
     const filterDropdown = document.getElementById("filterStaffDropdown");
-    const filterSel = document.getElementById("filterStaffSelect");
-    if (filterSearchInp && filterDropdown && filterSel) {
+    if (filterSearchInp && filterDropdown) {
       filterSearchInp.addEventListener("focus", () => {
-        populateFilterStaffDropdown(filterSearchInp.value === "Tất cả nhân sự" ? "" : filterSearchInp.value);
-        filterDropdown.classList.remove("hidden");
-      });
-      filterSearchInp.addEventListener("click", () => {
-        populateFilterStaffDropdown(filterSearchInp.value === "Tất cả nhân sự" ? "" : filterSearchInp.value);
+        if (filterSearchInp.value === "Tất cả nhân sự") {
+          filterSearchInp.value = "";
+        }
+        populateFilterStaffDropdown(filterSearchInp.value);
         filterDropdown.classList.remove("hidden");
       });
       filterSearchInp.addEventListener("input", () => {
-        populateFilterStaffDropdown(filterSearchInp.value);
+        const val = filterSearchInp.value;
+        if (!val.trim()) {
+          state.filterStaffId = "ALL";
+          document.getElementById("filterStaffSelect").value = "ALL";
+          renderScheduleTable();
+        }
+        populateFilterStaffDropdown(val);
         filterDropdown.classList.remove("hidden");
       });
       filterSearchInp.addEventListener("blur", () => {
         setTimeout(() => {
-          filterDropdown.classList.add("hidden");
-          if (!filterSearchInp.value.trim()) {
-            filterSel.value = "ALL";
-            state.filterStaffId = "ALL";
+          if (!filterSearchInp.value.trim() && state.filterStaffId === "ALL") {
             filterSearchInp.value = "Tất cả nhân sự";
-            renderScheduleTable();
           }
-        }, 140);
+        }, 160);
+      });
+      document.addEventListener("click", (ev) => {
+        if (!document.getElementById("filterStaffCombo")?.contains(ev.target)) {
+          filterDropdown.classList.add("hidden");
+          if (!filterSearchInp.value.trim() && state.filterStaffId === "ALL") {
+            filterSearchInp.value = "Tất cả nhân sự";
+          }
+        }
       });
     }
 
-    document.getElementById("chkOnlyWarnings").addEventListener("change", (e) => safeRun(() => {
+    document.getElementById("chkOnlyWarnings").onchange = (e) => safeRun(() => {
       state.onlyWarnings = e.target.checked;
       renderScheduleTable();
-    }));
-
-    document.getElementById("btnExportExcel").addEventListener("click", () => safeRun(openExportOptionsModal));
-
-    document.getElementById("btnImportExcelTrigger").addEventListener("click", () => safeRun(() => {
-      if (!state.isAdmin) return;
-      document.getElementById("inputExcelFile").value = "";
-      document.getElementById("inputExcelFile").click();
-    }));
-
-    document.getElementById("inputExcelFile").addEventListener("change", (e) => {
-      const f = e.target.files && e.target.files[0];
-      if (f) importFormattedExcelFile(f);
     });
 
-    document.getElementById("btnPrint").addEventListener("click", () => window.print());
+    document.getElementById("btnExportExcel").onclick = () => safeRun(openExportOptionsModal);
+    document.getElementById("btnImportExcelTrigger").onclick = () => {
+      if (!state.isAdmin) {
+        showModal("Yêu cầu quyền Admin", "<p>Vui lòng bấm <b>Đăng nhập Admin</b> ở góc trên bên phải trước khi nhập dữ liệu từ file Excel.</p>");
+        return;
+      }
+      document.getElementById("inputExcelFile").click();
+    };
+    document.getElementById("inputExcelFile").onchange = (e) => safeRun(() => {
+      const file = e.target.files[0];
+      if (!file) return;
+      importFromExcelFile(file);
+      e.target.value = "";
+    });
 
-    document.getElementById("btnAutoSchedule").addEventListener("click", () => safeRun(() => {
+    const presencePicker = document.getElementById("presenceDatePicker");
+    const presenceSessionSel = document.getElementById("presenceSessionSelect");
+    if (presencePicker) {
+      presencePicker.value = state.presenceDateISO || getTodayISO();
+      presencePicker.onchange = (e) => safeRun(() => {
+        const picked = e.target.value;
+        if (/^\d{4}-\d{2}-\d{2}$/.test(picked)) {
+          state.presenceDateISO = picked;
+          renderTodayPresence();
+        }
+      });
+    }
+    if (presenceSessionSel) {
+      presenceSessionSel.value = state.presenceSession || getCurrentSessionLabel();
+      presenceSessionSel.onchange = (e) => safeRun(() => {
+        state.presenceSession = e.target.value || getCurrentSessionLabel();
+        renderTodayPresence();
+      });
+    }
+    document.getElementById("btnPresenceToday").onclick = () => safeRun(() => {
+      const tIso = getTodayISO();
+      const curSess = getCurrentSessionLabel();
+      state.presenceDateISO = tIso;
+      state.presenceSession = curSess;
+      if (presencePicker) presencePicker.value = tIso;
+      if (presenceSessionSel) presenceSessionSel.value = curSess;
+      renderTodayPresence();
+    });
+
+    document.getElementById("btnPrint").onclick = () => safeRun(() => window.print());
+    document.getElementById("btnAutoSchedule").onclick = () => safeRun(() => {
       if (!state.isAdmin) return;
       confirmActionWarningModal({
-        title: `Tự Động Xếp Lịch Tháng ${formatVNMonthYear(state.selectedMonth)}`,
-        warningText: `Cảnh báo: Thao tác này sẽ ghi đè toàn bộ ca trực đã xếp trong tháng ${formatVNMonthYear(state.selectedMonth)}.`,
-        detailHtml: "Các lịch công tác/nghỉ đột xuất đã duyệt vẫn được giữ lại, nhưng các ca trực cũ sẽ được xếp lại từ đầu.",
-        confirmLabel: "Xác nhận xếp lại toàn tháng",
+        title: "Cảnh Báo Xếp Lịch Tự Động Cả Tháng",
+        warningText: `Xếp lịch tự động sẽ ghi đè các ca trực hiện có trong tháng ${formatVNMonthYear(state.selectedMonth)}.`,
+        detailHtml: "Vui lòng xác nhận nếu bạn chắc chắn muốn chạy xếp lịch lại toàn bộ tháng.",
+        confirmLabel: "Xác nhận xếp lại tháng",
         cancelLabel: "Huỷ bỏ",
         confirmClass: "btn-primary",
         onConfirm: () => autoGenerateSchedule(false)
       });
-    }));
+    });
 
-    document.getElementById("btnFillEmpty").addEventListener("click", () => safeRun(() => {
+    document.getElementById("btnFillEmpty").onclick = () => safeRun(() => {
       if (!state.isAdmin) return;
       confirmActionWarningModal({
-        title: `Điền Ô Trống Tháng ${formatVNMonthYear(state.selectedMonth)}`,
-        warningText: `Hệ thống sẽ tự động điền nhân sự trực vào các ô còn trống trong tháng ${formatVNMonthYear(state.selectedMonth)}.`,
-        detailHtml: "Các ngày đã có người trực sẽ được giữ nguyên, chỉ bổ sung vào các vị trí trống.",
+        title: "Xác Nhận Điền Ô Trống Trong Tháng",
+        warningText: `Hệ thống sẽ tự động điền các vị trí trực còn trống của tháng ${formatVNMonthYear(state.selectedMonth)}.`,
+        detailHtml: "Các ô đã có người trực trước đó sẽ được giữ nguyên.",
         confirmLabel: "Xác nhận điền ô trống",
         cancelLabel: "Huỷ bỏ",
         confirmClass: "btn-amber",
         onConfirm: () => autoGenerateSchedule(true)
       });
-    }));
+    });
 
-    const btnManageHolidays = document.getElementById("btnManageHolidays");
-    if (btnManageHolidays) {
-      btnManageHolidays.addEventListener("click", () => safeRun(openHolidayManagerModal));
+    const btnDelProcessed = document.getElementById("btnDeleteProcessedRegs");
+    if (btnDelProcessed) {
+      btnDelProcessed.onclick = () => safeRun(() => {
+        if (!state.isAdmin) return;
+        const oldCount = state.registrations.filter(r => r.status !== "pending").length;
+        if (!oldCount) {
+          showModal("Không có đăng ký cũ", "<p style='margin:0;'>Hiện không có đăng ký cũ (đã duyệt hoặc từ chối) để xoá.</p>");
+          return;
+        }
+        confirmActionWarningModal({
+          title: "Xoá Đăng Ký Cũ",
+          warningText: `Bạn đang chuẩn bị xoá ${oldCount} đăng ký cũ (đã duyệt hoặc từ chối).`,
+          detailHtml: "Các đăng ký đang ở trạng thái <b>Chờ duyệt</b> sẽ được giữ lại.",
+          confirmLabel: "Xác nhận xoá",
+          cancelLabel: "Huỷ bỏ",
+          confirmClass: "btn-danger",
+          onConfirm: () => {
+            state.registrations = state.registrations.filter(r => r.status === "pending");
+            saveState();
+            renderAll();
+          }
+        });
+      });
     }
 
-    document.getElementById("btnExportJson").addEventListener("click", () => safeRun(() => {
-      if (!state.isAdmin) return;
-      const backupObj = {
-        app: "TYT_HUNG_LONG_SCHEDULE",
-        exportedAt: new Date().toISOString(),
-        selectedMonth: state.selectedMonth,
-        staff: state.staff,
-        leaders: state.leaders,
-        schedule: state.schedule,
-        registrations: state.registrations,
-        emailSubscribers: state.emailSubscribers,
-        customHolidays: state.customHolidays || {},
-        disabledHolidays: state.disabledHolidays || {}
-      };
-      const blob = new Blob([JSON.stringify(backupObj, null, 2)], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `Lich_Truc_TYT_Hung_Long_${state.selectedMonth}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-    }));
+    document.getElementById("btnManageHolidays")?.addEventListener("click", () => safeRun(openHolidayManagerModal));
 
-    document.getElementById("btnImportJsonTrigger").addEventListener("click", () => safeRun(() => {
+    document.getElementById("btnClearMonth").onclick = () => safeRun(() => {
       if (!state.isAdmin) return;
-      document.getElementById("inputJsonFile").value = "";
-      document.getElementById("inputJsonFile").click();
-    }));
-
-    document.getElementById("inputJsonFile").addEventListener("change", (e) => {
-      const f = e.target.files && e.target.files[0];
-      if (!f || !state.isAdmin) return;
-      const reader = new FileReader();
-      reader.onload = function(evt) {
-        safeRun(() => {
-          const parsed = JSON.parse(evt.target.result);
-          if (!parsed || typeof parsed !== "object") {
-            showModal("File JSON không hợp lệ", "<p>Không đọc được cấu trúc dữ liệu JSON.</p>");
-            return;
-          }
-          if (Array.isArray(parsed.staff) && parsed.staff.length > 0) {
-            state.staff = normalizeStaffList(parsed.staff);
-          }
-          if (Array.isArray(parsed.leaders) && parsed.leaders.length > 0) {
-            state.leaders = parsed.leaders;
-          }
-          if (parsed.schedule && typeof parsed.schedule === "object") {
-            state.schedule = parsed.schedule;
-          }
-          if (Array.isArray(parsed.registrations)) {
-            state.registrations = parsed.registrations;
-          }
-          if (Array.isArray(parsed.emailSubscribers)) {
-            state.emailSubscribers = parsed.emailSubscribers;
-          }
-          if (parsed.customHolidays && typeof parsed.customHolidays === "object") {
-            state.customHolidays = parsed.customHolidays;
-          }
-          if (parsed.disabledHolidays && typeof parsed.disabledHolidays === "object") {
-            state.disabledHolidays = parsed.disabledHolidays;
-          }
-          if (parsed.selectedMonth) {
-            state.selectedMonth = parsed.selectedMonth;
-            document.getElementById("monthPicker").value = state.selectedMonth;
-          }
+      const mDates = getMonthDates(state.selectedMonth);
+      confirmActionWarningModal({
+        title: "Cảnh Báo Xoá Toàn Bộ Lịch Tháng",
+        warningText: `Bạn đang chuẩn bị xoá toàn bộ dữ liệu lịch trực và công tác của tháng ${formatVNMonthYear(state.selectedMonth)} (${mDates.length} ngày).`,
+        detailHtml: "Hành động này sẽ xoá trắng lịch của tháng đang chọn.",
+        confirmLabel: "Xác nhận xoá lịch tháng",
+        cancelLabel: "Giữ nguyên lịch",
+        confirmClass: "btn-danger",
+        onConfirm: () => {
+          mDates.forEach(iso => { delete state.schedule[iso]; });
           dispatchEmailChangeNotification(
-            "Khôi phục / Nhập JSON",
-            `Đã nhập dữ liệu từ file ${f.name}`,
-            `Cập nhật tháng ${formatVNMonthYear(state.selectedMonth)}.`
+            "Xoá lịch tháng",
+            `Đã xoá lịch tháng ${formatVNMonthYear(state.selectedMonth)}`,
+            `Xoá dữ liệu lịch của ${mDates.length} ngày trong tháng ${formatVNMonthYear(state.selectedMonth)}.`,
+            mDates
           );
           saveState();
           renderAll();
-          showModal("Nhập JSON Thành Công", `<p>Đã khôi phục dữ liệu từ file <b>${escapeHtml(f.name)}</b>.</p>`);
-        });
-      };
-      reader.readAsText(f, "utf-8");
+        }
+      });
     });
 
-    document.getElementById("btnClearMonth").addEventListener("click", () => safeRun(() => {
+    document.getElementById("btnSubscribeEmail").onclick = () => safeRun(() => {
+      const emailInput = document.getElementById("inputNotifyEmail");
+      const staffSel = document.getElementById("selectNotifyStaff");
+      const emailVal = emailInput.value.trim().toLowerCase();
+      const staffIdVal = staffSel ? staffSel.value : "";
+
+      if (!isValidEmailAddress(emailVal)) {
+        showModal("Email không hợp lệ", "<p style='margin:0;color:#9f1239;'>Vui lòng nhập đúng định dạng địa chỉ email (ví dụ: ten@domain.com).</p>");
+        return;
+      }
+
+      if (!Array.isArray(state.emailSubscribers)) state.emailSubscribers = [];
+      const exists = state.emailSubscribers.some(item => item.email === emailVal);
+      if (exists) {
+        showModal("Email đã đăng ký", `<p style='margin:0;'>Địa chỉ <b>${escapeHtml(emailVal)}</b> đã có trong danh sách nhận thông báo thay đổi.</p>`);
+        return;
+      }
+
+      state.emailSubscribers.push({
+        id: "sub_" + Date.now(),
+        email: emailVal,
+        staffId: staffIdVal,
+        createdAt: Date.now()
+      });
+      emailInput.value = "";
+      saveState();
+      renderEmailSubscribersUI();
+      showModal("Đăng Ký Thành Công", `<p style='margin:0;'>Email <b>${escapeHtml(emailVal)}</b> sẽ nhận thông báo khi có thay đổi trên mọi hạng mục.</p>`);
+    });
+
+    document.getElementById("btnToggleEmailLog").onclick = () => safeRun(() => {
       if (!state.isAdmin) return;
-      const dates = getMonthDates(state.selectedMonth);
-      confirmActionWarningModal({
-        title: `Xoá Lịch Tháng ${formatVNMonthYear(state.selectedMonth)}`,
-        warningText: `Cảnh báo nghiêm trọng: Thao tác này sẽ xoá toàn bộ ${dates.length} ngày lịch trực và lịch công tác/nghỉ trong tháng ${formatVNMonthYear(state.selectedMonth)}.`,
-        detailHtml: "Dữ liệu sau khi xoá sẽ khó khôi phục nếu bạn chưa xuất file sao lưu (.JSON hoặc .xlsx).",
-        confirmLabel: "Xác nhận xoá toàn bộ lịch tháng",
-        cancelLabel: "Huỷ bỏ",
-        confirmClass: "btn-danger",
-        onConfirm: () => {
-          const changedDates = [];
-          dates.forEach(d => {
-            if (state.schedule[d]) {
-              delete state.schedule[d];
-              changedDates.push(d);
-            }
-          });
-          if (changedDates.length > 0) {
-            dispatchEmailChangeNotification(
-              "Xoá lịch tháng",
-              `Đã xoá toàn bộ lịch tháng ${formatVNMonthYear(state.selectedMonth)}`,
-              `Xoá dữ liệu ${changedDates.length} ngày trong tháng ${formatVNMonthYear(state.selectedMonth)}.`,
-              changedDates
-            );
-          }
-          saveState(true);
-          renderAll();
-        }
-      });
-    }));
-
-    const regDateInput = document.getElementById("regDateInput");
-    const inlineCalTitle = document.getElementById("inlineCalMonthTitle");
-    const inlineCalGrid = document.getElementById("inlineCalGrid");
-    const pickedSummaryEl = document.getElementById("pickedDatesSummary");
-    let calViewYm = (state.selectedMonth && /^\d{4}-\d{2}$/.test(state.selectedMonth))
-      ? state.selectedMonth
-      : getTodayISO().slice(0, 7);
-    let rangeAnchorIso = "";
-    let isDraggingDates = false;
-    let dragStartIso = "";
-
-    function setSelectedDatesList(list) {
-      const uniqueSorted = Array.from(new Set((list || []).filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d)))).sort();
-      selectedRegDates = uniqueSorted;
-      if (regDateInput) {
-        regDateInput.value = uniqueSorted[0] || "";
-      }
-      if (pickedSummaryEl) {
-        if (!uniqueSorted.length) {
-          pickedSummaryEl.textContent = "0 ngày đã chọn";
-        } else if (uniqueSorted.length === 1) {
-          pickedSummaryEl.textContent = `Đã chọn: ${formatVNDate(uniqueSorted[0])}`;
-        } else {
-          pickedSummaryEl.textContent = `Đã chọn ${uniqueSorted.length} ngày (${formatVNDate(uniqueSorted[0])} → ${formatVNDate(uniqueSorted[uniqueSorted.length - 1])})`;
-        }
-      }
-      renderMultiRegDatesChips();
-      renderInlineCalendar();
-    }
-
-    function selectDateRangeInclusive(dStart, dEnd) {
-      if (!dStart || !dEnd) return;
-      const a = dStart <= dEnd ? dStart : dEnd;
-      const b = dStart <= dEnd ? dEnd : dStart;
-      const days = [];
-      let cur = a;
-      let guard = 0;
-      while (cur <= b && guard < 180) {
-        days.push(cur);
-        cur = addDaysISO(cur, 1);
-        guard++;
-      }
-      setSelectedDatesList(days);
-    }
-
-    function renderInlineCalendar() {
-      if (!inlineCalGrid || !inlineCalTitle) return;
-      const [cy, cm] = calViewYm.split("-").map(Number);
-      inlineCalTitle.textContent = `Tháng ${String(cm).padStart(2, "0")}/${cy}`;
-
-      const firstDow = new Date(cy, cm - 1, 1).getDay();
-      const offsetMon = firstDow === 0 ? 6 : firstDow - 1;
-      const totalDays = new Date(cy, cm, 0).getDate();
-      const todayStr = getTodayISO();
-      const selectedSet = new Set(selectedRegDates);
-
-      const dHeaders = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
-      let html = dHeaders.map(h => `<div style="font-size:11px;font-weight:700;color:#64748b;padding:3px 0;">${h}</div>`).join("");
-
-      for (let i = 0; i < offsetMon; i++) {
-        html += `<div></div>`;
-      }
-
-      for (let day = 1; day <= totalDays; day++) {
-        const iso = `${cy}-${String(cm).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-        const isPicked = selectedSet.has(iso);
-        const isToday = iso === todayStr;
-        const bg = isPicked ? "#0f766e" : (isToday ? "#ccfbf1" : "#ffffff");
-        const fg = isPicked ? "#ffffff" : (isToday ? "#0f3d3e" : "#0f172a");
-        const brd = isPicked ? "#0f766e" : (isToday ? "#0d9488" : "#cbd5e1");
-
-        html += `<button type="button" data-cal-iso="${iso}" style="height:32px;border-radius:7px;border:1px solid ${brd};background:${bg};color:${fg};font-size:12px;font-weight:${isPicked || isToday ? "700" : "500"};cursor:pointer;padding:0;">${day}</button>`;
-      }
-
-      inlineCalGrid.innerHTML = html;
-
-      inlineCalGrid.querySelectorAll("button[data-cal-iso]").forEach(btn => {
-        const iso = btn.getAttribute("data-cal-iso");
-        btn.addEventListener("pointerdown", (ev) => {
-          ev.preventDefault();
-          isDraggingDates = true;
-          dragStartIso = iso;
-          if (ev.shiftKey && rangeAnchorIso) {
-            selectDateRangeInclusive(rangeAnchorIso, iso);
-          } else {
-            rangeAnchorIso = iso;
-            setSelectedDatesList([iso]);
-          }
-        });
-        btn.addEventListener("pointerenter", () => {
-          if (isDraggingDates && dragStartIso) {
-            selectDateRangeInclusive(dragStartIso, iso);
-          }
-        });
-      });
-    }
-
-    document.addEventListener("pointerup", () => {
-      isDraggingDates = false;
-      dragStartIso = "";
+      const box = document.getElementById("emailNotificationsLogBox");
+      if (box) box.classList.toggle("hidden");
     });
 
-    const btnCalPrev = document.getElementById("btnCalPrevMonth");
-    const btnCalNext = document.getElementById("btnCalNextMonth");
-    const btnClearPicked = document.getElementById("btnClearPickedDates");
-
-    if (btnCalPrev) {
-      btnCalPrev.addEventListener("click", () => {
-        const [cy, cm] = calViewYm.split("-").map(Number);
-        const prevDt = new Date(cy, cm - 2, 1);
-        calViewYm = `${prevDt.getFullYear()}-${String(prevDt.getMonth() + 1).padStart(2, "0")}`;
-        renderInlineCalendar();
-      });
-    }
-
-    if (btnCalNext) {
-      btnCalNext.addEventListener("click", () => {
-        const [cy, cm] = calViewYm.split("-").map(Number);
-        const nextDt = new Date(cy, cm, 1);
-        calViewYm = `${nextDt.getFullYear()}-${String(nextDt.getMonth() + 1).padStart(2, "0")}`;
-        renderInlineCalendar();
-      });
-    }
-
-    if (btnClearPicked) {
-      btnClearPicked.addEventListener("click", () => {
-        rangeAnchorIso = "";
-        setSelectedDatesList([]);
-      });
-    }
-
-    const initToday = getTodayISO();
-    calViewYm = initToday.slice(0, 7);
-    rangeAnchorIso = initToday;
-    setSelectedDatesList([initToday]);
-
-    document.getElementById("btnRegToday").addEventListener("click", () => {
-      const tIso = getTodayISO();
-      calViewYm = tIso.slice(0, 7);
-      rangeAnchorIso = tIso;
-      setSelectedDatesList([tIso]);
+    document.getElementById("btnExportJson").onclick = () => safeRun(() => {
+      const blob = new Blob([JSON.stringify({ staff: state.staff, schedule: state.schedule, registrations: state.registrations }, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `SaoLuu_LichTruc_TYT_${getTodayISO()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
     });
+
+    document.getElementById("btnImportJsonTrigger").onclick = () => document.getElementById("inputJsonFile").click();
+    document.getElementById("inputJsonFile").onchange = (e) => safeRun(() => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => safeRun(() => {
+        const data = JSON.parse(ev.target.result);
+        if (data.staff) state.staff = normalizeStaffList(data.staff);
+        if (data.schedule) state.schedule = data.schedule;
+        if (data.registrations) state.registrations = data.registrations;
+        saveState();
+        renderAll();
+        showModal("Khôi phục thành công", "<p>Đã nạp dữ liệu từ file sao lưu .JSON.</p>");
+      });
+      reader.readAsText(file);
+    });
+
+    const regDate = document.getElementById("regDateInput");
+    regDate.value = getTodayISO();
+    document.getElementById("btnRegToday").onclick = () => { regDate.value = getTodayISO(); };
 
     const regSearchInp = document.getElementById("regStaffSearchInput");
     const regDropdown = document.getElementById("regStaffDropdown");
-    const regSel = document.getElementById("regStaffSelect");
-    if (regSearchInp && regDropdown && regSel) {
+    if (regSearchInp && regDropdown) {
       regSearchInp.addEventListener("focus", () => {
-        populateRegStaffDropdown(regSearchInp.value);
-        regDropdown.classList.remove("hidden");
-      });
-      regSearchInp.addEventListener("click", () => {
         populateRegStaffDropdown(regSearchInp.value);
         regDropdown.classList.remove("hidden");
       });
@@ -5412,72 +5168,302 @@
         populateRegStaffDropdown(regSearchInp.value);
         regDropdown.classList.remove("hidden");
       });
-      regSearchInp.addEventListener("blur", () => {
-        setTimeout(() => regDropdown.classList.add("hidden"), 140);
+      document.addEventListener("click", (ev) => {
+        if (!document.getElementById("regStaffCombo")?.contains(ev.target)) {
+          regDropdown.classList.add("hidden");
+        }
       });
     }
 
-    document.getElementById("btnSubmitReg").addEventListener("click", () => safeRun(() => {
-      const typedStaffText = (document.getElementById("regStaffSearchInput")?.value || "").trim().toLowerCase();
-      let staffId = document.getElementById("regStaffSelect").value;
-      if (typedStaffText) {
-        const exactOrMatch = state.staff.find(s => `${s.name} – ${s.title} (${s.dept})`.toLowerCase() === typedStaffText)
-          || state.staff.find(s => s.name.toLowerCase().includes(typedStaffText));
-        if (exactOrMatch) {
-          staffId = exactOrMatch.id;
-          document.getElementById("regStaffSelect").value = exactOrMatch.id;
+    const btnAddRegDate = document.getElementById("btnAddRegDate");
+    if (btnAddRegDate) {
+      btnAddRegDate.onclick = () => safeRun(() => {
+        const dVal = document.getElementById("regDateInput").value;
+        if (!dVal) return;
+        if (!selectedRegDates.includes(dVal)) {
+          selectedRegDates.push(dVal);
+          selectedRegDates.sort();
         }
+        renderMultiRegDatesChips();
+      });
+    }
+
+    const btnSelAllPending = document.getElementById("btnSelectAllPendingRegs");
+    if (btnSelAllPending) {
+      btnSelAllPending.onclick = () => safeRun(() => {
+        document.querySelectorAll(".bulk-reg-chk").forEach(chk => { chk.checked = true; });
+        window.__updateBulkRegCount();
+      });
+    }
+
+    const btnBulkApprove = document.getElementById("btnBulkApproveRegs");
+    if (btnBulkApprove) {
+      btnBulkApprove.onclick = () => safeRun(() => {
+        if (!state.isAdmin) return;
+        const checkedIds = Array.from(document.querySelectorAll(".bulk-reg-chk:checked")).map(c => c.value);
+        if (!checkedIds.length) {
+          showModal("Chưa chọn đăng ký", "<p style='margin:0;'>Vui lòng tick chọn các đăng ký chờ duyệt cần phê duyệt hàng loạt.</p>");
+          return;
+        }
+        const affectedDates = [];
+        checkedIds.forEach(regId => {
+          const reg = state.registrations.find(r => r.id === regId && r.status === "pending");
+          if (!reg) return;
+          if (!state.schedule[reg.date]) {
+            state.schedule[reg.date] = { main1: "", main2: "", dyt2: "", tasks: [] };
+          }
+          const dayObj = state.schedule[reg.date];
+          if (!Array.isArray(dayObj.tasks)) dayObj.tasks = [];
+
+          if (reg.type === "Trực điểm chính") {
+            const st = getStaffById(reg.staffId);
+            if (st && isClinicalLeadTitle(st.title)) dayObj.main1 = reg.staffId;
+            else if (!dayObj.main2) dayObj.main2 = reg.staffId;
+            else dayObj.main1 = reg.staffId;
+          } else if (reg.type === "Trực ĐYT 2") {
+            dayObj.dyt2 = reg.staffId;
+          } else {
+            dayObj.tasks.push({
+              id: "t_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6),
+              staffId: reg.staffId,
+              session: reg.session,
+              type: reg.type,
+              workLocation: reg.workLocation || "",
+              note: reg.note
+            });
+          }
+          reg.status = "approved";
+      reg.reviewedAt = Date.now();
+          affectedDates.push(reg.date);
+        });
+        dispatchEmailChangeNotification(
+          "Phê duyệt hàng loạt",
+          `Đã duyệt hàng loạt ${checkedIds.length} đăng ký`,
+          `Cập nhật lịch cho ${Array.from(new Set(affectedDates)).length} ngày.`,
+          affectedDates
+        );
+        saveState();
+        renderAll();
+      });
+    }
+
+  window.__showStaffMonthDetails = function(staffId, mode) {
+    safeRun(() => {
+      const st = getStaffById(staffId);
+      if (!st) return;
+      const dates = getMonthDates(state.selectedMonth);
+      const items = [];
+      dates.forEach(iso => {
+        const e = state.schedule[iso] || {};
+        if (!Array.isArray(e.tasks)) return;
+        e.tasks.filter(t => t.staffId === staffId).forEach(t => {
+          const tp = String(t.type || "").toLowerCase();
+          if (tp.includes("lễ/tết") || tp.includes("nghỉ lễ")) return;
+          const isLeave = tp.includes("nghỉ phép") || tp.includes("nghỉ bù") || tp.includes("nghỉ");
+          if ((mode === "leave" && isLeave) || (mode === "work" && !isLeave)) {
+            items.push({ iso, session: t.session || "Cả ngày", type: t.type || "", note: t.note || "", workLocation: t.workLocation || "" });
+          }
+        });
+      });
+      const titleTxt = mode === "leave"
+        ? `Chi Tiết Nghỉ (${st.name} – ${formatVNMonthYear(state.selectedMonth)})`
+        : `Chi Tiết Công Tác (${st.name} – ${formatVNMonthYear(state.selectedMonth)})`;
+      if (!items.length) {
+        showModal(titleTxt, `<p style="margin:0;color:#64748b;">Không có bản ghi nào trong tháng ${escapeHtml(formatVNMonthYear(state.selectedMonth))}.</p>`);
+        return;
       }
-      const datesToRegister = selectedRegDates.length ? [...selectedRegDates] : (regDateInput.value ? [regDateInput.value] : []);
-      const session = normalizeSessionLabel(document.getElementById("regSessionSelect").value);
+      const listHtml = items.map(it => `
+        <div style="border:1px solid var(--slate-200);border-radius:8px;padding:8px 10px;margin-bottom:6px;background:#f8fafc;">
+          <b>${formatVNDate(it.iso)}</b> • <span class="chip chip-teal" style="margin:0;">${escapeHtml(it.session)}</span>
+          <div style="margin-top:4px;font-weight:600;color:#0f172a;">${escapeHtml(it.type)}${it.workLocation ? ` (${escapeHtml(it.workLocation)})` : ""}</div>
+          ${it.note ? `<div style="font-size:12px;color:#475569;margin-top:2px;">Ghi chú/Lý do: ${escapeHtml(it.note)}</div>` : ""}
+        </div>
+      `).join("");
+      showModal(titleTxt, listHtml);
+    });
+  };
+
+    let calViewYM = getTodayISO().slice(0, 7);
+    let calDragStart = null;
+    let calIsDragging = false;
+
+    let calRangeAnchor = null;
+
+    function updatePickedDatesSummary() {
+      const sumEl = document.getElementById("pickedDatesSummary");
+      if (sumEl) {
+        sumEl.textContent = selectedRegDates.length ? `${selectedRegDates.length} ngày đã chọn` : "0 ngày đã chọn";
+      }
+    }
+
+    function renderInlineMultiCalendar() {
+      const grid = document.getElementById("inlineCalGrid");
+      const titleEl = document.getElementById("inlineCalMonthTitle");
+      if (!grid || !titleEl) return;
+      const [yy, mm] = calViewYM.split("-").map(Number);
+      titleEl.textContent = `Tháng ${String(mm).padStart(2, "0")}/${yy}`;
+      const dows = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
+      let html = dows.map(d => `<div style="font-size:11px;font-weight:700;color:#64748b;padding:2px 0;">${d}</div>`).join("");
+
+      const firstDow = new Date(yy, mm - 1, 1).getDay();
+      const offset = firstDow === 0 ? 6 : firstDow - 1;
+      for (let i = 0; i < offset; i++) html += `<div></div>`;
+
+      const daysInMonth = new Date(yy, mm, 0).getDate();
+      for (let d = 1; d <= daysInMonth; d++) {
+        const iso = `${yy}-${String(mm).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+        const picked = selectedRegDates.includes(iso);
+        const isAnchor = calRangeAnchor === iso;
+        const bg = picked ? "var(--teal-700)" : "#fff";
+        const fg = picked ? "#fff" : "#0f172a";
+        const bd = isAnchor ? "#d97706" : (picked ? "var(--teal-700)" : "#cbd5e1");
+        html += `<button type="button" data-cal-iso="${iso}" style="border:2px solid ${bd};background:${bg};color:${fg};border-radius:8px;padding:6px 0;font-size:12px;font-weight:700;cursor:pointer;">${d}</button>`;
+      }
+      grid.innerHTML = html;
+      updatePickedDatesSummary();
+
+      const applyContinuousRange = (aIso, bIso) => {
+        const start = aIso <= bIso ? aIso : bIso;
+        const end = aIso <= bIso ? bIso : aIso;
+        const nextList = [];
+        let cur = start;
+        while (cur <= end) {
+          nextList.push(cur);
+          cur = addDaysISO(cur, 1);
+        }
+        selectedRegDates = nextList;
+        document.getElementById("regDateInput").value = start;
+      };
+
+      grid.querySelectorAll("button[data-cal-iso]").forEach(btn => {
+        const iso = btn.getAttribute("data-cal-iso");
+        btn.addEventListener("pointerdown", (ev) => {
+          ev.preventDefault();
+          calIsDragging = true;
+          calDragStart = iso;
+          if (!calRangeAnchor) {
+            calRangeAnchor = iso;
+            selectedRegDates = [iso];
+            document.getElementById("regDateInput").value = iso;
+          } else if (calRangeAnchor === iso && selectedRegDates.length === 1 && selectedRegDates[0] === iso) {
+            calRangeAnchor = null;
+            selectedRegDates = [];
+            document.getElementById("regDateInput").value = "";
+          } else {
+            applyContinuousRange(calRangeAnchor, iso);
+            calRangeAnchor = null;
+          }
+          renderMultiRegDatesChips();
+          renderInlineMultiCalendar();
+        });
+        btn.addEventListener("pointerenter", () => {
+          if (calIsDragging && calDragStart && calDragStart !== iso) {
+            applyContinuousRange(calDragStart, iso);
+            calRangeAnchor = null;
+            renderMultiRegDatesChips();
+            renderInlineMultiCalendar();
+          }
+        });
+      });
+    }
+
+    document.addEventListener("pointerup", () => {
+      calIsDragging = false;
+      calDragStart = null;
+    });
+
+    const btnToggleCal = document.getElementById("btnToggleInlineCal");
+    if (btnToggleCal) {
+      btnToggleCal.onclick = () => safeRun(() => {
+        const box = document.getElementById("inlineMultiCalBox");
+        if (!box) return;
+        const curInp = document.getElementById("regDateInput").value;
+        if (/^\d{4}-\d{2}-\d{2}$/.test(curInp)) calViewYM = curInp.slice(0, 7);
+        box.classList.toggle("hidden");
+        renderInlineMultiCalendar();
+      });
+    }
+
+    document.getElementById("btnCalPrevMonth")?.addEventListener("click", () => {
+      const [yy, mm] = calViewYM.split("-").map(Number);
+      const dt = new Date(yy, mm - 2, 1);
+      calViewYM = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}`;
+      renderInlineMultiCalendar();
+    });
+
+    document.getElementById("btnCalNextMonth")?.addEventListener("click", () => {
+      const [yy, mm] = calViewYM.split("-").map(Number);
+      const dt = new Date(yy, mm, 1);
+      calViewYM = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}`;
+      renderInlineMultiCalendar();
+    });
+
+    document.getElementById("btnClearPickedDates")?.addEventListener("click", () => {
+      selectedRegDates = [];
+      renderMultiRegDatesChips();
+      renderInlineMultiCalendar();
+    });
+
+    document.getElementById("btnBulkAddFromCal")?.addEventListener("click", () => {
+      if (!selectedRegDates.length) {
+        const dVal = document.getElementById("regDateInput").value;
+        if (dVal && !selectedRegDates.includes(dVal)) selectedRegDates.push(dVal);
+      }
+      renderMultiRegDatesChips();
+      showModal("Đã Chọn Đồng Loạt", `<p style="margin:0;">Đã đưa <b>${selectedRegDates.length}</b> ngày vào danh sách chờ gửi (${selectedRegDates.map(formatVNDate).join(", ")}).</p>`);
+    });
+
+    document.getElementById("btnSubmitReg").onclick = () => safeRun(() => {
+      const staffId = document.getElementById("regStaffSelect").value;
+      const singleDate = document.getElementById("regDateInput").value;
+      const targetDates = selectedRegDates.length > 0 ? [...selectedRegDates] : (singleDate ? [singleDate] : []);
+      const session = document.getElementById("regSessionSelect").value;
       const type = document.getElementById("regTypeSelect").value;
-      const workLocation = document.getElementById("regWorkLocSelect") ? document.getElementById("regWorkLocSelect").value : "";
       const note = document.getElementById("regNoteInput").value.trim();
 
-      if (!staffId || !datesToRegister.length) {
-        showModal("Thiếu thông tin", "<p>Vui lòng chọn nhân sự và chọn ngày đăng ký trên lịch.</p>");
+      if (!staffId || targetDates.length === 0) {
+        showModal("Thiếu thông tin", "<p>Vui lòng chọn đầy đủ nhân sự và ngày đăng ký.</p>");
         return;
       }
 
-      const stObj = getStaffById(staffId);
-      const warningsFound = [];
-      const sortedDates = [...datesToRegister].sort();
+      const st = getStaffById(staffId);
+      if ((type === "Trực điểm chính" || type === "Trực ĐYT 2") && st && st.isAdminOnly) {
+        showModal("Không hợp lệ", `<p>Nhân sự <b>${escapeHtml(st.name)}</b> đang ở chế độ <b>Hành chính (không trực)</b>.</p>`);
+        return;
+      }
 
-      sortedDates.forEach(dIso => {
+      const workLocation = document.getElementById("regWorkLocSelect") ? document.getElementById("regWorkLocSelect").value : "";
+      const conflictNotes = [];
+      targetDates.forEach(dIso => {
         const dayEntry = state.schedule[dIso] || {};
-        const prevEntry = state.schedule[addDaysISO(dIso, -1)] || {};
-        const nextEntry = state.schedule[addDaysISO(dIso, 1)] || {};
-        const dowInfo = getDayOfWeekInfo(dIso);
-
-        if (stObj && stObj.isAdminOnly && (type === "Trực điểm chính" || type === "Trực ĐYT 2")) {
-          warningsFound.push(`${formatVNDate(dIso)}: ${stObj.name} đang thuộc chế độ Hành chính (không tham gia trực).`);
-        }
-        if ([prevEntry.main1, prevEntry.main2, prevEntry.dyt2].includes(staffId) && (type === "Trực điểm chính" || type === "Trực ĐYT 2" || type === "Hỗ trợ tua trực")) {
-          warningsFound.push(`${formatVNDate(dIso)}: ${stObj?.name || "Nhân sự"} đang trực 24/24 ngày hôm trước (${formatVNDate(addDaysISO(dIso, -1))}), hôm nay là ngày ra trực.`);
-        }
-        if ([nextEntry.main1, nextEntry.main2, nextEntry.dyt2].includes(staffId) && (type === "Trực điểm chính" || type === "Trực ĐYT 2")) {
-          warningsFound.push(`${formatVNDate(dIso)}: ${stObj?.name || "Nhân sự"} đã có lịch trực vào ngày hôm sau (${formatVNDate(addDaysISO(dIso, 1))}).`);
-        }
-        if ([dayEntry.main1, dayEntry.main2, dayEntry.dyt2].includes(staffId) && type !== "Trực điểm chính" && type !== "Trực ĐYT 2") {
-          warningsFound.push(`${formatVNDate(dIso)}: ${stObj?.name || "Nhân sự"} đang có ca trực 24/24 trong cùng ngày này.`);
-        }
-        const existingTasks = Array.isArray(dayEntry.tasks) ? dayEntry.tasks.filter(t => t.staffId === staffId) : [];
-        if (existingTasks.length > 0) {
-          const sameSessConflict = existingTasks.some(t => normalizeSessionLabel(t.session) === "Cả ngày" || session === "Cả ngày" || normalizeSessionLabel(t.session) === session);
-          if (sameSessConflict) {
-            warningsFound.push(`${formatVNDate(dIso)}: Đã có lịch "${existingTasks.map(t => `${t.type} (${normalizeSessionLabel(t.session)})`).join(", ")}" trùng buổi đăng ký.`);
-          }
-        }
-        if (stObj && stObj.name === "Bác sĩ Dung" && dowInfo.dow !== 2 && dowInfo.dow !== 4) {
-          warningsFound.push(`${formatVNDate(dIso)}: Bác sĩ Dung chỉ làm việc định kỳ vào Thứ 3 và Thứ 5 (cần Admin xét duyệt ngoại lệ).`);
+        const isDutyDay = [dayEntry.main1, dayEntry.main2, dayEntry.dyt2].includes(staffId);
+        if (isDutyDay && type !== "Trực điểm chính" && type !== "Trực ĐYT 2") {
+          conflictNotes.push(`Ngày ${formatVNDate(dIso)}: ${st ? st.name : ""} đang có tên trong ca trực.`);
         }
       });
 
-      const doSendRegistrations = () => {
-        const baseTs = Date.now();
-        sortedDates.forEach((dIso, idx) => {
+      showModal("Kiểm Tra Thông Tin Trước Khi Gửi", `
+        <p style="margin-top:0;font-size:12.5px;color:#475569;">Vui lòng kiểm tra lại toàn bộ thông tin bên dưới trước khi gửi đăng ký:</p>
+        <div style="background:#f8fafc;border:1px solid #cbd5e1;border-radius:10px;padding:10px;font-size:13px;margin-bottom:10px;">
+          <div><b>Nhân sự:</b> ${escapeHtml(st ? `${st.name} (${st.dept})` : "")}</div>
+          <div><b>Số lượng ngày (${targetDates.length}):</b> ${escapeHtml(targetDates.map(formatVNDate).join(", "))}</div>
+          <div><b>Buổi:</b> ${escapeHtml(session)}</div>
+          <div><b>Nội dung:</b> ${escapeHtml(type)}</div>
+          <div><b>Địa điểm:</b> ${escapeHtml(workLocation || "—")}</div>
+          <div><b>Ghi chú:</b> ${escapeHtml(note || "—")}</div>
+        </div>
+        ${conflictNotes.length ? `<div class="banner warn" style="margin-bottom:10px;">${conflictNotes.map(c => `<div>• ${escapeHtml(c)}</div>`).join("")}</div>` : ""}
+        <div class="row-2" style="gap:8px;">
+          <button type="button" class="btn btn-secondary" id="btnCancelPreSend">Sửa lại</button>
+          <button type="button" class="btn btn-primary" id="btnConfirmFinalSend">Xác nhận gửi đăng ký</button>
+        </div>
+      `);
+
+      document.getElementById("btnCancelPreSend").onclick = closeModal;
+      document.getElementById("btnConfirmFinalSend").onclick = () => safeRun(() => {
+        targetDates.forEach((dIso, i) => {
           state.registrations.push({
-            id: "reg_" + baseTs + "_" + idx + "_" + Math.random().toString(36).slice(2, 6),
+            id: "reg_" + Date.now() + "_" + i + "_" + Math.random().toString(36).slice(2, 6),
             staffId,
             date: dIso,
             session,
@@ -5485,308 +5471,85 @@
             workLocation,
             note,
             status: "pending",
-            createdAt: baseTs + idx
+            createdAt: Date.now() + i
           });
         });
 
         document.getElementById("regNoteInput").value = "";
+        selectedRegDates = [];
+        dispatchEmailChangeNotification(
+          "Đăng ký mới",
+          `${st ? st.name : "Nhân sự"} đăng ký "${type}" (${targetDates.length} ngày)`,
+          `Ngày: ${targetDates.map(formatVNDate).join(", ")} • Buổi: ${session}${note ? " • Ghi chú: " + note : ""}`,
+          targetDates
+        );
         saveState();
-        renderAll();
-        showModal("Đã Gửi Đăng Ký", `<p>Đã gửi <b>${sortedDates.length}</b> đăng ký (${sortedDates.map(formatVNDate).join(", ")}) cho <b>${escapeHtml(stObj ? stObj.name : "nhân sự")}</b> (${escapeHtml(type)} - ${escapeHtml(session)}). Vui lòng chờ Admin phê duyệt tại mục <b>3. Duyệt & LS</b>.</p>`);
-      };
-
-      const previewHtml = `
-        <div style="background:#f8fafc;border:1px solid #cbd5e1;border-radius:10px;padding:10px;font-size:12.5px;color:#334155;margin-bottom:10px;">
-          <div><b>Nhân sự:</b> ${escapeHtml(stObj ? `${stObj.name} – ${stObj.title} (${stObj.dept})` : "—")}</div>
-          <div><b>Ngày (${sortedDates.length}):</b> ${escapeHtml(sortedDates.map(formatVNDate).join(", "))}</div>
-          <div><b>Buổi:</b> ${escapeHtml(session)} • <b>Nội dung:</b> ${escapeHtml(type)}</div>
-          ${workLocation ? `<div><b>Trụ sở:</b> ${escapeHtml(workLocation)}</div>` : ""}
-          ${note ? `<div><b>Ghi chú:</b> ${escapeHtml(note)}</div>` : ""}
-        </div>
-        ${warningsFound.length
-          ? `<div class="banner warn" style="margin-bottom:10px;"><b>Lưu ý kiểm tra lịch trước khi gửi:</b><ul style="margin:6px 0 0 18px;padding:0;">${warningsFound.map(w => `<li style="margin-bottom:3px;">${escapeHtml(w)}</li>`).join("")}</ul></div>`
-          : `<div class="banner ok" style="margin-bottom:10px;">Kiểm tra sơ bộ: Chưa phát hiện xung đột trực tiếp với lịch hiện tại.</div>`
-        }
-        <div class="row-2" style="gap:8px;">
-          <button type="button" class="btn btn-secondary" id="btnCancelPreCheck">Quay lại sửa</button>
-          <button type="button" class="btn btn-primary" id="btnConfirmSendReg">Xác nhận gửi đăng ký</button>
-        </div>
-      `;
-
-      showModal("Kiểm Tra Thông Tin Trước Khi Gửi", previewHtml);
-      document.getElementById("btnCancelPreCheck").onclick = closeModal;
-      document.getElementById("btnConfirmSendReg").onclick = () => safeRun(() => {
         closeModal();
-        doSendRegistrations();
+        renderAll();
+        showModal("Đã Gửi Đăng Ký", `<p>Đã gửi <b>${targetDates.length}</b> đăng ký cho <b>${escapeHtml(st ? st.name : "")}</b> (${targetDates.map(formatVNDate).join(", ")}) vào hàng chờ duyệt.</p>`);
       });
-    }));
+    });
 
-    document.getElementById("btnAddStaff").addEventListener("click", () => safeRun(() => {
-      if (!state.isAdmin) return;
+    document.getElementById("btnAddStaff").onclick = () => safeRun(() => {
       const name = document.getElementById("newStaffName").value.trim();
       if (!name) {
         showModal("Thiếu họ tên", "<p>Vui lòng nhập họ và tên nhân sự mới.</p>");
         return;
       }
-      const deptVal = document.getElementById("newStaffDept").value;
-      const workLocVal = document.getElementById("newStaffWorkLoc") ? document.getElementById("newStaffWorkLoc").value : (deptVal === "Điểm Y tế 2" ? "Điểm Y tế 2" : "Điểm chính");
       state.staff.push({
         id: "s_" + Date.now(),
         name,
         position: document.getElementById("newStaffPosition").value,
         title: document.getElementById("newStaffTitle").value,
-        dept: deptVal,
-        workLocation: workLocVal,
+        dept: document.getElementById("newStaffDept").value,
+        workLocation: document.getElementById("newStaffWorkLoc").value,
         contract: document.getElementById("newStaffContract").value,
         isAdminOnly: document.getElementById("newStaffAdminOnly").checked
       });
       state.staff = normalizeStaffList(state.staff);
       document.getElementById("newStaffName").value = "";
-      document.getElementById("newStaffAdminOnly").checked = false;
       dispatchEmailChangeNotification(
         "Danh sách nhân sự",
         `Thêm nhân sự mới: ${name}`,
-        `Đơn vị: ${deptVal} • Trụ sở: ${workLocVal}`
+        `Đơn vị: ${document.getElementById("newStaffDept").value} • Chức danh: ${document.getElementById("newStaffTitle").value}`
       );
       saveState();
       renderAll();
-    }));
+    });
 
-    document.getElementById("btnRestore29").addEventListener("click", () => safeRun(() => {
+    document.getElementById("btnRestore29").onclick = () => safeRun(() => {
       if (!state.isAdmin) return;
       confirmActionWarningModal({
-        title: "Khôi Phục Danh Sách 29 Nhân Sự Chuẩn",
-        warningText: "Cảnh báo: Thao tác này sẽ khôi phục danh sách 29 nhân sự mặc định của Trạm Y tế xã Hưng Long.",
-        detailHtml: "Các nhân sự tự thêm mới chưa có trong danh sách gốc có thể bị thay thế theo danh sách chuẩn.",
-        confirmLabel: "Xác nhận khôi phục 29 nhân sự",
+        title: "Cảnh Báo Khôi Phục DS 29 Nhân Sự",
+        warningText: "Khôi phục danh sách chuẩn 29 nhân sự có thể ghi đè các chỉnh sửa hoặc nhân sự thêm mới hiện tại.",
+        detailHtml: "Hãy xác nhận nếu bạn muốn đưa danh sách nhân sự về mặc định 29 người.",
+        confirmLabel: "Xác nhận khôi phục",
         cancelLabel: "Huỷ bỏ",
         confirmClass: "btn-amber",
         onConfirm: () => {
           state.staff = normalizeStaffList(DEFAULT_STAFF);
-          dispatchEmailChangeNotification(
-            "Danh sách nhân sự",
-            "Khôi phục danh sách 29 nhân sự chuẩn",
-            "Đã đồng bộ lại 29 nhân sự theo danh sách mặc định."
-          );
           saveState();
           renderAll();
+          showModal("Đã khôi phục", "<p>Đã khôi phục đầy đủ danh sách chuẩn 29 nhân sự Trạm Y tế.</p>");
         }
       });
-    }));
-
-    document.getElementById("btnSelectAllPendingRegs").addEventListener("click", () => safeRun(() => {
-      if (!state.isAdmin) return;
-      const chks = Array.from(document.querySelectorAll(".bulk-reg-chk"));
-      if (!chks.length) return;
-      const allChecked = chks.every(c => c.checked);
-      chks.forEach(c => { c.checked = !allChecked; });
-      window.__updateBulkRegCount();
-    }));
-
-    document.getElementById("btnBulkApproveRegs").addEventListener("click", () => safeRun(() => {
-      if (!state.isAdmin) return;
-      const selectedIds = Array.from(document.querySelectorAll(".bulk-reg-chk:checked")).map(c => c.value);
-      if (!selectedIds.length) {
-        showModal("Chưa chọn đăng ký", "<p style='margin:0;'>Vui lòng tick chọn ít nhất một đăng ký chờ duyệt để duyệt hàng loạt.</p>");
-        return;
-      }
-
-      const prevScheduleCopy = JSON.parse(JSON.stringify(state.schedule));
-      const prevRegsCopy = JSON.parse(JSON.stringify(state.registrations));
-      const conflictNotes = [];
-      const approvedNames = [];
-
-      selectedIds.forEach(regId => {
-        const reg = state.registrations.find(r => r.id === regId && r.status === "pending");
-        if (!reg) return;
-        const normSess = normalizeSessionLabel(reg.session);
-        if (!state.schedule[reg.date]) {
-          state.schedule[reg.date] = { main1: "", main2: "", dyt2: "", tasks: [] };
-        }
-        const dayObj = state.schedule[reg.date];
-        if (!Array.isArray(dayObj.tasks)) dayObj.tasks = [];
-
-        if (reg.type === "Trực điểm chính") {
-          const st = getStaffById(reg.staffId);
-          if (st && isClinicalLeadTitle(st.title)) dayObj.main1 = reg.staffId;
-          else if (!dayObj.main2) dayObj.main2 = reg.staffId;
-          else dayObj.main1 = reg.staffId;
-        } else if (reg.type === "Trực ĐYT 2") {
-          dayObj.dyt2 = reg.staffId;
-        } else {
-          dayObj.tasks.push({
-            id: "t_" + Date.now() + "_" + Math.random().toString(36).slice(2, 5),
-            staffId: reg.staffId,
-            session: normSess,
-            type: reg.type,
-            workLocation: reg.workLocation || "",
-            note: reg.note
-          });
-        }
-        reg.status = "approved";
-        reg.reviewedAt = Date.now();
-        const stNm = getStaffById(reg.staffId)?.name || "Nhân sự";
-        approvedNames.push(`${stNm} (${formatVNDate(reg.date)})`);
-
-        const wList = evaluateDayWarnings(reg.date);
-        if (wList.length > 0) {
-          conflictNotes.push(`${formatVNDate(reg.date)} - ${stNm}: ${wList.join("; ")}`);
-        }
-      });
-
-      const finalizeBulkApprove = () => {
-        dispatchEmailChangeNotification(
-          "Phê duyệt đăng ký hàng loạt",
-          `Đã duyệt ${approvedNames.length} đăng ký`,
-          approvedNames.join(", ")
-        );
-        saveState(true);
-        renderAll();
-      };
-
-      if (conflictNotes.length > 0) {
-        requestAdminConflictConfirmation({
-          modalTitle: "Cảnh Báo Khi Duyệt Đăng Ký Hàng Loạt",
-          conflictMessages: conflictNotes,
-          summaryHtml: `Đã xử lý <b>${approvedNames.length}</b> đăng ký, trong đó có cảnh báo xung đột lịch.`,
-          keepOldLabel: "Giữ nguyên lịch cũ",
-          applyAnywayLabel: "Vẫn duyệt tất cả",
-          onKeepOld: () => {
-            state.schedule = prevScheduleCopy;
-            state.registrations = prevRegsCopy;
-            renderAll();
-          },
-          onApplyAnyway: finalizeBulkApprove
-        });
-        return;
-      }
-
-      finalizeBulkApprove();
-    }));
-
-    document.getElementById("btnDeleteProcessedRegs").addEventListener("click", () => safeRun(() => {
-      if (!state.isAdmin) return;
-      const oldCount = state.registrations.filter(r => r.status !== "pending").length;
-      if (!oldCount) {
-        showModal("Không có đăng ký cũ", "<p style='margin:0;'>Hiện không có đăng ký nào ở trạng thái Đã duyệt hoặc Từ chối để xoá.</p>");
-        return;
-      }
-      confirmActionWarningModal({
-        title: "Xoá Đăng Ký Cũ (Đã Duyệt / Từ Chối)",
-        warningText: `Bạn có chắc chắn muốn xoá ${oldCount} đăng ký cũ đã duyệt hoặc đã từ chối không?`,
-        detailHtml: "Các đăng ký đang <b>Chờ duyệt</b> sẽ được giữ nguyên.",
-        confirmLabel: `Xác nhận xoá (${oldCount})`,
-        cancelLabel: "Huỷ bỏ",
-        confirmClass: "btn-danger",
-        onConfirm: () => {
-          state.registrations = state.registrations.filter(r => r.status === "pending");
-          saveState();
-          renderAll();
-        }
-      });
-    }));
-
-    document.getElementById("btnSubscribeEmail").addEventListener("click", () => safeRun(() => {
-      const emailEl = document.getElementById("inputNotifyEmail");
-      const staffEl = document.getElementById("selectNotifyStaff");
-      const rawEmail = (emailEl.value || "").trim().toLowerCase();
-      const linkedStaffId = staffEl ? staffEl.value : "";
-
-      if (!isValidEmailAddress(rawEmail)) {
-        showModal("Email chưa hợp lệ", "<p>Vui lòng nhập đúng định dạng địa chỉ email (ví dụ: <b>tramyte@example.com</b>).</p>");
-        return;
-      }
-
-      if (!Array.isArray(state.emailSubscribers)) state.emailSubscribers = [];
-      const existingIdx = state.emailSubscribers.findIndex(x => x.email === rawEmail);
-      if (existingIdx >= 0) {
-        state.emailSubscribers[existingIdx].staffId = linkedStaffId;
-      } else {
-        state.emailSubscribers.push({
-          email: rawEmail,
-          staffId: linkedStaffId,
-          createdAt: Date.now()
-        });
-      }
-      emailEl.value = "";
-      saveState();
-      renderEmailSubscribersUI();
-      showModal("Đăng Ký Thông Báo Thành Công", `<p>Email <b>${escapeHtml(rawEmail)}</b> đã được lưu vào danh sách nhận thông báo thay đổi.</p>`);
-    }));
-
-    document.getElementById("btnToggleEmailLog").addEventListener("click", () => safeRun(() => {
-      if (!state.isAdmin) return;
-      const box = document.getElementById("emailNotificationsLogBox");
-      if (box) {
-        box.classList.toggle("hidden");
-        renderEmailSubscribersUI();
-      }
-    }));
-
-    window.__showStaffMonthDetails = function(staffId, kind) {
-      safeRun(() => {
-        const st = getStaffById(staffId);
-        if (!st) return;
-        const dates = getMonthDates(state.selectedMonth);
-        const rows = [];
-        dates.forEach(iso => {
-          const e = state.schedule[iso] || {};
-          if (!Array.isArray(e.tasks)) return;
-          e.tasks.filter(t => t.staffId === staffId).forEach(t => {
-            const tp = String(t.type || "").toLowerCase();
-            if (tp.includes("lễ/tết") || tp.includes("nghỉ lễ")) return;
-            const isLeave = tp.includes("nghỉ phép") || tp.includes("nghỉ bù") || tp.includes("nghỉ");
-            if ((kind === "leave" && isLeave) || (kind === "work" && !isLeave)) {
-              rows.push({
-                date: iso,
-                session: normalizeSessionLabel(t.session) || "Cả ngày",
-                type: t.type || "",
-                workLocation: t.workLocation || "",
-                note: t.note || ""
-              });
-            }
-          });
-        });
-
-        const heading = kind === "leave"
-          ? `Chi Tiết Nghỉ Phép / Nghỉ Bù Tháng ${formatVNMonthYear(state.selectedMonth)} — ${st.name}`
-          : `Chi Tiết Công Tác Tháng ${formatVNMonthYear(state.selectedMonth)} — ${st.name}`;
-
-        if (!rows.length) {
-          showModal(heading, `<p style="margin:0;color:#64748b;">Không có dữ liệu chi tiết trong tháng ${formatVNMonthYear(state.selectedMonth)}.</p>`);
-          return;
-        }
-
-        const listHtml = rows.map((r, i) => `
-          <div style="padding:8px 10px;border:1px solid var(--slate-200);border-radius:8px;margin-bottom:6px;background:var(--slate-50);">
-            <div style="font-weight:700;color:#0f172a;">${i + 1}. Ngày ${formatVNDate(r.date)} • ${escapeHtml(r.session)}</div>
-            <div style="font-size:12.5px;color:#0f766e;font-weight:600;margin-top:2px;">Nội dung: ${escapeHtml(r.type)}${r.workLocation ? ` • Trụ sở: ${escapeHtml(r.workLocation)}` : ""}</div>
-            ${r.note ? `<div style="font-size:12px;color:#334155;margin-top:2px;">Ghi chú: ${escapeHtml(r.note)}</div>` : ""}
-          </div>
-        `).join("");
-
-        showModal(heading, `<div style="max-height:60vh;overflow-y:auto;">${listHtml}</div>`);
-      });
-    };
-  }
-
-  function init() {
-    safeRun(() => {
-      loadState();
-      if (state.cloud.url) {
-        document.getElementById("inputFirebaseUrl").value = state.cloud.url;
-        document.getElementById("inputRoomId").value = state.cloud.room || "tram-y-te";
-      }
-      bindEvents();
-      switchSheet("1");
-      renderAll();
-      if (state.cloud.url) {
-        startCloudSync();
-      }
     });
   }
 
-  init();
+  
+    document.getElementById("btnEditLeadersModal")?.addEventListener("click", () => safeRun(openLeadersEditorModal));
+    document.getElementById("btnOpenEmailRecoveryFromSheet6")?.addEventListener("click", () => safeRun(openAdminEmailRecoveryModal));
+    document.getElementById("btnSendRecoveryEmailNow")?.addEventListener("click", () => safeRun(openAdminEmailRecoveryModal));
+
+  /* Init */
+  loadState();
+  bindEvents();
+  if (state.cloud.url) {
+    document.getElementById("inputFirebaseUrl").value = state.cloud.url;
+    document.getElementById("inputRoomId").value = state.cloud.room;
+    startCloudSync();
+  }
+  renderAll();
 })();
 </script>
 </body>
