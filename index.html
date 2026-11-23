@@ -2211,6 +2211,13 @@
         });
         if (hasLeaveAllDay) return false;
         if (stTasks.some(t => t.workLocation === "Không có mặt tại đơn vị")) return false;
+        const stApprovedAllDay = (state.registrations || []).filter(r =>
+          r && r.staffId === st.id && r.date === iso && r.status === "approved" && (!r.session || r.session === "Cả ngày")
+        );
+        if (stApprovedAllDay.some(r => {
+          const tp = String(r.type || "").toLowerCase();
+          return tp.includes("nghỉ") || tp.includes("vắng") || r.workLocation === "Không có mặt tại đơn vị";
+        })) return false;
 
         const isMainDuty = entry.main1 === st.id || entry.main2 === st.id;
         const isDyt2Duty = entry.dyt2 === st.id;
@@ -2969,29 +2976,47 @@
       if (isHolidayDay) return;
       if (st.name === "Bác sĩ Dung" && dow.dow !== 2 && dow.dow !== 4 && !dungOverride) return;
       if (mainSeen.has(st.id) || dyt2Seen.has(st.id) || offSessionIds.has(st.id)) return;
+
+      // Kiểm tra cả lịch đã xếp trong schedule (theo đúng buổi) lẫn đơn đăng ký đã được Admin duyệt (theo đúng buổi)
       const matchedTasks = tasks.filter(t => t.staffId === st.id);
-      const hasAbsentTask = matchedTasks.some(t => t.workLocation === "Không có mặt tại đơn vị");
-      if (hasAbsentTask) return;
+      const approvedSessionRegs = (state.registrations || []).filter(r =>
+        r && r.staffId === st.id && r.date === targetIso && r.status === "approved" && matchesSession(r)
+      );
+
+      const isLeaveReg = approvedSessionRegs.some(r => {
+        const tp = String(r.type || "").toLowerCase();
+        return tp.includes("nghỉ") || tp.includes("vắng");
+      });
+      if (isLeaveReg) return;
+
+      const hasAbsentScheduled = matchedTasks.some(t => t.workLocation === "Không có mặt tại đơn vị");
+      const hasAbsentApproved = approvedSessionRegs.some(r => r.workLocation === "Không có mặt tại đơn vị");
+      if (hasAbsentScheduled || hasAbsentApproved) return;
 
       const isDutyAny = mainDutyIds.has(st.id) || dyt2DutyIds.has(st.id);
       const actualLoc = getActualWorkLoc(st);
-      const hasTaskDay = matchedTasks.length > 0;
       const isRaTruc = prevDutyIds.has(st.id);
 
-      const taskLocOverride = matchedTasks.map(t => t.workLocation).find(loc => loc === "Điểm chính" || loc === "Điểm Y tế 2");
+      // Trừ khi nhân sự được sắp xếp hoặc duyệt lịch không có mặt tại đơn vị, còn lại tính có mặt theo đúng trụ sở làm việc theo đúng buổi
+      const taskLocOverride = matchedTasks.map(t => t.workLocation).find(loc => loc === "Điểm chính" || loc === "Điểm Y tế 2")
+        || approvedSessionRegs.map(r => r.workLocation).find(loc => loc === "Điểm chính" || loc === "Điểm Y tế 2");
 
-      let targetBranch = actualLoc;
-      if (taskLocOverride) targetBranch = taskLocOverride;
+      let targetBranch = taskLocOverride || actualLoc;
       if (mainDutyIds.has(st.id)) targetBranch = "Điểm chính";
       else if (dyt2DutyIds.has(st.id)) targetBranch = "Điểm Y tế 2";
 
+      const combinedItems = [...matchedTasks];
+      approvedSessionRegs.forEach(r => {
+        if (!combinedItems.some(t => t.type === r.type && (t.session === r.session || t.session === "Cả ngày"))) {
+          combinedItems.push(r);
+        }
+      });
+
       let label = "";
-      if (hasTaskDay) {
-        label = matchedTasks.map(t => `${t.type} (${t.session})`).join(", ");
-      } else if (isWeekdayMonToFri && !st.isAdminOnly && !isDutyAny && !isRaTruc) {
+      if (combinedItems.length > 0) {
+        label = combinedItems.map(t => `${t.type} (${t.session || targetSession})`).join(", ");
+      } else if (isWeekdayMonToFri && !isDutyAny && !isRaTruc) {
         label = "Hành chính";
-      } else if (!dow.isWeekend && !isRaTruc) {
-        label = st.isAdminOnly ? "Hành chính" : `Có mặt tại ${targetBranch}`;
       } else {
         return;
       }
@@ -4135,12 +4160,11 @@
     const rawStr = String(val || "").trim();
     const upperStr = rawStr.toUpperCase();
     const baseAlign = { horizontal: "center", vertical: "center", wrapText: true };
-    const cleanBgRgb = isWeekendCol ? "F1F5F9" : "FFFFFF";
-    const tokens = rawStr.split("/").map(s => s.trim()).filter(Boolean);
+    const tokens = rawStr.split("/").map(s => s.trim().toUpperCase()).filter(Boolean);
 
-    // Đồng bộ: tất cả lịch công tác dùng chữ đứng (italic: false), font Times New Roman cỡ 9.5
+    // Chỉ có nhãn "TRỰC ĐYT 2", "TRỰC", "RT" được định dạng màu sắc
     // 1. TRỰC ĐYT 2: tone đỏ - nâu - hồng dễ nhìn, nổi bật
-    if (tokens.includes("TRỰC ĐYT 2") || upperStr.includes("TRỰC ĐYT 2")) {
+    if (tokens.includes("TRỰC ĐYT 2") || upperStr === "TRỰC ĐYT 2") {
       return {
         font: { name: "Times New Roman", sz: 9.5, bold: true, italic: false, color: { rgb: "78281F" } },
         fill: { patternType: "solid", fgColor: { rgb: "FADBD8" } },
@@ -4152,7 +4176,7 @@
       };
     }
     // 2. TRỰC (Điểm chính): tone xanh ngọc dịu mắt, chữ đứng in đậm
-    if (tokens.includes("TRỰC") || upperStr.includes("TRỰC")) {
+    if (tokens.includes("TRỰC") || upperStr === "TRỰC") {
       return {
         font: { name: "Times New Roman", sz: 9.5, bold: true, italic: false, color: { rgb: "065F46" } },
         fill: { patternType: "solid", fgColor: { rgb: "D1FAE5" } },
@@ -4160,7 +4184,7 @@
         border: borderObj
       };
     }
-    // 3. RT (Ra trực): tone vàng hổ phách nhạt, chữ đứng in đậm (không chữ nghiêng)
+    // 3. RT (Ra trực): tone vàng hổ phách nhạt, chữ đứng in đậm
     if (tokens.includes("RT") || upperStr === "RT") {
       return {
         font: { name: "Times New Roman", sz: 9.5, bold: true, italic: false, color: { rgb: "92400E" } },
@@ -4169,45 +4193,11 @@
         border: borderObj
       };
     }
-    // 4. HỖ TRỢ TUA TRỰC: in hoa toàn bộ, đồng bộ tone xanh dương nhạt
-    if (upperStr.includes("HỖ TRỢ TUA TRỰC")) {
-      return {
-        font: { name: "Times New Roman", sz: 9.5, bold: true, italic: false, color: { rgb: "1E40AF" } },
-        fill: { patternType: "solid", fgColor: { rgb: "DBEAFE" } },
-        alignment: baseAlign,
-        border: borderObj
-      };
-    }
-    // 5. Đồng bộ định dạng cho các nội dung công tác / nghỉ giống nhau (chữ đứng, cỡ 9.5)
-    if (upperStr.startsWith("TIÊM NGỪA") || upperStr.startsWith("HỖ TRỢ TIÊM NGỪA") || upperStr === "TNDV") {
-      return {
-        font: { name: "Times New Roman", sz: 9.5, bold: true, italic: false, color: { rgb: "075985" } },
-        fill: { patternType: "solid", fgColor: { rgb: "E0F2FE" } },
-        alignment: baseAlign,
-        border: borderObj
-      };
-    }
-    if (upperStr === "P" || upperStr === "NB" || upperStr.startsWith("NGHỈ") || upperStr === "LỄ" || upperStr === "TẾT") {
-      return {
-        font: { name: "Times New Roman", sz: 9.5, bold: false, italic: false, color: { rgb: "6B21A8" } },
-        fill: { patternType: "solid", fgColor: { rgb: "F3E8FF" } },
-        alignment: baseAlign,
-        border: borderObj
-      };
-    }
-    if (upperStr === "TH" || upperStr === "H" || upperStr.startsWith("TẬP HUẤN") || upperStr.startsWith("HỌP") || upperStr.startsWith("HỌC")) {
-      return {
-        font: { name: "Times New Roman", sz: 9.5, bold: false, italic: false, color: { rgb: "1E3A8A" } },
-        fill: { patternType: "solid", fgColor: { rgb: "EFF6FF" } },
-        alignment: baseAlign,
-        border: borderObj
-      };
-    }
 
-    // Mặc định (HC hoặc ô trống cuối tuần): chữ đứng, đồng bộ font/size/màu
+    // Còn lại các lịch công tác khác (HC, tiêm ngừa, tập huấn, họp, nghỉ, hỗ trợ, ô trống...): nền trắng, chữ đen
     return {
-      font: { name: "Times New Roman", sz: 9.5, bold: false, italic: false, color: { rgb: "0F172A" } },
-      fill: { patternType: "solid", fgColor: { rgb: cleanBgRgb } },
+      font: { name: "Times New Roman", sz: 9.5, bold: false, italic: false, color: { rgb: "000000" } },
+      fill: { patternType: "solid", fgColor: { rgb: "FFFFFF" } },
       alignment: baseAlign,
       border: borderObj
     };
