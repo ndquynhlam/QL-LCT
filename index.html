@@ -4265,7 +4265,8 @@
       }
       return Promise.all([sheetFile.async("string"), stylesFile.async("string")]).then(([sheetXml, stylesXml]) => {
         let dxfId = 0;
-        const dxfEntry = `<dxf><font><b/><color rgb="FF4A1512"/></font><fill><patternFill patternType="solid"><fgColor rgb="FFFCE4E2"/><bgColor indexed="64"/></patternFill></fill><border><top style="medium"><color rgb="FF4A1512"/></top><bottom style="medium"><color rgb="FF4A1512"/></bottom><left style="thin"><color rgb="FF4A1512"/></left><right style="thin"><color rgb="FF4A1512"/></right></border></dxf>`;
+        // Thứ tự chuẩn OpenXML Schema (CT_Border): left -> right -> top -> bottom -> diagonal
+        const dxfEntry = `<dxf><font><b/><color rgb="FF4A1512"/></font><fill><patternFill patternType="solid"><fgColor rgb="FFFCE4E2"/><bgColor indexed="64"/></patternFill></fill><border><left style="thin"><color rgb="FF4A1512"/></left><right style="thin"><color rgb="FF4A1512"/></right><top style="medium"><color rgb="FF4A1512"/></top><bottom style="medium"><color rgb="FF4A1512"/></bottom></border></dxf>`;
         if (/<dxfs\b[^>]*\/>/.test(stylesXml)) {
           dxfId = 0;
           stylesXml = stylesXml.replace(/<dxfs\b[^>]*\/>/, `<dxfs count="1">${dxfEntry}</dxfs>`);
@@ -4274,7 +4275,15 @@
           dxfId = matchCount ? parseInt(matchCount[1], 10) : 0;
           stylesXml = stylesXml.replace(/<dxfs\b[^>]*count="\d+"[^>]*>/, `<dxfs count="${dxfId + 1}">`).replace("</dxfs>", `${dxfEntry}</dxfs>`);
         } else {
-          stylesXml = stylesXml.replace("</styleSheet>", `<dxfs count="1">${dxfEntry}</dxfs></styleSheet>`);
+          // Thứ tự chuẩn OpenXML Schema (CT_Stylesheet): chèn <dxfs> trước <tableStyles> hoặc <extLst>
+          const dxfsBlock = `<dxfs count="1">${dxfEntry}</dxfs>`;
+          if (/<tableStyles\b/.test(stylesXml)) {
+            stylesXml = stylesXml.replace(/<tableStyles\b/, `${dxfsBlock}<tableStyles`);
+          } else if (/<extLst\b/.test(stylesXml)) {
+            stylesXml = stylesXml.replace(/<extLst\b/, `${dxfsBlock}<extLst`);
+          } else {
+            stylesXml = stylesXml.replace("</styleSheet>", `${dxfsBlock}</styleSheet>`);
+          }
         }
 
         const safeSqref = String(sheet1RangeRef || "G8:AL65").replace(/&/g, "&amp;");
