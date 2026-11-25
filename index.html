@@ -1278,7 +1278,7 @@
 
 <script>
 (function() {
-  const STORAGE_KEY = "tyt_schedule_app_v6_2026";
+  const STORAGE_KEY = "tyt_schedule_app_v7_2026";
   const DEFAULT_PIN = "2026";
 
   // Ưu tiên 1: Thứ tự Đơn vị công tác khớp với mẫu chuẩn Lich_Cong_Tac_TYT_Hung_Long
@@ -1556,7 +1556,17 @@
     }
     const fixed = list.map(s => {
       const copy = Object.assign({}, s);
-      if (copy.name === "Điều dưỡng Mẫn") copy.name = "PHAN THANH MẨN";
+      const OLD_NAME_UPGRADE = {"Điều dưỡng Bình": ["LÊ QUỐC BÌNH", "ĐĐ. CKI", "Quyền Giám đốc", "Ban Giám đốc"], "CN. Linh": ["NGUYỄN THỊ MỸ LINH", "CNKH", "Phó Giám đốc", "Ban Giám đốc"], "CN. Trân": ["LƯ THỊ MỸ TRÂN", "CN QLNN", "Trưởng phòng", "Phòng Hành chính"], "CN. Lang": ["PHẠM THỊ THU LANG", "CNKT", "Nhân viên", "Phòng Hành chính"], "CN. Lam": ["NGUYỄN ĐẶNG QUỲNH LAM", "CN QLNN", "Nhân viên", "Phòng Hành chính"], "Hộ sinh Anh": ["CAO THỊ HỒNG ANH", "CNHS", "Trưởng phòng", "Phòng Dân số"], "Điều dưỡng Nhung": ["NGUYỄN THỊ NGỌC NHUNG", "CNĐD", "Nhân viên", "Phòng Dân số"], "Hộ sinh Hằng": ["NGUYỄN THỊ CẨM HẰNG", "CNHS", "Nhân viên", "Phòng Dân số"], "Hộ sinh Ngọc": ["NGUYỄN THỊ HỒNG NGỌC", "CĐHS", "Nhân viên", "Phòng Dân số"], "Dược sĩ Dung": ["LÊ THỊ MỘNG DUNG", "DS", "Trưởng khoa", "Khoa Dược"], "Dược sĩ Bích": ["NGUYỄN THỊ NGỌC BÍCH", "CĐD", "Nhân viên", "Khoa Dược"], "Dược sĩ Thảo": ["NGUYỄN THỊ THANH THẢO", "CĐD", "Nhân viên", "Khoa Dược"], "Dược sĩ Ý": ["LẠI THỊ HỮU Ý", "CĐD", "Nhân viên", "Khoa Dược"], "Bác sĩ Nuôi": ["NGUYỄN NGỌC NUÔI", "BS. CKI", "Trưởng khoa", "Khoa Khám bệnh"], "Bác sĩ Vân": ["NGUYỄN THANH VÂN", "BS", "Nhân viên", "Khoa Khám bệnh"], "Điều dưỡng Ánh": ["NGUYỄN THỊ NGỌC ÁNH", "CNĐD", "Nhân viên", "Khoa Khám bệnh"], "Điều dưỡng Loan": ["TRẦN THANH LOAN", "CNĐD", "Trưởng khoa", "Khoa Phòng bệnh"], "CN. Hường": ["TRƯƠNG THỊ MỸ HƯỜNG", "CN YTCC", "Nhân viên", "Khoa Phòng bệnh"], "Điều dưỡng Liên": ["VÕ KIM LIỄN", "CNĐD", "Nhân viên", "Khoa Phòng bệnh"], "Điều dưỡng Mẩn": ["PHAN THANH MẨN", "CĐĐD", "Nhân viên", "Khoa Phòng bệnh"], "Điều dưỡng Thảo": ["NGUYỄN NGỌC THẢO", "CNĐD", "Nhân viên", "Khoa Phòng bệnh"], "Điều dưỡng Tuyền": ["HUỲNH THỊ KIM TUYỀN", "CNĐD", "Nhân viên", "Khoa Phòng bệnh"], "Y sĩ Hà": ["LƯU HẢI HÀ", "YS", "Nhân viên", "Khoa Phòng bệnh"], "Y sĩ Tuấn": ["NGÔ MINH TUẤN", "YS", "Nhân viên", "Khoa Phòng bệnh"], "Bác sĩ An": ["NGUYỄN THÁI AN", "BS", "Phụ trách điểm", "Điểm Y tế 2"], "Điều dưỡng Giang": ["TRẦN HOÀNG GIANG", "CNĐD", "Nhân viên", "Điểm Y tế 2"], "Điều dưỡng Vạn": ["PHẠM THỊ VẠN", "TCĐD", "Nhân viên", "Điểm Y tế 2"], "Y sĩ Nghị": ["PHAN HOÀNG NGHỊ", "YS", "Nhân viên", "Điểm Y tế 2"]};
+      if (OLD_NAME_UPGRADE[copy.name]) {
+        const [uName, uTitle, uPos, uDept] = OLD_NAME_UPGRADE[copy.name];
+        copy.name = uName;
+        if (!copy.title || ["Điều dưỡng", "Hộ sinh", "Dược sĩ", "Bác sĩ", "Y sĩ", "Chuyên môn khác"].includes(copy.title)) {
+          copy.title = uTitle;
+        }
+        if (uPos) copy.position = uPos;
+        if (uDept) copy.dept = uDept;
+      }
+
       if (copy.name === "Hộ sinh Ngọc" || copy.name === "CN. Hường" || copy.name === "NGUYỄN THỊ HỒNG NGỌC" || copy.name === "TRƯƠNG THỊ MỸ HƯỜNG") copy.isAdminOnly = true;
       if (copy.name === "Dược sĩ Thảo" || copy.name === "Dược sĩ Ý" || copy.name === "NGUYỄN THỊ THANH THẢO" || copy.name === "LẠI THỊ HỮU Ý") copy.contract = "Viên chức";
       if (copy.name === "Bác sĩ Dung") copy.contract = "HĐ NQ73";
