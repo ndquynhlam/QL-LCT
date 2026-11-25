@@ -4462,7 +4462,92 @@
     });
   }
 
-  function exportFormattedExcel(opts) {
+  
+  /* =====================================================================
+     ĐỒNG BỘ HAI CHIỀU THÔNG TIN CŨ (HỆ THỐNG) <-> THÔNG TIN MỚI (EXCEL)
+     ===================================================================== */
+  const STAFF_EXCEL_SYNC_MAP = [
+    { oldName: "Điều dưỡng Bình", newName: "LÊ QUỐC BÌNH", oldDept: "Ban Giám đốc", newDept: "Ban Giám đốc", oldTitle: "Điều dưỡng", newTitle: "ĐĐ. CKI", oldPos: "Quyền Giám đốc", newPos: "Quyền Giám đốc" },
+    { oldName: "CN. Linh", newName: "NGUYỄN THỊ MỸ LINH", oldDept: "Ban Giám đốc", newDept: "Ban Giám đốc", oldTitle: "Chuyên môn khác", newTitle: "CNKH", oldPos: "Phó Giám đốc", newPos: "Phó Giám đốc" },
+    { oldName: "CN. Trân", newName: "LƯ THỊ MỸ TRÂN", oldDept: "Phòng Hành chính", newDept: "Phòng Hành chính", oldTitle: "Chuyên môn khác", newTitle: "CN QLNN", oldPos: "Trưởng phòng", newPos: "Trưởng phòng" },
+    { oldName: "CN. Lang", newName: "PHẠM THỊ THU LANG", oldDept: "Phòng Hành chính", newDept: "Phòng Hành chính", oldTitle: "Chuyên môn khác", newTitle: "CNKT", oldPos: "Nhân viên", newPos: "Nhân viên" },
+    { oldName: "CN. Lam", newName: "NGUYỄN ĐẶNG QUỲNH LAM", oldDept: "Phòng Hành chính", newDept: "Phòng Hành chính", oldTitle: "Chuyên môn khác", newTitle: "CN QLNN", oldPos: "Nhân viên", newPos: "Nhân viên" },
+    { oldName: "Hộ sinh Anh", newName: "CAO THỊ HỒNG ANH", oldDept: "Phòng Dân số", newDept: "Phòng Dân số", oldTitle: "Hộ sinh", newTitle: "CNHS", oldPos: "Trưởng phòng", newPos: "Trưởng phòng" },
+    { oldName: "Điều dưỡng Nhung", newName: "NGUYỄN THỊ NGỌC NHUNG", oldDept: "Phòng Dân số", newDept: "Phòng Dân số", oldTitle: "Điều dưỡng", newTitle: "CNĐD", oldPos: "Nhân viên", newPos: "Nhân viên" },
+    { oldName: "Hộ sinh Hằng", newName: "NGUYỄN THỊ CẨM HẰNG", oldDept: "Phòng Dân số", newDept: "Phòng Dân số", oldTitle: "Hộ sinh", newTitle: "CNHS", oldPos: "Nhân viên", newPos: "Nhân viên" },
+    { oldName: "Hộ sinh Ngọc", newName: "NGUYỄN THỊ HỒNG NGỌC", oldDept: "Phòng Dân số", newDept: "Phòng Dân số", oldTitle: "Hộ sinh", newTitle: "CĐHS", oldPos: "Nhân viên", newPos: "Nhân viên" },
+    { oldName: "Dược sĩ Dung", newName: "LÊ THỊ MỘNG DUNG", oldDept: "Khoa Dược", newDept: "Khoa Dược", oldTitle: "Dược sĩ", newTitle: "DS", oldPos: "Trưởng khoa", newPos: "Trưởng khoa" },
+    { oldName: "Dược sĩ Bích", newName: "NGUYỄN THỊ NGỌC BÍCH", oldDept: "Khoa Dược", newDept: "Khoa Dược", oldTitle: "Dược sĩ", newTitle: "CĐD", oldPos: "Nhân viên", newPos: "Nhân viên" },
+    { oldName: "Dược sĩ Thảo", newName: "NGUYỄN THỊ THANH THẢO", oldDept: "Khoa Dược", newDept: "Khoa Dược", oldTitle: "Dược sĩ", newTitle: "CĐD", oldPos: "Nhân viên", newPos: "Nhân viên" },
+    { oldName: "Dược sĩ Ý", newName: "LẠI THỊ HỮU Ý", oldDept: "Khoa Dược", newDept: "Khoa Dược", oldTitle: "Dược sĩ", newTitle: "CĐD", oldPos: "Nhân viên", newPos: "Nhân viên" },
+    { oldName: "Bác sĩ Nuôi", newName: "NGUYỄN NGỌC NUÔI", oldDept: "Khoa Khám bệnh", newDept: "Khoa Khám bệnh", oldTitle: "Bác sĩ", newTitle: "BS. CKI", oldPos: "Trưởng khoa", newPos: "Trưởng khoa" },
+    { oldName: "Bác sĩ Vân", newName: "NGUYỄN THANH VÂN", oldDept: "Khoa Khám bệnh", newDept: "Khoa Khám bệnh", oldTitle: "Bác sĩ", newTitle: "BS", oldPos: "Nhân viên", newPos: "Nhân viên" },
+    { oldName: "Điều dưỡng Ánh", newName: "NGUYỄN THỊ NGỌC ÁNH", oldDept: "Khoa Khám bệnh", newDept: "Khoa Khám bệnh", oldTitle: "Điều dưỡng", newTitle: "CNĐD", oldPos: "Nhân viên", newPos: "Nhân viên" },
+    { oldName: "Điều dưỡng Loan", newName: "TRẦN THANH LOAN", oldDept: "Khoa Phòng bệnh", newDept: "Khoa Phòng bệnh", oldTitle: "Điều dưỡng", newTitle: "CNĐD", oldPos: "Trưởng khoa", newPos: "Trưởng khoa" },
+    { oldName: "CN. Hường", newName: "TRƯƠNG THỊ MỸ HƯƠNG", oldDept: "Khoa Phòng bệnh", newDept: "Khoa Phòng bệnh", oldTitle: "Chuyên môn khác", newTitle: "CN YTCC", oldPos: "Nhân viên", newPos: "Nhân viên" },
+    { oldName: "Điều dưỡng Liên", newName: "VÕ KIM LIỄN", oldDept: "Khoa Phòng bệnh", newDept: "Khoa Phòng bệnh", oldTitle: "Điều dưỡng", newTitle: "CNĐD", oldPos: "Nhân viên", newPos: "Nhân viên" },
+    { oldName: "Điều dưỡng Mẩn", newName: "PHAN THANH MẨN", oldDept: "Khoa Phòng bệnh", newDept: "Khoa Phòng bệnh", oldTitle: "Điều dưỡng", newTitle: "CĐĐD", oldPos: "Nhân viên", newPos: "Nhân viên" },
+    { oldName: "Điều dưỡng Thảo", newName: "NGUYỄN NGỌC THẢO", oldDept: "Khoa Phòng bệnh", newDept: "Khoa Phòng bệnh", oldTitle: "Điều dưỡng", newTitle: "CNĐD", oldPos: "Nhân viên", newPos: "Nhân viên" },
+    { oldName: "Điều dưỡng Tuyền", newName: "HUỲNH THỊ KIM TUYẾN", oldDept: "Khoa Phòng bệnh", newDept: "Khoa Phòng bệnh", oldTitle: "Điều dưỡng", newTitle: "CNĐD", oldPos: "Nhân viên", newPos: "Nhân viên" },
+    { oldName: "Y sĩ Hà", newName: "LƯU HẢI HÀ", oldDept: "Khoa Phòng bệnh", newDept: "Khoa Phòng bệnh", oldTitle: "Y sĩ", newTitle: "YS", oldPos: "Nhân viên", newPos: "Nhân viên" },
+    { oldName: "Y sĩ Tuấn", newName: "NGÔ MINH TUẤN", oldDept: "Khoa Phòng bệnh", newDept: "Khoa Phòng bệnh", oldTitle: "Y sĩ", newTitle: "YS", oldPos: "Nhân viên", newPos: "Nhân viên" },
+    { oldName: "Bác sĩ An", newName: "NGUYỄN THÁI AN", oldDept: "Điểm Y tế 2", newDept: "Điểm Y tế 2", oldTitle: "Bác sĩ", newTitle: "BS", oldPos: "Phụ trách điểm", newPos: "Phụ trách điểm" },
+    { oldName: "Điều dưỡng Giang", newName: "TRẦN HOÀNG GIANG", oldDept: "Điểm Y tế 2", newDept: "Điểm Y tế 2", oldTitle: "Điều dưỡng", newTitle: "CNĐD", oldPos: "Nhân viên", newPos: "Nhân viên" },
+    { oldName: "Điều dưỡng Vạn", newName: "PHẠM THỊ VẠN", oldDept: "Điểm Y tế 2", newDept: "Điểm Y tế 2", oldTitle: "Điều dưỡng", newTitle: "TCĐD", oldPos: "Nhân viên", newPos: "Nhân viên" },
+    { oldName: "Y sĩ Nghị", newName: "PHAN HOÀNG NGHỊ", oldDept: "Điểm Y tế 2", newDept: "Điểm Y tế 2", oldTitle: "Y sĩ", newTitle: "YS", oldPos: "Nhân viên", newPos: "Nhân viên" },
+  ];
+
+  function _normSyncKey(str) {
+    return String(str || "").trim().toLowerCase().replace(/\s+/g, " ");
+  }
+
+  function mapStaffToExcelNew(st) {
+    if (!st) return { name: "", dept: "", title: "", position: "" };
+    const kOld = _normSyncKey(st.name);
+    const hit = STAFF_EXCEL_SYNC_MAP.find(m => _normSyncKey(m.oldName) === kOld || _normSyncKey(m.newName) === kOld);
+    if (hit) {
+      return {
+        name: hit.newName,
+        dept: hit.newDept,
+        title: hit.newTitle,
+        position: hit.newPos
+      };
+    }
+    return {
+      name: String(st.name || "").trim(),
+      dept: String(st.dept || "").trim(),
+      title: String(st.title || "").trim(),
+      position: String(st.position || "").trim()
+    };
+  }
+
+  function resolveStaffFromExcelInput(rawName, rawDept, rawTitle, rawPos) {
+    const cleanName = String(rawName || "").trim();
+    const k = _normSyncKey(cleanName);
+    const hit = STAFF_EXCEL_SYNC_MAP.find(m => _normSyncKey(m.newName) === k || _normSyncKey(m.oldName) === k);
+    if (hit) {
+      const existing = state.staff.find(s => _normSyncKey(s.name) === _normSyncKey(hit.oldName) || _normSyncKey(s.name) === _normSyncKey(hit.newName));
+      return {
+        matched: true,
+        existing,
+        name: hit.oldName,
+        dept: String(rawDept || "").trim() && _normSyncKey(rawDept) !== _normSyncKey(hit.newDept) ? String(rawDept).trim() : hit.oldDept,
+        title: String(rawTitle || "").trim() && _normSyncKey(rawTitle) !== _normSyncKey(hit.newTitle) ? String(rawTitle).trim() : hit.oldTitle,
+        position: String(rawPos || "").trim() && _normSyncKey(rawPos) !== _normSyncKey(hit.newPos) ? String(rawPos).trim() : hit.oldPos
+      };
+    }
+    const existing = state.staff.find(s => _normSyncKey(s.name) === k);
+    return {
+      matched: false,
+      existing,
+      name: cleanName,
+      dept: String(rawDept || existing?.dept || "Khoa Phòng bệnh").trim(),
+      title: String(rawTitle || existing?.title || "Điều dưỡng").trim(),
+      position: String(rawPos || existing?.position || "Nhân viên").trim()
+    };
+  }
+
+function exportFormattedExcel(opts) {
     if (typeof XLSX === "undefined") {
       showModal("Lỗi thư viện Excel", "<p>Chưa tải được thư viện xuất Excel. Vui lòng kiểm tra kết nối mạng và tải lại trang.</p>");
       return;
@@ -4586,19 +4671,21 @@
       setCell(ws1, rAfternoon, 0, "", metaCenterStyle);
       merges1.push({ s: { r: rMorning, c: 0 }, e: { r: rAfternoon, c: 0 } });
 
-      setCell(ws1, rMorning, 1, st.name, metaLeftStyle);
+      const mappedExcel = mapStaffToExcelNew(st);
+
+      setCell(ws1, rMorning, 1, mappedExcel.name, metaLeftStyle);
       setCell(ws1, rAfternoon, 1, "", metaLeftStyle);
       merges1.push({ s: { r: rMorning, c: 1 }, e: { r: rAfternoon, c: 1 } });
 
-      setCell(ws1, rMorning, 2, st.dept, metaCenterStyle);
+      setCell(ws1, rMorning, 2, mappedExcel.dept, metaCenterStyle);
       setCell(ws1, rAfternoon, 2, "", metaCenterStyle);
       merges1.push({ s: { r: rMorning, c: 2 }, e: { r: rAfternoon, c: 2 } });
 
-      setCell(ws1, rMorning, 3, st.position, metaCenterStyle);
+      setCell(ws1, rMorning, 3, mappedExcel.position, metaCenterStyle);
       setCell(ws1, rAfternoon, 3, "", metaCenterStyle);
       merges1.push({ s: { r: rMorning, c: 3 }, e: { r: rAfternoon, c: 3 } });
 
-      setCell(ws1, rMorning, 4, st.title, metaCenterStyle);
+      setCell(ws1, rMorning, 4, mappedExcel.title, metaCenterStyle);
       setCell(ws1, rAfternoon, 4, "", metaCenterStyle);
       merges1.push({ s: { r: rMorning, c: 4 }, e: { r: rAfternoon, c: 4 } });
 
@@ -4607,11 +4694,11 @@
 
       dsNhanSuRows.push([
         sIdx + 1,
-        st.name,
-        st.dept,
+        mappedExcel.name,
+        mappedExcel.dept,
         getStaffBaseBranch(st),
-        st.position,
-        st.title,
+        mappedExcel.position,
+        mappedExcel.title,
         st.contract || "Viên chức",
         st.isAdminOnly ? "Hành chính" : "Tham gia trực"
       ]);
@@ -4845,25 +4932,28 @@
           const importedNames = new Set();
           const importedStaff = [];
           rowsDS.forEach((r, idx) => {
-            const name = String(r["Họ và tên"] || "").trim();
-            if (!name) return;
-            importedNames.add(name);
-            const existing = state.staff.find(s => s.name === name);
-            const deptVal = String(r["Đơn vị công tác"] || existing?.dept || "Khoa Phòng bệnh").trim();
+            const rawName = String(r["Họ và tên"] || "").trim();
+            if (!rawName) return;
+            const res = resolveStaffFromExcelInput(rawName, r["Đơn vị công tác"], r["Chức danh"], r["Chức vụ"]);
+            const name = res.name;
+            importedNames.add(_normSyncKey(name));
+            importedNames.add(_normSyncKey(rawName));
+            const existing = res.existing;
+            const deptVal = res.dept;
             const locVal = String(r["Trụ sở làm việc"] || existing?.workLocation || (deptVal === "Điểm Y tế 2" ? "Điểm Y tế 2" : "Điểm chính")).trim();
             importedStaff.push({
               id: existing ? existing.id : ("s_imp_" + (idx + 1) + "_" + Date.now()),
               name,
               dept: deptVal,
               workLocation: locVal,
-              title: String(r["Chức danh"] || existing?.title || "Điều dưỡng").trim(),
-              position: String(r["Chức vụ"] || existing?.position || "Nhân viên").trim(),
+              title: res.title,
+              position: res.position,
               contract: String(r["Loại hợp đồng"] || existing?.contract || "Viên chức").trim(),
               isAdminOnly: String(r["Chế độ trực"] || "").trim() === "Hành chính"
             });
           });
           state.staff.forEach(s => {
-            if (!importedNames.has(s.name)) {
+            if (!importedNames.has(_normSyncKey(s.name))) {
               importedStaff.push(s);
             }
           });
@@ -4890,14 +4980,15 @@
             datesCleared.add(iso);
           }
 
-          let st = state.staff.find(s => s.name === name);
+          const resIE = resolveStaffFromExcelInput(name, r["Đơn vị công tác"], r["Chức danh"], r["Chức vụ"]);
+          let st = resIE.existing;
           if (!st) {
             st = {
               id: "s_ie_" + Date.now() + "_" + Math.random().toString(36).slice(2, 5),
-              name,
-              dept: String(r["Đơn vị công tác"] || "Khoa Phòng bệnh").trim(),
-              title: String(r["Chức danh"] || "Điều dưỡng").trim(),
-              position: String(r["Chức vụ"] || "Nhân viên").trim(),
+              name: resIE.name,
+              dept: resIE.dept,
+              title: resIE.title,
+              position: resIE.position,
               contract: String(r["Loại hợp đồng"] || "Viên chức").trim(),
               isAdminOnly: String(r["Chế độ trực"] || "").trim() === "Hành chính"
             };
@@ -4970,14 +5061,15 @@
         const name = String(rowM[1] || "").trim();
         if (!name || name === "NGƯỜI LẬP BẢNG") break;
 
-        let st = state.staff.find(s => s.name === name);
+        const resMat = resolveStaffFromExcelInput(name, rowM[2], rowM[4], rowM[3]);
+        let st = resMat.existing;
         if (!st) {
           st = {
             id: "s_m_" + Date.now() + "_" + r,
-            name,
-            dept: String(rowM[2] || "Khoa Phòng bệnh").trim(),
-            position: String(rowM[3] || "Nhân viên").trim(),
-            title: String(rowM[4] || "Điều dưỡng").trim(),
+            name: resMat.name,
+            dept: resMat.dept,
+            position: resMat.position,
+            title: resMat.title,
             contract: "Viên chức",
             isAdminOnly: false
           };
