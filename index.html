@@ -4547,7 +4547,20 @@
     };
   }
 
-function exportFormattedExcel(opts) {
+function formatTitleTitlePosExcel(st) {
+    const m = mapStaffToExcelNew(st);
+    const cd = String(m.title || "").trim();
+    const cv = String(m.position || "").trim();
+    if (cd && cv && cd.toLowerCase() !== cv.toLowerCase()) return `${cd}/${cv}`;
+    return cd || cv || "";
+  }
+
+  function createExcelDateUTC(iso) {
+    const [y, m, d] = String(iso).split("-").map(Number);
+    return new Date(Date.UTC(y, m - 1, d));
+  }
+
+  function exportFormattedExcel(opts) {
     if (typeof XLSX === "undefined") {
       showModal("Lỗi thư viện Excel", "<p>Chưa tải được thư viện xuất Excel. Vui lòng kiểm tra kết nối mạng và tải lại trang.</p>");
       return;
@@ -4555,16 +4568,20 @@ function exportFormattedExcel(opts) {
 
     const [defY, defM] = state.selectedMonth.split("-");
     const dates = (opts && Array.isArray(opts.dates) && opts.dates.length) ? opts.dates : getMonthDates(state.selectedMonth);
-    const titleBannerText = (opts && opts.titleText) ? opts.titleText : `LỊCH CÔNG TÁC THÁNG ${defM} NĂM ${defY}`;
+    const isWeekMode = opts && opts.mode === "week";
+    const line4Text = isWeekMode
+      ? "LỊCH CÔNG TÁC TUẦN"
+      : ((opts && opts.titleText) ? opts.titleText : `LỊCH CÔNG TÁC THÁNG ${defM} NĂM ${defY}`);
+    const line5Text = isWeekMode
+      ? `TỪ ${formatVNDate(dates[0])} ĐẾN ${formatVNDate(dates[dates.length - 1])}`
+      : "";
     const downloadFileName = (opts && opts.fileName) ? opts.fileName : `Lich_Cong_Tac_TYT_Hung_Long_Thang_${defM}_${defY}.xlsx`;
+
     const numDays = dates.length;
-    const totalCols = 6 + numDays; // A..F (6) + days
+    const totalCols = 5 + numDays; // A..E (5) + các cột ngày
     const lastColLetter = XLSX.utils.encode_col(totalCols - 1);
 
-    const sortedStaff = normalizeStaffList(state.staff).filter(st => {
-      const c = String(st.contract || "Viên chức").trim().toUpperCase();
-      return c !== "HĐ NQ73" && !c.includes("NQ73");
-    });
+    const sortedStaff = normalizeStaffList(state.staff);
     const thinBorder = {
       top: { style: "thin", color: { rgb: "94A3B8" } },
       bottom: { style: "thin", color: { rgb: "94A3B8" } },
@@ -4575,136 +4592,141 @@ function exportFormattedExcel(opts) {
     const ws1 = {};
     const merges1 = [];
 
-    function setCell(ws, r0, c0, val, style) {
+    function setCell(ws, r0, c0, val, style, numFmt) {
       const addr = XLSX.utils.encode_cell({ r: r0, c: c0 });
-      ws[addr] = { v: val === null || val === undefined ? "" : val, t: typeof val === "number" ? "n" : "s" };
+      if (val instanceof Date) {
+        ws[addr] = { v: val, t: "d", z: numFmt || "dd/mm/yyyy" };
+      } else {
+        ws[addr] = { v: val === null || val === undefined ? "" : val, t: typeof val === "number" ? "n" : "s" };
+      }
       if (style) ws[addr].s = style;
     }
 
     // Dòng 1: Quốc hiệu & Đơn vị chủ quản
+    const splitCol = Math.min(5, totalCols - 1);
     setCell(ws1, 0, 0, "UBND XÃ HƯNG LONG", {
-      font: { name: "Times New Roman", sz: 11, bold: true, color: { rgb: "1E3A5F" } },
+      font: { name: "Times New Roman", sz: 11, bold: false, color: { rgb: "0F172A" } },
       alignment: { horizontal: "center", vertical: "center" }
     });
-    setCell(ws1, 0, 6, "CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM", {
-      font: { name: "Times New Roman", sz: 11, bold: true, color: { rgb: "1E3A5F" } },
+    if (splitCol - 1 > 0) merges1.push({ s: { r: 0, c: 0 }, e: { r: 0, c: splitCol - 1 } });
+
+    setCell(ws1, 0, splitCol, "CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM", {
+      font: { name: "Times New Roman", sz: 11, bold: true, color: { rgb: "0F172A" } },
       alignment: { horizontal: "center", vertical: "center" }
     });
-    merges1.push({ s: { r: 0, c: 0 }, e: { r: 0, c: 4 } });
-    merges1.push({ s: { r: 0, c: 6 }, e: { r: 0, c: totalCols - 1 } });
+    if (totalCols - 1 > splitCol) merges1.push({ s: { r: 0, c: splitCol }, e: { r: 0, c: totalCols - 1 } });
 
     // Dòng 2: TRẠM Y TẾ & Độc lập - Tự do - Hạnh phúc
     setCell(ws1, 1, 0, "TRẠM Y TẾ", {
       font: { name: "Times New Roman", sz: 11, bold: true, color: { rgb: "0F172A" } },
       alignment: { horizontal: "center", vertical: "center" }
     });
-    setCell(ws1, 1, 6, "Độc lập - Tự do - Hạnh phúc", {
-      font: { name: "Times New Roman", sz: 11, bold: true, color: { rgb: "0F172A" } },
+    if (splitCol - 1 > 0) merges1.push({ s: { r: 1, c: 0 }, e: { r: 1, c: splitCol - 1 } });
+
+    setCell(ws1, 1, splitCol, "Độc lập - Tự do - Hạnh phúc", {
+      font: { name: "Times New Roman", sz: 12, bold: true, color: { rgb: "0F172A" } },
       alignment: { horizontal: "center", vertical: "center" }
     });
-    merges1.push({ s: { r: 1, c: 0 }, e: { r: 1, c: 4 } });
-    merges1.push({ s: { r: 1, c: 6 }, e: { r: 1, c: totalCols - 1 } });
+    if (totalCols - 1 > splitCol) merges1.push({ s: { r: 1, c: splitCol }, e: { r: 1, c: totalCols - 1 } });
 
-    // Dòng 3: Trống hoàn toàn
-    // Dòng 4: Tên bảng LỊCH CÔNG TÁC THÁNG [MM] NĂM [YYYY]
-    setCell(ws1, 3, 0, titleBannerText, {
-      font: { name: "Times New Roman", sz: 15, bold: true, color: { rgb: "1E3A5F" } },
+    // Dòng 4: Tiêu đề LỊCH CÔNG TÁC TUẦN / THÁNG
+    setCell(ws1, 3, 0, line4Text, {
+      font: { name: "Times New Roman", sz: 15, bold: true, color: { rgb: "0F172A" } },
       alignment: { horizontal: "center", vertical: "center" }
     });
     merges1.push({ s: { r: 3, c: 0 }, e: { r: 3, c: totalCols - 1 } });
 
-    // Dòng 5: Trống hoàn toàn
+    // Dòng 5: Khoảng thời gian (TỪ DD/MM/YYYY ĐẾN DD/MM/YYYY)
+    if (line5Text) {
+      setCell(ws1, 4, 0, line5Text, {
+        font: { name: "Times New Roman", sz: 15, bold: true, color: { rgb: "0F172A" } },
+        alignment: { horizontal: "center", vertical: "center" }
+      });
+      merges1.push({ s: { r: 4, c: 0 }, e: { r: 4, c: totalCols - 1 } });
+    }
 
-    // Dòng 6-7 (row index 5 và 6): 2 hàng tiêu đề đồng nhất màu sắc, font, cỡ chữ, căn lề và đường viền
-    const fixedHeaders = ["STT", "Họ và tên", "Đơn vị công tác", "Chức vụ", "Chức danh", "Buổi"];
-    const headerDarkStyle = {
-      font: { name: "Times New Roman", sz: 10, bold: true, italic: false, color: { rgb: "FFFFFF" } },
-      fill: { patternType: "solid", fgColor: { rgb: "1E3A5F" } },
-      alignment: { horizontal: "center", vertical: "center", wrapText: true },
-      border: thinBorder
-    };
+    // Dòng 7-8 (row index 6 và 7): Header bảng chuẩn hoá
+    const fixedHeaders = ["STT", "HỌ VÀ TÊN", "ĐƠN VỊ\nCÔNG TÁC", "CHỨC DANH/CHỨC VỤ", "BUỔI"];
     fixedHeaders.forEach((h, cIdx) => {
-      setCell(ws1, 5, cIdx, h, headerDarkStyle);
-      setCell(ws1, 6, cIdx, h, headerDarkStyle);
-      merges1.push({ s: { r: 5, c: cIdx }, e: { r: 6, c: cIdx } });
+      const hdrStyle = {
+        font: { name: "Times New Roman", sz: 12, bold: true, italic: false, color: { rgb: "1E3A5F" } },
+        fill: { patternType: "solid", fgColor: { rgb: "DBEAFE" } },
+        alignment: { horizontal: "center", vertical: "center", wrapText: true },
+        border: thinBorder
+      };
+      setCell(ws1, 6, cIdx, h, hdrStyle);
+      setCell(ws1, 7, cIdx, "", hdrStyle);
+      merges1.push({ s: { r: 6, c: cIdx }, e: { r: 7, c: cIdx } });
     });
 
     dates.forEach((iso, dIdx) => {
-      const cIdx = 6 + dIdx;
+      const cIdx = 5 + dIdx;
       const dow = getDayOfWeekInfo(iso);
-      const ddmm = `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
+      const dayTopLabel = dow.dow === 0 ? "CHỦ NHẬT" : `THỨ ${dow.dow + 1}`;
       const dayHeaderStyle = {
-        font: { name: "Times New Roman", sz: 10, bold: true, italic: false, color: { rgb: dow.isWeekend ? "7C2D12" : "1E3A5F" } },
+        font: { name: "Times New Roman", sz: 12, bold: true, italic: false, color: { rgb: dow.isWeekend ? "7C2D12" : "1E3A5F" } },
         fill: { patternType: "solid", fgColor: { rgb: dow.isWeekend ? "FDE68A" : "DBEAFE" } },
         alignment: { horizontal: "center", vertical: "center", wrapText: true },
         border: thinBorder
       };
-      setCell(ws1, 5, cIdx, dow.shortLabel, dayHeaderStyle);
-      setCell(ws1, 6, cIdx, ddmm, dayHeaderStyle);
+      setCell(ws1, 6, cIdx, dayTopLabel, dayHeaderStyle);
+      setCell(ws1, 7, cIdx, createExcelDateUTC(iso), dayHeaderStyle, "dd/mm/yyyy");
     });
 
-    // Dữ liệu từng nhân sự (mỗi người 2 hàng: Sáng & Chiều, bắt đầu từ row index 7 = dòng 8)
-    let curRow = 7;
+    // Dữ liệu từng nhân sự (mỗi người 2 hàng: Sáng & Chiều, bắt đầu từ row index 8 = dòng 9)
+    let curRow = 8;
     const dsNhanSuRows = [
-      ["STT", "Họ và tên", "Đơn vị công tác", "Trụ sở làm việc", "Chức vụ", "Chức danh", "Loại hợp đồng", "Chế độ trực"]
+      ["STT", "Họ và tên", "Đơn vị công tác", "Chức danh", "Chức vụ", "Chế độ trực"]
     ];
 
     sortedStaff.forEach((st, sIdx) => {
-      const bgRgb = "FFFFFF";
       const metaCenterStyle = {
-        font: { name: "Times New Roman", sz: 9.5, color: { rgb: "0F172A" } },
-        fill: { patternType: "solid", fgColor: { rgb: bgRgb } },
+        font: { name: "Times New Roman", sz: 12, color: { rgb: "0F172A" } },
+        fill: { patternType: "solid", fgColor: { rgb: "FFFFFF" } },
         alignment: { horizontal: "center", vertical: "center", wrapText: true },
         border: thinBorder
       };
-      const metaLeftStyle = {
-        font: { name: "Times New Roman", sz: 9.5, bold: true, color: { rgb: "0F172A" } },
-        fill: { patternType: "solid", fgColor: { rgb: bgRgb } },
+      const metaNameStyle = {
+        font: { name: "Times New Roman", sz: 12, bold: true, color: { rgb: "0F172A" } },
+        fill: { patternType: "solid", fgColor: { rgb: "FFFFFF" } },
         alignment: { horizontal: "left", vertical: "center", wrapText: true },
         border: thinBorder
       };
 
       const rMorning = curRow;
       const rAfternoon = curRow + 1;
+      const mappedExcel = mapStaffToExcelNew(st);
 
       setCell(ws1, rMorning, 0, sIdx + 1, metaCenterStyle);
       setCell(ws1, rAfternoon, 0, "", metaCenterStyle);
       merges1.push({ s: { r: rMorning, c: 0 }, e: { r: rAfternoon, c: 0 } });
 
-      const mappedExcel = mapStaffToExcelNew(st);
-
-      setCell(ws1, rMorning, 1, mappedExcel.name, metaLeftStyle);
-      setCell(ws1, rAfternoon, 1, "", metaLeftStyle);
+      setCell(ws1, rMorning, 1, mappedExcel.name, metaNameStyle);
+      setCell(ws1, rAfternoon, 1, "", metaNameStyle);
       merges1.push({ s: { r: rMorning, c: 1 }, e: { r: rAfternoon, c: 1 } });
 
       setCell(ws1, rMorning, 2, mappedExcel.dept, metaCenterStyle);
       setCell(ws1, rAfternoon, 2, "", metaCenterStyle);
       merges1.push({ s: { r: rMorning, c: 2 }, e: { r: rAfternoon, c: 2 } });
 
-      setCell(ws1, rMorning, 3, mappedExcel.position, metaCenterStyle);
+      setCell(ws1, rMorning, 3, formatTitleTitlePosExcel(st), metaCenterStyle);
       setCell(ws1, rAfternoon, 3, "", metaCenterStyle);
       merges1.push({ s: { r: rMorning, c: 3 }, e: { r: rAfternoon, c: 3 } });
 
-      setCell(ws1, rMorning, 4, mappedExcel.title, metaCenterStyle);
-      setCell(ws1, rAfternoon, 4, "", metaCenterStyle);
-      merges1.push({ s: { r: rMorning, c: 4 }, e: { r: rAfternoon, c: 4 } });
-
-      setCell(ws1, rMorning, 5, "Sáng", metaCenterStyle);
-      setCell(ws1, rAfternoon, 5, "Chiều", metaCenterStyle);
+      setCell(ws1, rMorning, 4, "Sáng", metaCenterStyle);
+      setCell(ws1, rAfternoon, 4, "Chiều", metaCenterStyle);
 
       dsNhanSuRows.push([
         sIdx + 1,
         mappedExcel.name,
         mappedExcel.dept,
-        getStaffBaseBranch(st),
-        mappedExcel.position,
         mappedExcel.title,
-        st.contract || "Viên chức",
+        mappedExcel.position,
         st.isAdminOnly ? "Hành chính" : "Tham gia trực"
       ]);
 
       dates.forEach((iso, dIdx) => {
-        const cIdx = 6 + dIdx;
+        const cIdx = 5 + dIdx;
         const dow = getDayOfWeekInfo(iso);
         const valM = computeStaffSessionText(st.id, iso, "Buổi Sáng");
         const valA = computeStaffSessionText(st.id, iso, "Buổi Chiều");
@@ -4725,57 +4747,52 @@ function exportFormattedExcel(opts) {
       curRow += 2;
     });
 
-    const lastDataRow1Based = curRow; // curRow is 0-indexed next empty row (e.g. 65 -> Excel row 66)
-    // Dòng trống sau bảng dữ liệu (curRow), dòng ký tên ở curRow + 1
+    const lastDataRow1Based = curRow;
     const sigRow = curRow + 1;
     const sigStyle = {
-      font: { name: "Times New Roman", sz: 10, bold: true, color: { rgb: "1E3A5F" } },
+      font: { name: "Times New Roman", sz: 12, bold: true, color: { rgb: "0F172A" } },
       alignment: { horizontal: "center", vertical: "center", wrapText: true }
     };
-    const c1Start = 0;
-    const c1End = Math.max(2, Math.floor((totalCols - 1) / 3));
-    const c2Start = c1End + 1;
-    const c2End = Math.max(c2Start, Math.floor((2 * (totalCols - 1)) / 3));
-    const c3Start = c2End + 1;
 
-    setCell(ws1, sigRow, c1Start, "NGƯỜI LẬP BẢNG", sigStyle);
-    if (c1End > c1Start) merges1.push({ s: { r: sigRow, c: c1Start }, e: { r: sigRow, c: c1End } });
+    setCell(ws1, sigRow, 0, "NGƯỜI LẬP BẢNG", sigStyle);
+    merges1.push({ s: { r: sigRow, c: 0 }, e: { r: sigRow, c: 3 } });
 
-    setCell(ws1, sigRow, c2Start, "TRƯỞNG PHÒNG HC, TC, NS", sigStyle);
-    if (c2End > c2Start) merges1.push({ s: { r: sigRow, c: c2Start }, e: { r: sigRow, c: c2End } });
+    const midCol = Math.min(4, totalCols - 1);
+    const rightCol = Math.min(8, totalCols - 1);
+    setCell(ws1, sigRow, midCol, "TRƯỞNG PHÒNG HC, TC, NS", sigStyle);
+    if (rightCol - 1 > midCol) merges1.push({ s: { r: sigRow, c: midCol }, e: { r: sigRow, c: rightCol - 1 } });
 
-    setCell(ws1, sigRow, c3Start, "Q. GIÁM ĐỐC", sigStyle);
-    if (totalCols - 1 > c3Start) merges1.push({ s: { r: sigRow, c: c3Start }, e: { r: sigRow, c: totalCols - 1 } });
+    setCell(ws1, sigRow, rightCol, "Q. GIÁM ĐỐC", sigStyle);
+    if (totalCols - 1 > rightCol) merges1.push({ s: { r: sigRow, c: rightCol }, e: { r: sigRow, c: totalCols - 1 } });
 
     ws1["!ref"] = XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: sigRow, c: totalCols - 1 } });
     ws1["!merges"] = merges1;
 
     const colsCfg = [
-      { wch: 6 },
-      { wch: 20 },
-      { wch: 22 },
-      { wch: 18 },
-      { wch: 18 },
-      { wch: 9 }
+      { wch: 7 },
+      { wch: 33 },
+      { wch: 17 },
+      { wch: 24 },
+      { wch: 10 }
     ];
-    for (let i = 0; i < numDays; i++) colsCfg.push({ wch: 20 });
+    for (let i = 0; i < numDays; i++) colsCfg.push({ wch: 21.5 });
     ws1["!cols"] = colsCfg;
 
     const rowsCfg = [
-      { hpt: 24 },
-      { hpt: 24 },
-      { hpt: 14 },
+      { hpt: 19.5 },
+      { hpt: 19.5 },
+      { hpt: 14.1 },
       { hpt: 28 },
-      { hpt: 14 },
+      { hpt: 28 },
+      { hpt: 14.1 },
       { hpt: 24 },
       { hpt: 24 }
     ];
-    for (let r = 7; r < curRow; r++) rowsCfg[r] = { hpt: 28 };
-    rowsCfg[curRow] = { hpt: 14 };
+    for (let r = 8; r < curRow; r++) rowsCfg[r] = { hpt: 37.5 };
+    rowsCfg[curRow] = { hpt: 14.1 };
     rowsCfg[sigRow] = { hpt: 30 };
     ws1["!rows"] = rowsCfg;
 
-    ws1["!freeze"] = { xSplit: 6, ySplit: 7, topLeftCell: "G8", activePane: "bottomRight", state: "frozen" };
     ws1["!pageSetup"] = {
       paperSize: 9,
       orientation: "landscape",
@@ -4787,14 +4804,19 @@ function exportFormattedExcel(opts) {
       left: 0.3, right: 0.3, top: 0.4, bottom: 0.4, header: 0.2, footer: 0.2
     };
 
-    // Sheet 2: DS_Nhan_Su (chuẩn hoá 2 sheet: Lich_Cong_Tac_Thang & DS_Nhan_Su, đồng bộ font đứng Times New Roman)
+    // Sheet 2: DS_Nhan_Su (6 cột chuẩn hoá, font Times New Roman)
     const ws2 = XLSX.utils.aoa_to_sheet(dsNhanSuRows);
     for (let r = 0; r < dsNhanSuRows.length; r++) {
       for (let c = 0; c < dsNhanSuRows[r].length; c++) {
         const addr = XLSX.utils.encode_cell({ r, c });
         if (!ws2[addr]) continue;
         if (r === 0) {
-          ws2[addr].s = headerDarkStyle;
+          ws2[addr].s = {
+            font: { name: "Times New Roman", sz: 10, bold: true, color: { rgb: "FFFFFF" } },
+            fill: { patternType: "solid", fgColor: { rgb: "1E3A5F" } },
+            alignment: { horizontal: "center", vertical: "center", wrapText: true },
+            border: thinBorder
+          };
         } else {
           ws2[addr].s = {
             font: { name: "Times New Roman", sz: 9.5, bold: c === 1, italic: false, color: { rgb: "0F172A" } },
@@ -4805,15 +4827,15 @@ function exportFormattedExcel(opts) {
       }
     }
     ws2["!cols"] = [
-      { wch: 6 }, { wch: 20 }, { wch: 22 }, { wch: 18 }, { wch: 18 }, { wch: 16 }, { wch: 14 }, { wch: 16 }
+      { wch: 6 }, { wch: 24 }, { wch: 20 }, { wch: 14 }, { wch: 18 }, { wch: 16 }
     ];
 
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws1, "Lich_Cong_Tac_Thang");
+    XLSX.utils.book_append_sheet(wb, ws1, "LCT_Va_import_excel");
     XLSX.utils.book_append_sheet(wb, ws2, "DS_Nhan_Su");
 
-    const wbOut = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-    const dataRangeRef = `G8:${lastColLetter}${lastDataRow1Based}`;
+    const wbOut = XLSX.write(wb, { bookType: "xlsx", type: "array", cellDates: true });
+    const dataRangeRef = `F9:${lastColLetter}${lastDataRow1Based}`;
 
     injectConditionalFormattingToXlsx(wbOut, dataRangeRef).then(blob => {
       const url = URL.createObjectURL(blob);
@@ -4826,16 +4848,50 @@ function exportFormattedExcel(opts) {
   }
 
   /* =====================================================================
-     EXCEL IMPORT (.XLSX) SUPPORTING BOTH 3-SHEET & Lich_Cong_Tac_Thang
+     EXCEL IMPORT (.XLSX) SUPPORTING LCT_Va_import_excel & Lich_Cong_Tac_Thang
      ===================================================================== */
   function parseVNDateToISO(str) {
+    if (str instanceof Date && !isNaN(str.getTime())) {
+      const y = str.getUTCFullYear();
+      const m = String(str.getUTCMonth() + 1).padStart(2, "0");
+      const d = String(str.getUTCDate()).padStart(2, "0");
+      return `${y}-${m}-${d}`;
+    }
+    if (typeof str === "number" && str > 20000) {
+      const utcMs = Math.round((str - 25569) * 86400 * 1000);
+      const dt = new Date(utcMs);
+      if (!isNaN(dt.getTime())) {
+        const y = dt.getUTCFullYear();
+        const m = String(dt.getUTCMonth() + 1).padStart(2, "0");
+        const d = String(dt.getUTCDate()).padStart(2, "0");
+        return `${y}-${m}-${d}`;
+      }
+    }
     const s = String(str || "").trim();
     const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
     if (m) {
       return `${m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`;
     }
+    const mShort = s.match(/^(\d{1,2})\/(\d{1,2})$/);
+    if (mShort) {
+      const [curY] = state.selectedMonth.split("-");
+      return `${curY}-${mShort[2].padStart(2, "0")}-${mShort[1].padStart(2, "0")}`;
+    }
     if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
     return "";
+  }
+
+  function splitTitleAndPosExcel(rawRole) {
+    const clean = String(rawRole || "").trim();
+    if (!clean) return { title: "", position: "" };
+    const slashIdx = clean.indexOf("/");
+    if (slashIdx !== -1) {
+      return {
+        title: clean.slice(0, slashIdx).trim(),
+        position: clean.slice(slashIdx + 1).trim()
+      };
+    }
+    return { title: clean, position: clean };
   }
 
   function applyCellTokensToSchedule(staffId, iso, sessionLabel, rawText) {
@@ -4879,7 +4935,6 @@ function exportFormattedExcel(opts) {
         if (st && isClinicalLeadTitle(st.title)) dayObj.main1 = staffId;
         else dayObj.main2 = staffId;
       } else {
-        // Công tác / Tập huấn / Nghỉ / Khác
         let type = part;
         let note = "";
         const dashIdx = part.indexOf(" - ");
@@ -4923,9 +4978,9 @@ function exportFormattedExcel(opts) {
     const reader = new FileReader();
     reader.onload = (ev) => safeRun(() => {
       const data = new Uint8Array(ev.target.result);
-      const wb = XLSX.read(data, { type: "array" });
+      const wb = XLSX.read(data, { type: "array", cellDates: true });
 
-      // 1. Cập nhật DS_Nhan_Su chuẩn hoá nếu có sheet DS_Nhan_Su (bảo toàn nhân sự HĐ NQ73 không có trong bảng xuất)
+      // 1. Cập nhật DS_Nhan_Su chuẩn hoá nếu có sheet DS_Nhan_Su
       if (wb.SheetNames.includes("DS_Nhan_Su")) {
         const rowsDS = XLSX.utils.sheet_to_json(wb.Sheets["DS_Nhan_Su"], { defval: "" });
         if (rowsDS.length > 0 && rowsDS[0]["Họ và tên"]) {
@@ -4963,64 +5018,19 @@ function exportFormattedExcel(opts) {
         }
       }
 
-      // 2. Ưu tiên đọc dữ liệu chi tiết từ sheet Import_Export nếu có
-      if (wb.SheetNames.includes("Import_Export")) {
-        const rowsIE = XLSX.utils.sheet_to_json(wb.Sheets["Import_Export"], { defval: "" });
-        const datesCleared = new Set();
-        let detectedMonth = "";
-
-        rowsIE.forEach(r => {
-          const name = String(r["Họ và tên"] || "").trim();
-          const iso = parseVNDateToISO(r["Ngày"]);
-          if (!name || !iso) return;
-
-          if (!detectedMonth) detectedMonth = iso.slice(0, 7);
-          if (!datesCleared.has(iso)) {
-            state.schedule[iso] = { main1: "", main2: "", dyt2: "", tasks: [] };
-            datesCleared.add(iso);
-          }
-
-          const resIE = resolveStaffFromExcelInput(name, r["Đơn vị công tác"], r["Chức danh"], r["Chức vụ"]);
-          let st = resIE.existing;
-          if (!st) {
-            st = {
-              id: "s_ie_" + Date.now() + "_" + Math.random().toString(36).slice(2, 5),
-              name: resIE.name,
-              dept: resIE.dept,
-              title: resIE.title,
-              position: resIE.position,
-              contract: String(r["Loại hợp đồng"] || "Viên chức").trim(),
-              isAdminOnly: String(r["Chế độ trực"] || "").trim() === "Hành chính"
-            };
-            state.staff.push(st);
-          }
-
-          applyCellTokensToSchedule(st.id, iso, "Buổi Sáng", r["Sáng"]);
-          applyCellTokensToSchedule(st.id, iso, "Buổi Chiều", r["Chiều"]);
-        });
-
-        state.staff = normalizeStaffList(state.staff);
-        if (detectedMonth) {
-          state.selectedMonth = detectedMonth;
-          document.getElementById("monthPicker").value = detectedMonth;
-        }
-        saveState();
-        renderAll();
-        showModal("Nhập File Excel Thành Công", `<p>Đã đồng bộ dữ liệu nhân sự và lịch công tác tháng <b>${escapeHtml(formatVNMonthYear(state.selectedMonth))}</b> từ file Excel.</p>`);
-        return;
-      }
-
-      // 2. Đọc chuẩn từ sheet Lich_Cong_Tac_Thang (định dạng bảng ngang 2 sheet chuẩn hoá)
-      const mainSheetName = wb.SheetNames.includes("Lich_Cong_Tac_Thang") ? "Lich_Cong_Tac_Thang" : wb.SheetNames[0];
+      // 2. Đọc bảng lịch ngang chuẩn (LCT_Va_import_excel hoặc Lich_Cong_Tac_Thang)
+      const mainSheetName = wb.SheetNames.includes("LCT_Va_import_excel")
+        ? "LCT_Va_import_excel"
+        : (wb.SheetNames.includes("Lich_Cong_Tac_Thang") ? "Lich_Cong_Tac_Thang" : wb.SheetNames[0]);
       const ws = wb.Sheets[mainSheetName];
       const matrix = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
       const merges = ws["!merges"] || [];
 
-      // Tìm năm và tháng từ dòng tiêu đề (dòng 4: THÁNG MM NĂM YYYY hoặc TUẦN TỪ DD/MM/YYYY ĐẾN DD/MM/YYYY)
       let monthStr = state.selectedMonth.slice(5, 7);
       let yearStr = state.selectedMonth.slice(0, 4);
       let weekEndMonth = "";
       let weekEndYear = "";
+
       for (let r = 0; r < Math.min(6, matrix.length); r++) {
         const line = (matrix[r] || []).join(" ");
         const mTitle = line.match(/THÁNG\s*(\d{1,2})\s*NĂM\s*(\d{4})/i);
@@ -5039,29 +5049,67 @@ function exportFormattedExcel(opts) {
         }
       }
 
-      // Dòng 7 (index 6) chứa DD/MM từ cột G (index 6)
-      const dateRow = matrix[6] || [];
+      // Phát hiện hàng ngày (dòng 8 / index 7 cho LCT_Va_import_excel, hoặc dòng 7 / index 6 cho bản cũ) và cột bắt đầu ngày (cột F = index 5 hoặc G = index 6)
+      let dateRowIdx = 7;
+      let startDayCol = 5;
+      let pairStartRow = 8;
+
+      const r7 = matrix[7] || [];
+      const r6 = matrix[6] || [];
+      const hasDateInR7Col5 = parseVNDateToISO(r7[5]) !== "";
+      const hasDateInR6Col6 = parseVNDateToISO(r6[6]) !== "";
+      if (hasDateInR7Col5) {
+        dateRowIdx = 7;
+        startDayCol = 5;
+        pairStartRow = 8;
+      } else if (hasDateInR6Col6) {
+        dateRowIdx = 6;
+        startDayCol = 6;
+        pairStartRow = 7;
+      }
+
+      const dateRow = matrix[dateRowIdx] || [];
       const colDates = {};
-      for (let c = 6; c < dateRow.length; c++) {
-        const cellTxt = String(dateRow[c] || "").trim();
-        const mDay = cellTxt.match(/^(\d{1,2})\/(\d{1,2})$/);
-        if (mDay) {
-          const dMonth = mDay[2].padStart(2, "0");
-          const dYear = (weekEndYear && dMonth === weekEndMonth && Number(dMonth) < Number(monthStr)) ? weekEndYear : yearStr;
-          const iso = `${dYear}-${dMonth}-${mDay[1].padStart(2, "0")}`;
+      for (let c = startDayCol; c < dateRow.length; c++) {
+        const rawCell = dateRow[c];
+        let iso = parseVNDateToISO(rawCell);
+        if (!iso && typeof rawCell === "string") {
+          const mDay = rawCell.trim().match(/^(\d{1,2})\/(\d{1,2})$/);
+          if (mDay) {
+            const dMonth = mDay[2].padStart(2, "0");
+            const dYear = (weekEndYear && dMonth === weekEndMonth && Number(dMonth) < Number(monthStr)) ? weekEndYear : yearStr;
+            iso = `${dYear}-${dMonth}-${mDay[1].padStart(2, "0")}`;
+          }
+        }
+        if (iso) {
           colDates[c] = iso;
           state.schedule[iso] = { main1: "", main2: "", dyt2: "", tasks: [] };
+          if (!weekEndYear) {
+            yearStr = iso.slice(0, 4);
+            monthStr = iso.slice(5, 7);
+          }
         }
       }
 
-      // Đọc từng cặp dòng Sáng / Chiều bắt đầu từ index 7
-      for (let r = 7; r < matrix.length - 1; r += 2) {
+      for (let r = pairStartRow; r < matrix.length - 1; r += 2) {
         const rowM = matrix[r] || [];
         const rowA = matrix[r + 1] || [];
         const name = String(rowM[1] || "").trim();
         if (!name || name === "NGƯỜI LẬP BẢNG") break;
 
-        const resMat = resolveStaffFromExcelInput(name, rowM[2], rowM[4], rowM[3]);
+        let rawDept = rowM[2];
+        let rawTitle = "";
+        let rawPos = "";
+        if (startDayCol === 5) {
+          const parsedRole = splitTitleAndPosExcel(rowM[3]);
+          rawTitle = parsedRole.title;
+          rawPos = parsedRole.position;
+        } else {
+          rawPos = rowM[3];
+          rawTitle = rowM[4];
+        }
+
+        const resMat = resolveStaffFromExcelInput(name, rawDept, rawTitle, rawPos);
         let st = resMat.existing;
         if (!st) {
           st = {
@@ -5094,7 +5142,7 @@ function exportFormattedExcel(opts) {
       document.getElementById("monthPicker").value = state.selectedMonth;
       saveState();
       renderAll();
-      showModal("Nhập File Excel Thành Công", `<p>Đã nạp lịch công tác tháng <b>${monthStr}/${yearStr}</b> từ bảng lịch Excel.</p>`);
+      showModal("Nhập File Excel Thành Công", `<p>Đã nạp lịch công tác tháng <b>${monthStr}/${yearStr}</b> từ bảng lịch Excel chuẩn hoá.</p>`);
     });
     reader.readAsArrayBuffer(file);
   }
