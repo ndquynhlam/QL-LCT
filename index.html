@@ -2207,6 +2207,68 @@
       }
     }
 
+    // Kiểm tra mâu thuẫn tự động (trạng thái & địa điểm) theo từng nhân sự và từng buổi (Sáng / Chiều)
+    const sessionsToCheck = ["Buổi Sáng", "Buổi Chiều"];
+    const isTaskInSession = (t, sess) => !t.session || t.session === "Cả ngày" || t.session === sess;
+    const isLeaveTaskType = (tp) => {
+      const low = String(tp || "").toLowerCase();
+      return low.includes("nghỉ phép") || low.includes("nghỉ bù") || low.includes("nghỉ") || low.includes("vắng");
+    };
+    const isDutyTaskType = (tp) => {
+      const low = String(tp || "").trim().toLowerCase();
+      return low === "trực điểm chính" || low === "trực đyt 2" || low === "trực dyt 2";
+    };
+
+    const staffIdsInDay = new Set([entry.main1, entry.main2, entry.dyt2].filter(Boolean));
+    tasks.forEach(t => { if (t && t.staffId) staffIdsInDay.add(t.staffId); });
+
+    const seenAutoConflict = new Set();
+    staffIdsInDay.forEach(sid => {
+      const st = getStaffById(sid);
+      if (!st) return;
+      const stTasks = tasks.filter(t => t && t.staffId === sid && !isDutyTaskType(t.type));
+      const inMainDuty = entry.main1 === sid || entry.main2 === sid;
+      const inDyt2Duty = entry.dyt2 === sid;
+
+      sessionsToCheck.forEach(sess => {
+        const sessTasks = stTasks.filter(t => isTaskInSession(t, sess));
+        const leaveTasks = sessTasks.filter(t => isLeaveTaskType(t.type));
+        const workTasks = sessTasks.filter(t => !isLeaveTaskType(t.type));
+
+        // 1. Mâu thuẫn trạng thái: vừa nghỉ vừa có lịch công tác/làm việc trong cùng buổi
+        if (leaveTasks.length > 0 && workTasks.length > 0) {
+          const leaveNames = Array.from(new Set(leaveTasks.map(t => t.type))).join(", ");
+          const workNames = Array.from(new Set(workTasks.map(t => t.type))).join(", ");
+          const msg = `Mâu thuẫn trạng thái (${sess}): ${st.name} vừa đăng ký "${leaveNames}" vừa có lịch "${workNames}"`;
+          if (!seenAutoConflict.has(msg)) {
+            seenAutoConflict.add(msg);
+            warnings.push(msg);
+          }
+        }
+
+        // 2. Mâu thuẫn địa điểm: cùng 1 buổi có mặt ở từ 2 trụ sở/địa điểm khác nhau
+        const locSources = [];
+        if (inMainDuty) locSources.push({ loc: "Điểm chính", label: "Trực Điểm chính" });
+        if (inDyt2Duty) locSources.push({ loc: "Điểm Y tế 2", label: "Trực ĐYT 2" });
+        workTasks.forEach(t => {
+          const wLoc = String(t.workLocation || "").trim();
+          if (wLoc) {
+            locSources.push({ loc: wLoc, label: t.type || "Công tác" });
+          }
+        });
+
+        const distinctLocs = Array.from(new Set(locSources.map(x => x.loc)));
+        if (distinctLocs.length > 1) {
+          const detailStr = locSources.map(x => `${x.label} tại ${x.loc}`).join(" và ");
+          const msg = `Mâu thuẫn địa điểm (${sess}): ${st.name} bị trùng lịch ở nhiều nơi (${detailStr})`;
+          if (!seenAutoConflict.has(msg)) {
+            seenAutoConflict.add(msg);
+            warnings.push(msg);
+          }
+        }
+      });
+    });
+
     // Quy tắc đảm bảo có ít nhất 1 Bác sĩ có mặt ở Điểm chính vào các ngày hành chính (Thứ 2 - Thứ 6)
     const isWeekdayMonFri = dowInfo.dow >= 1 && dowInfo.dow <= 5;
     const isHolidayAllDay = getHolidayInfo(iso).isHoliday;
@@ -4498,13 +4560,9 @@
 
     // Dữ liệu từng nhân sự (mỗi người 2 hàng: Sáng & Chiều, bắt đầu từ row index 7 = dòng 8)
     let curRow = 7;
-    const importExportRows = [
-      ["STT", "Họ và tên", "Đơn vị công tác", "Chức danh", "Chức vụ", "Loại hợp đồng", "Chế độ trực", "Ngày", "Thứ", "Sáng", "Chiều"]
-    ];
     const dsNhanSuRows = [
-      ["STT", "Họ và tên", "Đơn vị công tác", "Chức danh", "Chức vụ", "Loại hợp đồng", "Chế độ trực"]
+      ["STT", "Họ và tên", "Đơn vị công tác", "Trụ sở làm việc", "Chức vụ", "Chức danh", "Loại hợp đồng", "Chế độ trực"]
     ];
-    let ieCounter = 1;
 
     sortedStaff.forEach((st, sIdx) => {
       const bgRgb = "FFFFFF";
@@ -4551,8 +4609,9 @@
         sIdx + 1,
         st.name,
         st.dept,
-        st.title,
+        getStaffBaseBranch(st),
         st.position,
+        st.title,
         st.contract || "Viên chức",
         st.isAdminOnly ? "Hành chính" : "Tham gia trực"
       ]);
@@ -4562,20 +4621,6 @@
         const dow = getDayOfWeekInfo(iso);
         const valM = computeStaffSessionText(st.id, iso, "Buổi Sáng");
         const valA = computeStaffSessionText(st.id, iso, "Buổi Chiều");
-
-        importExportRows.push([
-          ieCounter++,
-          st.name,
-          st.dept,
-          st.title,
-          st.position,
-          st.contract || "Viên chức",
-          st.isAdminOnly ? "Hành chính" : "Tham gia trực",
-          formatVNDate(iso),
-          dow.label,
-          valM,
-          valA
-        ]);
 
         const styleM = getCellStyleForValue(valM, !!dow.isWeekend, thinBorder);
         const styleA = getCellStyleForValue(valA, !!dow.isWeekend, thinBorder);
@@ -4655,16 +4700,14 @@
       left: 0.3, right: 0.3, top: 0.4, bottom: 0.4, header: 0.2, footer: 0.2
     };
 
-    // Sheet 2: Import_Export (đồng bộ font đứng Times New Roman)
-    const ws2 = XLSX.utils.aoa_to_sheet(importExportRows);
-    for (let r = 0; r < importExportRows.length; r++) {
-      for (let c = 0; c < importExportRows[r].length; c++) {
+    // Sheet 2: DS_Nhan_Su (chuẩn hoá 2 sheet: Lich_Cong_Tac_Thang & DS_Nhan_Su, đồng bộ font đứng Times New Roman)
+    const ws2 = XLSX.utils.aoa_to_sheet(dsNhanSuRows);
+    for (let r = 0; r < dsNhanSuRows.length; r++) {
+      for (let c = 0; c < dsNhanSuRows[r].length; c++) {
         const addr = XLSX.utils.encode_cell({ r, c });
         if (!ws2[addr]) continue;
         if (r === 0) {
           ws2[addr].s = headerDarkStyle;
-        } else if (c === 9 || c === 10) {
-          ws2[addr].s = getCellStyleForValue(importExportRows[r][c], false, thinBorder);
         } else {
           ws2[addr].s = {
             font: { name: "Times New Roman", sz: 9.5, bold: c === 1, italic: false, color: { rgb: "0F172A" } },
@@ -4675,35 +4718,12 @@
       }
     }
     ws2["!cols"] = [
-      { wch: 6 }, { wch: 20 }, { wch: 22 }, { wch: 18 }, { wch: 18 },
-      { wch: 14 }, { wch: 16 }, { wch: 13 }, { wch: 11 }, { wch: 24 }, { wch: 24 }
-    ];
-
-    // Sheet 3: DS_Nhan_Su (đồng bộ font đứng Times New Roman)
-    const ws3 = XLSX.utils.aoa_to_sheet(dsNhanSuRows);
-    for (let r = 0; r < dsNhanSuRows.length; r++) {
-      for (let c = 0; c < dsNhanSuRows[r].length; c++) {
-        const addr = XLSX.utils.encode_cell({ r, c });
-        if (!ws3[addr]) continue;
-        if (r === 0) {
-          ws3[addr].s = headerDarkStyle;
-        } else {
-          ws3[addr].s = {
-            font: { name: "Times New Roman", sz: 9.5, bold: c === 1, italic: false, color: { rgb: "0F172A" } },
-            alignment: { horizontal: c === 1 ? "left" : "center", vertical: "center", wrapText: true },
-            border: thinBorder
-          };
-        }
-      }
-    }
-    ws3["!cols"] = [
-      { wch: 6 }, { wch: 20 }, { wch: 22 }, { wch: 18 }, { wch: 18 }, { wch: 14 }, { wch: 16 }
+      { wch: 6 }, { wch: 20 }, { wch: 22 }, { wch: 18 }, { wch: 18 }, { wch: 16 }, { wch: 14 }, { wch: 16 }
     ];
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws1, "Lich_Cong_Tac_Thang");
-    XLSX.utils.book_append_sheet(wb, ws2, "Import_Export");
-    XLSX.utils.book_append_sheet(wb, ws3, "DS_Nhan_Su");
+    XLSX.utils.book_append_sheet(wb, ws2, "DS_Nhan_Su");
 
     const wbOut = XLSX.write(wb, { bookType: "xlsx", type: "array" });
     const dataRangeRef = `G8:${lastColLetter}${lastDataRow1Based}`;
@@ -4787,11 +4807,19 @@
         if (existing) {
           if (existing.session !== sessionLabel) existing.session = "Cả ngày";
         } else {
+          const stObj = getStaffById(staffId);
+          const lowTp = String(type || "").toLowerCase();
+          const defaultLoc = (lowTp.includes("nghỉ") || lowTp.includes("vắng"))
+            ? "Không có mặt tại đơn vị"
+            : (lowTp === "tiêm ngừa" && getFixedVaccinationBranch(iso))
+              ? getFixedVaccinationBranch(iso)
+              : getStaffBaseBranch(stObj);
           dayObj.tasks.push({
             id: "t_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6),
             staffId,
             session: sessionLabel,
             type,
+            workLocation: defaultLoc,
             note
           });
         }
@@ -4810,24 +4838,34 @@
       const data = new Uint8Array(ev.target.result);
       const wb = XLSX.read(data, { type: "array" });
 
-      // 1. Cập nhật DS_Nhan_Su nếu có sheet DS_Nhan_Su
+      // 1. Cập nhật DS_Nhan_Su chuẩn hoá nếu có sheet DS_Nhan_Su (bảo toàn nhân sự HĐ NQ73 không có trong bảng xuất)
       if (wb.SheetNames.includes("DS_Nhan_Su")) {
         const rowsDS = XLSX.utils.sheet_to_json(wb.Sheets["DS_Nhan_Su"], { defval: "" });
         if (rowsDS.length > 0 && rowsDS[0]["Họ và tên"]) {
+          const importedNames = new Set();
           const importedStaff = [];
           rowsDS.forEach((r, idx) => {
             const name = String(r["Họ và tên"] || "").trim();
             if (!name) return;
+            importedNames.add(name);
             const existing = state.staff.find(s => s.name === name);
+            const deptVal = String(r["Đơn vị công tác"] || existing?.dept || "Khoa Phòng bệnh").trim();
+            const locVal = String(r["Trụ sở làm việc"] || existing?.workLocation || (deptVal === "Điểm Y tế 2" ? "Điểm Y tế 2" : "Điểm chính")).trim();
             importedStaff.push({
               id: existing ? existing.id : ("s_imp_" + (idx + 1) + "_" + Date.now()),
               name,
-              dept: String(r["Đơn vị công tác"] || "Khoa Phòng bệnh").trim(),
-              title: String(r["Chức danh"] || "Điều dưỡng").trim(),
-              position: String(r["Chức vụ"] || "Nhân viên").trim(),
-              contract: String(r["Loại hợp đồng"] || "Viên chức").trim(),
+              dept: deptVal,
+              workLocation: locVal,
+              title: String(r["Chức danh"] || existing?.title || "Điều dưỡng").trim(),
+              position: String(r["Chức vụ"] || existing?.position || "Nhân viên").trim(),
+              contract: String(r["Loại hợp đồng"] || existing?.contract || "Viên chức").trim(),
               isAdminOnly: String(r["Chế độ trực"] || "").trim() === "Hành chính"
             });
+          });
+          state.staff.forEach(s => {
+            if (!importedNames.has(s.name)) {
+              importedStaff.push(s);
+            }
           });
           if (importedStaff.length > 0) {
             state.staff = normalizeStaffList(importedStaff);
@@ -4881,21 +4919,31 @@
         return;
       }
 
-      // 3. Nếu chỉ có sheet Lich_Cong_Tac_Thang (định dạng bảng ngang gộp ô)
+      // 2. Đọc chuẩn từ sheet Lich_Cong_Tac_Thang (định dạng bảng ngang 2 sheet chuẩn hoá)
       const mainSheetName = wb.SheetNames.includes("Lich_Cong_Tac_Thang") ? "Lich_Cong_Tac_Thang" : wb.SheetNames[0];
       const ws = wb.Sheets[mainSheetName];
       const matrix = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
       const merges = ws["!merges"] || [];
 
-      // Tìm năm và tháng từ dòng tiêu đề (dòng 4)
+      // Tìm năm và tháng từ dòng tiêu đề (dòng 4: THÁNG MM NĂM YYYY hoặc TUẦN TỪ DD/MM/YYYY ĐẾN DD/MM/YYYY)
       let monthStr = state.selectedMonth.slice(5, 7);
       let yearStr = state.selectedMonth.slice(0, 4);
+      let weekEndMonth = "";
+      let weekEndYear = "";
       for (let r = 0; r < Math.min(6, matrix.length); r++) {
         const line = (matrix[r] || []).join(" ");
         const mTitle = line.match(/THÁNG\s*(\d{1,2})\s*NĂM\s*(\d{4})/i);
         if (mTitle) {
           monthStr = mTitle[1].padStart(2, "0");
           yearStr = mTitle[2];
+          break;
+        }
+        const wTitle = line.match(/TỪ\s*(\d{1,2})\/(\d{1,2})\/(\d{4})\s*ĐẾN\s*(\d{1,2})\/(\d{1,2})\/(\d{4})/i);
+        if (wTitle) {
+          monthStr = wTitle[2].padStart(2, "0");
+          yearStr = wTitle[3];
+          weekEndMonth = wTitle[5].padStart(2, "0");
+          weekEndYear = wTitle[6];
           break;
         }
       }
@@ -4907,7 +4955,9 @@
         const cellTxt = String(dateRow[c] || "").trim();
         const mDay = cellTxt.match(/^(\d{1,2})\/(\d{1,2})$/);
         if (mDay) {
-          const iso = `${yearStr}-${mDay[2].padStart(2, "0")}-${mDay[1].padStart(2, "0")}`;
+          const dMonth = mDay[2].padStart(2, "0");
+          const dYear = (weekEndYear && dMonth === weekEndMonth && Number(dMonth) < Number(monthStr)) ? weekEndYear : yearStr;
+          const iso = `${dYear}-${dMonth}-${mDay[1].padStart(2, "0")}`;
           colDates[c] = iso;
           state.schedule[iso] = { main1: "", main2: "", dyt2: "", tasks: [] };
         }
