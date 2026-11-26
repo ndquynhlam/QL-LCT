@@ -1333,7 +1333,6 @@
 { id: "s13", name: "Dược sĩ Ý", position: "Nhân viên", title: "Dược sĩ", dept: "Khoa Dược", workLocation: "Điểm chính", contract: "Viên chức", isAdminOnly: true },
 { id: "s14", name: "Bác sĩ Nuôi", position: "Trưởng khoa", title: "Bác sĩ", dept: "Khoa Khám bệnh", workLocation: "Điểm chính", contract: "Viên chức", isAdminOnly: false },
 { id: "s15", name: "Bác sĩ Vân", position: "Nhân viên", title: "Bác sĩ", dept: "Khoa Khám bệnh", workLocation: "Điểm chính", contract: "Viên chức", isAdminOnly: true },
-{ id: "s16", name: "Bác sĩ Dung", position: "Nhân viên", title: "Bác sĩ", dept: "Khoa Khám bệnh", workLocation: "Điểm chính", contract: "HĐ NQ73", isAdminOnly: true },
 { id: "s17", name: "Điều dưỡng Ánh", position: "Nhân viên", title: "Điều dưỡng", dept: "Khoa Khám bệnh", workLocation: "Điểm chính", contract: "Viên chức", isAdminOnly: false },
 { id: "s18", name: "Điều dưỡng Loan", position: "Trưởng khoa", title: "Điều dưỡng", dept: "Khoa Phòng bệnh", workLocation: "Điểm chính", contract: "Viên chức", isAdminOnly: false },
 { id: "s19", name: "CN. Hường", position: "Nhân viên", title: "Chuyên môn khác", dept: "Khoa Phòng bệnh", workLocation: "Điểm chính", contract: "Viên chức", isAdminOnly: true },
@@ -1551,20 +1550,23 @@
   }
 
   function normalizeStaffList(list) {
-    if (!Array.isArray(list) || list.length === 0) {
-      return JSON.parse(JSON.stringify(DEFAULT_STAFF));
-    }
-    const fixed = list.map(s => {
-      const copy = Object.assign({}, s);
-      if (copy.name === "Điều dưỡng Mẫn") copy.name = "Điều dưỡng Mẩn";
-      if (copy.name === "Hộ sinh Ngọc" || copy.name === "CN. Hường") copy.isAdminOnly = true;
-      if (copy.name === "Dược sĩ Thảo" || copy.name === "Dược sĩ Ý") copy.contract = "Viên chức";
-      if (copy.name === "Bác sĩ Dung") copy.contract = "HĐ NQ73";
-      if (!copy.workLocation) {
-        copy.workLocation = copy.dept === "Điểm Y tế 2" ? "Điểm Y tế 2" : "Điểm chính";
-      }
-      return copy;
-    });
+    const excludedNames = new Set(["bác sĩ dung", "bác sĩ thuỷ", "bác sĩ thủy"]);
+    const sourceList = (Array.isArray(list) && list.length > 0)
+      ? list
+      : JSON.parse(JSON.stringify(DEFAULT_STAFF));
+
+    const fixed = sourceList
+      .filter(s => s && !excludedNames.has(String(s.name || "").trim().toLowerCase()))
+      .map(s => {
+        const copy = Object.assign({}, s);
+        if (copy.name === "Điều dưỡng Mẫn") copy.name = "Điều dưỡng Mẩn";
+        if (copy.name === "Hộ sinh Ngọc" || copy.name === "CN. Hường") copy.isAdminOnly = true;
+        if (copy.name === "Dược sĩ Thảo" || copy.name === "Dược sĩ Ý") copy.contract = "Viên chức";
+        if (!copy.workLocation) {
+          copy.workLocation = copy.dept === "Điểm Y tế 2" ? "Điểm Y tế 2" : "Điểm chính";
+        }
+        return copy;
+      });
 
     const baseIndex = new Map(DEFAULT_STAFF.map((s, idx) => [s.name, idx]));
     fixed.sort((a, b) => {
@@ -4274,44 +4276,49 @@
     const baseAlign = { horizontal: "center", vertical: "center", wrapText: true };
     const tokens = rawStr.split("/").map(s => s.trim().toUpperCase()).filter(Boolean);
 
-    // Chỉ có nhãn "TRỰC ĐYT 2", "TRỰC", "RT" được định dạng màu sắc
-    // 1. TRỰC ĐYT 2: tone đỏ - nâu - hồng dễ nhìn, nổi bật
-    if (tokens.includes("TRỰC ĐYT 2") || upperStr === "TRỰC ĐYT 2") {
+    // 1. TRỰC ĐYT 2: nền hồng nhạt, chữ đỏ nâu đậm
+    if (tokens.includes("TRỰC ĐYT 2") || upperStr.includes("TRỰC ĐYT 2")) {
       return {
-        font: { name: "Times New Roman", sz: 10, bold: true, italic: false, color: { rgb: "4A1512" } },
-        fill: { patternType: "solid", fgColor: { rgb: "FCE4E2" } },
-        alignment: baseAlign,
-        border: {
-          top: { style: "medium", color: { rgb: "4A1512" } },
-          bottom: { style: "medium", color: { rgb: "4A1512" } },
-          left: { style: "thin", color: { rgb: "4A1512" } },
-          right: { style: "thin", color: { rgb: "4A1512" } }
-        }
-      };
-    }
-    // 2. TRỰC (Điểm chính): tone xanh ngọc dịu mắt, chữ đứng in đậm
-    if (tokens.includes("TRỰC") || upperStr === "TRỰC") {
-      return {
-        font: { name: "Times New Roman", sz: 9.5, bold: true, italic: false, color: { rgb: "065F46" } },
-        fill: { patternType: "solid", fgColor: { rgb: "D1FAE5" } },
-        alignment: baseAlign,
-        border: borderObj
-      };
-    }
-    // 3. RT (Ra trực): tone vàng hổ phách nhạt, chữ đứng in đậm
-    if (tokens.includes("RT") || upperStr === "RT") {
-      return {
-        font: { name: "Times New Roman", sz: 9.5, bold: true, italic: false, color: { rgb: "92400E" } },
-        fill: { patternType: "solid", fgColor: { rgb: "FEF3C7" } },
+        font: { name: "Times New Roman", sz: 12, bold: true, italic: false, color: { rgb: "78281F" } },
+        fill: { patternType: "solid", fgColor: { rgb: "F5B7B1" } },
         alignment: baseAlign,
         border: borderObj
       };
     }
 
-    // Còn lại các lịch công tác khác (HC, tiêm ngừa, tập huấn, họp, nghỉ, hỗ trợ, ô trống...): T7/CN tô nền vàng nhạt phân biệt rõ với ngày hành chính
+    // 2. TRỰC: nền xanh lá nhạt, chữ xanh đậm
+    if (tokens.includes("TRỰC") || upperStr === "TRỰC") {
+      return {
+        font: { name: "Times New Roman", sz: 12, bold: true, italic: false, color: { rgb: "065F46" } },
+        fill: { patternType: "solid", fgColor: { rgb: "D1FAE5" } },
+        alignment: baseAlign,
+        border: borderObj
+      };
+    }
+
+    // 3. TNDV: chữ nâu đỏ, nền vàng nhạt (giống cột Thứ 7, Chủ nhật)
+    if (tokens.includes("TNDV") || upperStr === "TNDV") {
+      return {
+        font: { name: "Times New Roman", sz: 12, bold: true, italic: false, color: { rgb: "7C2D12" } },
+        fill: { patternType: "solid", fgColor: { rgb: "FEF9C3" } },
+        alignment: baseAlign,
+        border: borderObj
+      };
+    }
+
+    // 4. Các ô còn lại: ngày thường chữ đen không in đậm; T7/CN nền vàng nhạt chữ nâu đỏ
     return {
-      font: { name: "Times New Roman", sz: 9.5, bold: isWeekendCol, italic: false, color: { rgb: isWeekendCol ? "7C2D12" : "000000" } },
-      fill: { patternType: "solid", fgColor: { rgb: isWeekendCol ? "FEF9C3" : "FFFFFF" } },
+      font: {
+        name: "Times New Roman",
+        sz: 12,
+        bold: !!isWeekendCol,
+        italic: false,
+        color: { rgb: isWeekendCol ? "7C2D12" : "000000" }
+      },
+      fill: {
+        patternType: "solid",
+        fgColor: { rgb: isWeekendCol ? "FEF9C3" : "FFFFFF" }
+      },
       alignment: baseAlign,
       border: borderObj
     };
@@ -4349,7 +4356,7 @@
         }
 
         const safeSqref = String(sheet1RangeRef || "G8:AL65").replace(/&/g, "&amp;");
-        const cfXml = `<conditionalFormatting sqref="${safeSqref}"><cfRule type="expression" dxfId="${dxfId}" priority="1"><formula>ISNUMBER(SEARCH("TRỰC ĐYT 2",G8))</formula></cfRule></conditionalFormatting>`;
+        const cfXml = `<conditionalFormatting sqref="${safeSqref}"><cfRule type="expression" dxfId="${dxfId}" priority="1"><formula>ISNUMBER(SEARCH("TRỰC ĐYT 2",F9))</formula></cfRule></conditionalFormatting>`;
 
         const anchorRegex = /(<pageMargins\b|<pageSetup\b|<headerFooter\b|<printOptions\b|<drawing\b)/;
         if (anchorRegex.test(sheetXml)) {
@@ -4581,7 +4588,10 @@ function formatTitleTitlePosExcel(st) {
     const totalCols = 5 + numDays; // A..E (5) + các cột ngày
     const lastColLetter = XLSX.utils.encode_col(totalCols - 1);
 
-    const sortedStaff = normalizeStaffList(state.staff);
+    const excludedExportNames = new Set(["bác sĩ dung", "bác sĩ thuỷ", "bác sĩ thủy"]);
+    const sortedStaff = normalizeStaffList(state.staff).filter(
+      st => !excludedExportNames.has(String(st.name || "").trim().toLowerCase())
+    );
     const thinBorder = {
       top: { style: "thin", color: { rgb: "94A3B8" } },
       bottom: { style: "thin", color: { rgb: "94A3B8" } },
@@ -5007,8 +5017,9 @@ function formatTitleTitlePosExcel(st) {
               isAdminOnly: String(r["Chế độ trực"] || "").trim() === "Hành chính"
             });
           });
+          const excludedImp = new Set(["bác sĩ dung", "bác sĩ thuỷ", "bác sĩ thủy"]);
           state.staff.forEach(s => {
-            if (!importedNames.has(_normSyncKey(s.name))) {
+            if (!excludedImp.has(_normSyncKey(s.name)) && !importedNames.has(_normSyncKey(s.name))) {
               importedStaff.push(s);
             }
           });
