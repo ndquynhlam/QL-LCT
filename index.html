@@ -4277,13 +4277,20 @@
     const baseAlign = { horizontal: "center", vertical: "center", wrapText: true };
     const tokens = rawStr.split("/").map(s => s.trim().toUpperCase().replace(/\s+/g, " ")).filter(Boolean);
 
-    // 1. TRỰC ĐYT 2: thống nhất tuyệt đối nền hồng nhạt (#FCE4E2) và chữ đỏ nâu đậm (#4A1512) trên MS Excel, Google Sheets và điện thoại
+    // 1. TRỰC ĐYT 2: mã màu mới nổi bật, tương phản cao và đồng nhất trên MS Excel, Google Sheets & điện thoại
+    // Nền cam đào nổi bật (#FF9E44) + chữ đỏ đô đậm (#5C0F0A) + viền đậm rõ nét
     if (tokens.includes("TRỰC ĐYT 2") || tokens.includes("TRỰC DYT 2") || normalizedStr.includes("TRỰC ĐYT 2") || normalizedStr.includes("TRỰC DYT 2")) {
+      const dyt2Border = {
+        top: { style: "medium", color: { rgb: "5C0F0A" } },
+        bottom: { style: "medium", color: { rgb: "5C0F0A" } },
+        left: { style: "thin", color: { rgb: "5C0F0A" } },
+        right: { style: "thin", color: { rgb: "5C0F0A" } }
+      };
       return {
-        font: { name: "Arial", sz: 11, bold: true, italic: false, color: { rgb: "4A1512" } },
-        fill: { patternType: "solid", fgColor: { rgb: "FCE4E2" }, bgColor: { indexed: 64 } },
+        font: { name: "Arial", sz: 11, bold: true, italic: false, color: { rgb: "5C0F0A" } },
+        fill: { patternType: "solid", fgColor: { rgb: "FF9E44" } },
         alignment: baseAlign,
-        border: borderObj
+        border: dyt2Border
       };
     }
 
@@ -4334,9 +4341,9 @@
         return new Blob([arrayBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
       }
       return Promise.all([sheetFile.async("string"), stylesFile.async("string")]).then(([sheetXml, stylesXml]) => {
+        // Đồng bộ dxf & conditionalFormatting chuẩn OOXML cho cả MS Excel và Google Sheets
         let dxfId = 0;
-        // Thứ tự chuẩn OpenXML Schema (CT_Border): left -> right -> top -> bottom -> diagonal
-        const dxfEntry = `<dxf><font><b/><color rgb="FF4A1512"/></font><fill><patternFill patternType="solid"><fgColor rgb="FFFCE4E2"/><bgColor indexed="64"/></patternFill></fill></dxf>`;
+        const dxfEntry = `<dxf><font><b/><color rgb="FF5C0F0A"/></font><fill><patternFill patternType="solid"><fgColor rgb="FFFF9E44"/><bgColor indexed="64"/></patternFill></fill><border><left style="thin"><color rgb="FF5C0F0A"/></left><right style="thin"><color rgb="FF5C0F0A"/></right><top style="medium"><color rgb="FF5C0F0A"/></top><bottom style="medium"><color rgb="FF5C0F0A"/></bottom></border></dxf>`;
         if (/<dxfs\b[^>]*\/>/.test(stylesXml)) {
           dxfId = 0;
           stylesXml = stylesXml.replace(/<dxfs\b[^>]*\/>/, `<dxfs count="1">${dxfEntry}</dxfs>`);
@@ -4356,9 +4363,8 @@
           }
         }
 
-        const safeSqref = String(sheet1RangeRef || "H8:BM36").replace(/&/g, "&amp;");
-        const startCellRef = safeSqref.split(":")[0] || "H8";
-        const cfXml = `<conditionalFormatting sqref="${safeSqref}"><cfRule type="expression" dxfId="${dxfId}" priority="1"><formula>ISNUMBER(SEARCH("TRỰC ĐYT 2",${startCellRef}))</formula></cfRule></conditionalFormatting>`;
+        const safeSqref = String(sheet1RangeRef || "F9:AL65").replace(/&/g, "&amp;");
+        const cfXml = `<conditionalFormatting sqref="${safeSqref}"><cfRule type="containsText" dxfId="${dxfId}" priority="1" operator="containsText" text="TRỰC ĐYT 2"><formula>"TRỰC ĐYT 2"</formula></cfRule></conditionalFormatting>`;
 
         const anchorRegex = /(<pageMargins\b|<pageSetup\b|<headerFooter\b|<printOptions\b|<drawing\b)/;
         if (anchorRegex.test(sheetXml)) {
