@@ -2888,7 +2888,9 @@
         tasksHtml += tasks.map(t => {
           const st = getStaffById(t.staffId);
           const nm = st ? st.name : "Nhân sự";
-          const noteStr = t.note ? ` (${escapeHtml(t.note)})` : "";
+          const isHoTroTuaTruc = String(t.type || "").trim().toLowerCase().includes("hỗ trợ tua trực");
+          const cleanNote = isHoTroTuaTruc ? "" : String(t.note || "").replace(/\(?Hỗ trợ trọn ngày hành chính\)?/gi, "").trim();
+          const noteStr = cleanNote ? ` (${escapeHtml(cleanNote)})` : "";
           const locStr = t.workLocation ? ` <i>[${escapeHtml(t.workLocation)}]</i>` : "";
           const chipHtml = isStaffWarned(st)
             ? `<span class="chip chip-rose" style="font-weight:700;">⚠️ ${escapeHtml(nm)}</span>`
@@ -4270,7 +4272,7 @@
             session: "Cả ngày",
             type: "Hỗ trợ tua trực",
             workLocation: "Điểm chính",
-            note: "Hỗ trợ trọn ngày hành chính"
+            note: ""
           });
           supportCounts[pickedSupporter.id] = (supportCounts[pickedSupporter.id] || 0) + 1;
           supportTurnIdx++;
@@ -4365,7 +4367,8 @@
             abbr = "TIÊM NGỪA";
           }
         }
-        const label = t.note ? `${abbr} - ${t.note}` : abbr;
+        const isHoTroTuaTruc = lowType.includes("hỗ trợ tua trực");
+        const label = (t.note && !isHoTroTuaTruc) ? `${abbr} - ${t.note}` : abbr;
         if (label && !otherTaskLabels.includes(label)) otherTaskLabels.push(label);
       }
     });
@@ -4382,7 +4385,8 @@
           const staffBranch = getStaffBaseBranch(stObj);
           abbr = fixedBranch ? ((staffBranch === fixedBranch) ? "TIÊM NGỪA" : "HỖ TRỢ TIÊM NGỪA") : "TIÊM NGỪA";
         }
-        const label = r.note ? `${abbr} - ${r.note}` : abbr;
+        const isHoTroTuaTruc = lowType.includes("hỗ trợ tua trực");
+        const label = (r.note && !isHoTroTuaTruc) ? `${abbr} - ${r.note}` : abbr;
         if (label && !otherTaskLabels.includes(label)) otherTaskLabels.push(label);
       }
     });
@@ -4730,9 +4734,18 @@ function formatTitleTitlePosExcel(st) {
 
     const [defY, defM] = state.selectedMonth.split("-");
     const dates = (opts && Array.isArray(opts.dates) && opts.dates.length) ? opts.dates : getMonthDates(state.selectedMonth);
+    const getISOWeekNumber = (isoStr) => {
+      const [wy, wm, wd] = String(isoStr).split("-").map(Number);
+      const dt = new Date(Date.UTC(wy, wm - 1, wd));
+      const dayNum = dt.getUTCDay() || 7;
+      dt.setUTCDate(dt.getUTCDate() + 4 - dayNum);
+      const yearStart = new Date(Date.UTC(dt.getUTCFullYear(), 0, 1));
+      return Math.ceil((((dt - yearStart) / 86400000) + 1) / 7);
+    };
     const isWeekMode = opts && opts.mode === "week";
+    const weekNumber = isWeekMode ? getISOWeekNumber(dates[0]) : 0;
     const line4Text = isWeekMode
-      ? "LỊCH CÔNG TÁC TUẦN"
+      ? `LỊCH CÔNG TÁC TUẦN ${weekNumber}`
       : ((opts && opts.titleText) ? opts.titleText : `LỊCH CÔNG TÁC THÁNG ${defM} NĂM ${defY}`);
     const line5Text = isWeekMode
       ? `TỪ ${formatVNDate(dates[0])} ĐẾN ${formatVNDate(dates[dates.length - 1])}`
