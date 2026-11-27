@@ -1324,7 +1324,7 @@
 { id: "s04", name: "CN. Lang", position: "Nhân viên", title: "Chuyên môn khác", dept: "Phòng Hành chính", workLocation: "Điểm chính", contract: "Viên chức", isAdminOnly: true },
 { id: "s05", name: "CN. Lam", position: "Nhân viên", title: "Chuyên môn khác", dept: "Phòng Hành chính", workLocation: "Điểm chính", contract: "Viên chức", isAdminOnly: true },
 { id: "s06", name: "Hộ sinh Anh", position: "Trưởng phòng", title: "Hộ sinh", dept: "Phòng Dân số", workLocation: "Điểm chính", contract: "Viên chức", isAdminOnly: false },
-{ id: "s07", name: "Điều dưỡng Nhung", position: "Nhân viên", title: "Điều dưỡng", dept: "Phòng Dân số", workLocation: "Điểm chính", contract: "Viên chức", isAdminOnly: false },
+{ id: "s07", name: "Điều dưỡng Nhung", position: "Nhân viên", title: "Điều dưỡng", dept: "Phòng Dân số", workLocation: "Điểm chính", contract: "Viên chức", isAdminOnly: true },
 { id: "s08", name: "Hộ sinh Hằng", position: "Nhân viên", title: "Hộ sinh", dept: "Phòng Dân số", workLocation: "Điểm chính", contract: "Viên chức", isAdminOnly: false },
 { id: "s09", name: "Hộ sinh Ngọc", position: "Nhân viên", title: "Hộ sinh", dept: "Phòng Dân số", workLocation: "Điểm chính", contract: "Viên chức", isAdminOnly: true },
 { id: "s10", name: "Dược sĩ Dung", position: "Trưởng khoa", title: "Dược sĩ", dept: "Khoa Dược", workLocation: "Điểm chính", contract: "Viên chức", isAdminOnly: true },
@@ -1560,7 +1560,7 @@
       .map(s => {
         const copy = Object.assign({}, s);
         if (copy.name === "Điều dưỡng Mẫn") copy.name = "Điều dưỡng Mẩn";
-        if (copy.name === "Hộ sinh Ngọc" || copy.name === "CN. Hường") copy.isAdminOnly = true;
+        if (copy.name === "Hộ sinh Ngọc" || copy.name === "Điều dưỡng Nhung" || copy.name === "CN. Hường") copy.isAdminOnly = true;
         if (copy.name === "Dược sĩ Thảo" || copy.name === "Dược sĩ Ý") copy.contract = "Viên chức";
         if (!copy.workLocation) {
           copy.workLocation = copy.dept === "Điểm Y tế 2" ? "Điểm Y tế 2" : "Điểm chính";
@@ -4049,81 +4049,185 @@
 
   function autoGenerateSchedule(onlyEmpty) {
     const dates = getMonthDates(state.selectedMonth);
-    const leads = state.staff.filter(s => !s.isAdminOnly && isClinicalLeadTitle(s.title));
-    const nurses = state.staff.filter(s => !s.isAdminOnly && isNurseOrMidwifeTitle(s.title));
+    if (!dates.length) return;
 
-    if (leads.length < 1 || nurses.length < 2) {
-      showModal("Không đủ nhân sự trực", "<p>Cần tối thiểu 1 Bác sĩ/Y sĩ và 2 Điều dưỡng/Hộ sinh tham gia trực để xếp tự động.</p>");
+    // 5 ca cố định xoay vòng:
+    // 1. Điều dưỡng Loan, Điều dưỡng Vạn, Bác sĩ An
+    // 2. Điều dưỡng Thảo, Điều dưỡng Liên, Y sĩ Tuấn
+    // 3. Điều dưỡng Tuyền, Điều dưỡng Mẩn, Y sĩ Hà
+    // 4. Hộ sinh Anh, Điều dưỡng Giang, Bác sĩ Nuôi
+    // 5. Điều dưỡng Ánh, Hộ sinh Hằng, Y sĩ Nghị
+    const FIXED_ROTATION_SHIFTS = [
+      { leadName: "Bác sĩ An", nurseNames: ["Điều dưỡng Loan", "Điều dưỡng Vạn"] },
+      { leadName: "Y sĩ Tuấn", nurseNames: ["Điều dưỡng Thảo", "Điều dưỡng Liên"] },
+      { leadName: "Y sĩ Hà", nurseNames: ["Điều dưỡng Tuyền", "Điều dưỡng Mẩn"] },
+      { leadName: "Bác sĩ Nuôi", nurseNames: ["Hộ sinh Anh", "Điều dưỡng Giang"] },
+      { leadName: "Y sĩ Nghị", nurseNames: ["Điều dưỡng Ánh", "Hộ sinh Hằng"] }
+    ];
+
+    const findStaffByExactName = (nm) => {
+      const target = String(nm || "").trim().toLowerCase();
+      return state.staff.find(s => String(s.name || "").trim().toLowerCase() === target) || null;
+    };
+
+    const resolvedTeams = FIXED_ROTATION_SHIFTS.map((t, idx) => ({
+      index: idx,
+      lead: findStaffByExactName(t.leadName),
+      nurses: t.nurseNames.map(findStaffByExactName).filter(Boolean)
+    }));
+
+    const missingMembers = [];
+    resolvedTeams.forEach((t, idx) => {
+      if (!t.lead) missingMembers.push(`Ca ${idx + 1}: thiếu ${FIXED_ROTATION_SHIFTS[idx].leadName}`);
+      if (t.nurses.length < 2) missingMembers.push(`Ca ${idx + 1}: thiếu Điều dưỡng/Hộ sinh`);
+    });
+
+    if (missingMembers.length > 0) {
+      showModal("Thiếu nhân sự trong 5 ca cố định", `<p>Không thể xếp xoay vòng 5 ca vì thiếu nhân sự trong danh sách:</p><ul>${missingMembers.map(m => `<li>${escapeHtml(m)}</li>`).join("")}</ul>`);
       return;
     }
 
-    const counts = {};
-    state.staff.forEach(s => { counts[s.id] = 0; });
+    // Dò lịch sử trước đầu tháng để nối tiếp đúng tua và đúng người vừa giữ Trực điểm chính
+    const firstDayPrevIso = addDaysISO(dates[0], -1);
+    const firstDayPrevEntry = state.schedule[firstDayPrevIso] || {};
+    let startTeamOffset = 0;
+    const lastMainNurseByTeam = {};
 
-    dates.forEach(iso => {
+    resolvedTeams.forEach((team, tIdx) => {
+      if (team.lead && firstDayPrevEntry.main1 === team.lead.id) {
+        startTeamOffset = (tIdx + 1) % resolvedTeams.length;
+      }
+      if (team.nurses[0] && firstDayPrevEntry.main2 === team.nurses[0].id) {
+        lastMainNurseByTeam[tIdx] = team.nurses[0].id;
+      } else if (team.nurses[1] && firstDayPrevEntry.main2 === team.nurses[1].id) {
+        lastMainNurseByTeam[tIdx] = team.nurses[1].id;
+      }
+    });
+
+    for (let back = 1; back <= 15; back++) {
+      const pIso = addDaysISO(dates[0], -back);
+      const pEntry = state.schedule[pIso];
+      if (!pEntry) continue;
+      resolvedTeams.forEach((team, tIdx) => {
+        if (lastMainNurseByTeam[tIdx]) return;
+        if (team.nurses[0] && pEntry.main2 === team.nurses[0].id) {
+          lastMainNurseByTeam[tIdx] = team.nurses[0].id;
+        } else if (team.nurses[1] && pEntry.main2 === team.nurses[1].id) {
+          lastMainNurseByTeam[tIdx] = team.nurses[1].id;
+        }
+      });
+    }
+
+    // 1. Xếp xoay vòng 5 ca cố định & luân phiên Trực điểm chính giữa 2 Điều dưỡng/Hộ sinh trong cùng tua
+    dates.forEach((iso, dayIdx) => {
       const cur = state.schedule[iso] || { main1: "", main2: "", dyt2: "", tasks: [] };
-      const prev = state.schedule[addDaysISO(iso, -1)] || {};
-      const blocked = new Set([prev.main1, prev.main2, prev.dyt2].filter(Boolean));
-      if (Array.isArray(cur.tasks)) {
-        cur.tasks.forEach(t => blocked.add(t.staffId));
+      if (!Array.isArray(cur.tasks)) cur.tasks = [];
+
+      const teamIdx = (startTeamOffset + dayIdx) % resolvedTeams.length;
+      const team = resolvedTeams[teamIdx];
+      const nA = team.nurses[0];
+      const nB = team.nurses[1];
+
+      // Tua trước ĐD/HS nào đã xếp Trực điểm chính -> tua sau ĐD/HS còn lại xếp Trực điểm chính
+      let chosenMainNurse = nA;
+      let chosenDyt2Nurse = nB;
+      if (lastMainNurseByTeam[teamIdx] === nA.id) {
+        chosenMainNurse = nB;
+        chosenDyt2Nurse = nA;
+      } else if (lastMainNurseByTeam[teamIdx] === nB.id) {
+        chosenMainNurse = nA;
+        chosenDyt2Nurse = nB;
       }
 
-      if (!onlyEmpty || !cur.main1) {
-        const dowAuto = getDayOfWeekInfo(iso);
-        const nextIsoAuto = addDaysISO(iso, 1);
-        const nextDowAuto = getDayOfWeekInfo(nextIsoAuto);
-        const candLeads = [...leads].filter(s => {
-          if (s.name === "Bác sĩ Dung" && dowAuto.dow !== 2 && dowAuto.dow !== 4) return false;
-          return true;
-        }).sort((a, b) => counts[a.id] - counts[b.id]);
+      if (!onlyEmpty || !cur.main1) cur.main1 = team.lead.id;
+      if (!onlyEmpty || !cur.main2) cur.main2 = chosenMainNurse.id;
+      if (!onlyEmpty || !cur.dyt2) cur.dyt2 = chosenDyt2Nurse.id;
 
-        const pick1 = candLeads.find(s => {
-          if (blocked.has(s.id)) return false;
-          // Nếu ngày mai (T2-T6) s là Bác sĩ trực hôm nay thì ngày mai ra trực, kiểm tra xem ngày mai Điểm chính còn ít nhất 1 Bác sĩ hành chính không
-          if (s.title === "Bác sĩ" && nextDowAuto.dow >= 1 && nextDowAuto.dow <= 5) {
-            const nextTasks = Array.isArray((state.schedule[nextIsoAuto] || {}).tasks) ? state.schedule[nextIsoAuto].tasks : [];
-            const otherDoctorsNextDay = state.staff.filter(doc => {
-              if (doc.id === s.id || doc.title !== "Bác sĩ") return false;
-              if (doc.name === "Bác sĩ Dung" && nextDowAuto.dow !== 2 && nextDowAuto.dow !== 4) return false;
-              const docLoc = doc.workLocation || (doc.dept === "Điểm Y tế 2" ? "Điểm Y tế 2" : "Điểm chính");
-              if (docLoc !== "Điểm chính") return false;
-              const offNext = nextTasks.some(t => t.staffId === doc.id && (String(t.type || "").toLowerCase().includes("nghỉ") || t.workLocation === "Không có mặt tại đơn vị"));
-              return !offNext;
-            });
-            if (otherDoctorsNextDay.length === 0) return false;
-          }
-          return true;
-        }) || candLeads.find(s => !blocked.has(s.id)) || candLeads[0];
-
-        if (pick1) {
-          cur.main1 = pick1.id;
-          blocked.add(pick1.id);
-          counts[pick1.id]++;
-        }
-      }
-
-      if (!onlyEmpty || !cur.main2) {
-        const candNurses = [...nurses].sort((a, b) => counts[a.id] - counts[b.id]);
-        const pick2 = candNurses.find(s => !blocked.has(s.id)) || candNurses[0];
-        if (pick2) {
-          cur.main2 = pick2.id;
-          blocked.add(pick2.id);
-          counts[pick2.id]++;
-        }
-      }
-
-      if (!onlyEmpty || !cur.dyt2) {
-        const candDyt2 = [...nurses].sort((a, b) => counts[a.id] - counts[b.id]);
-        const pick3 = candDyt2.find(s => !blocked.has(s.id)) || candDyt2[0];
-        if (pick3) {
-          cur.dyt2 = pick3.id;
-          blocked.add(pick3.id);
-          counts[pick3.id]++;
-        }
+      if (cur.main2 === nA.id || cur.main2 === nB.id) {
+        lastMainNurseByTeam[teamIdx] = cur.main2;
+      } else {
+        lastMainNurseByTeam[teamIdx] = chosenMainNurse.id;
       }
 
       state.schedule[iso] = cur;
     });
+
+    // 2. Cố định Hộ sinh Ngọc và Điều dưỡng Nhung "HỖ TRỢ TUA TRỰC" trọn 1 ngày vào các ngày hành chính (T2 - T6), chia công bằng
+    const hsNgoc = findStaffByExactName("Hộ sinh Ngọc");
+    const ddNhung = findStaffByExactName("Điều dưỡng Nhung");
+    const supportPool = [hsNgoc, ddNhung].filter(Boolean);
+
+    if (supportPool.length > 0) {
+      const supportCounts = {};
+      supportPool.forEach(s => { supportCounts[s.id] = 0; });
+
+      if (onlyEmpty) {
+        dates.forEach(iso => {
+          const e = state.schedule[iso];
+          if (!e || !Array.isArray(e.tasks)) return;
+          e.tasks.forEach(t => {
+            if (supportCounts[t.staffId] !== undefined && String(t.type || "").toLowerCase().includes("hỗ trợ tua trực")) {
+              supportCounts[t.staffId]++;
+            }
+          });
+        });
+      }
+
+      let supportTurnIdx = 0;
+      dates.forEach(iso => {
+        const dowInfo = getDayOfWeekInfo(iso);
+        const isAdminWeekday = dowInfo.dow >= 1 && dowInfo.dow <= 5 && !getHolidayInfo(iso).isHoliday;
+        const cur = state.schedule[iso] || { main1: "", main2: "", dyt2: "", tasks: [] };
+        if (!Array.isArray(cur.tasks)) cur.tasks = [];
+
+        if (!onlyEmpty) {
+          cur.tasks = cur.tasks.filter(t => !(supportPool.some(sp => sp.id === t.staffId) && String(t.type || "").toLowerCase().includes("hỗ trợ tua trực")));
+        }
+
+        if (!isAdminWeekday) {
+          state.schedule[iso] = cur;
+          return;
+        }
+
+        const alreadyHasSupport = cur.tasks.some(t =>
+          supportPool.some(sp => sp.id === t.staffId) && String(t.type || "").toLowerCase().includes("hỗ trợ tua trực")
+        );
+        if (onlyEmpty && alreadyHasSupport) {
+          state.schedule[iso] = cur;
+          return;
+        }
+
+        const isStaffBusyOrLeave = (stId) => {
+          return cur.tasks.some(t => {
+            if (t.staffId !== stId) return false;
+            const tp = String(t.type || "").toLowerCase();
+            return tp.includes("nghỉ") || tp.includes("vắng") || tp.includes("tập huấn") || tp.includes("học") || tp.includes("họp") || t.workLocation === "Không có mặt tại đơn vị";
+          });
+        };
+
+        const orderedCandidates = [...supportPool].sort((a, b) => {
+          const diff = (supportCounts[a.id] || 0) - (supportCounts[b.id] || 0);
+          if (diff !== 0) return diff;
+          return a.id === supportPool[supportTurnIdx % supportPool.length].id ? -1 : 1;
+        });
+
+        const pickedSupporter = orderedCandidates.find(sp => !isStaffBusyOrLeave(sp.id));
+        if (pickedSupporter) {
+          cur.tasks.push({
+            id: "t_sup_" + iso + "_" + pickedSupporter.id,
+            staffId: pickedSupporter.id,
+            session: "Cả ngày",
+            type: "Hỗ trợ tua trực",
+            workLocation: "Điểm chính",
+            note: "Hỗ trợ trọn ngày hành chính"
+          });
+          supportCounts[pickedSupporter.id] = (supportCounts[pickedSupporter.id] || 0) + 1;
+          supportTurnIdx++;
+        }
+
+        state.schedule[iso] = cur;
+      });
+    }
 
     const conflictDays = [];
     dates.forEach(iso => {
@@ -4136,8 +4240,8 @@
     const finishAutoGen = () => {
       dispatchEmailChangeNotification(
         "Xếp lịch tự động tháng",
-        `${onlyEmpty ? "Điền ô trống" : "Tự động xếp lịch"} tháng ${formatVNMonthYear(state.selectedMonth)}`,
-        `Đã xử lý ${dates.length} ngày trong tháng ${formatVNMonthYear(state.selectedMonth)}.`,
+        `${onlyEmpty ? "Điền ô trống" : "Tự động xếp lịch xoay vòng 5 ca"} tháng ${formatVNMonthYear(state.selectedMonth)}`,
+        `Đã xếp xoay vòng 5 ca cố định và phân công hỗ trợ tua trực ngày hành chính cho ${dates.length} ngày trong tháng ${formatVNMonthYear(state.selectedMonth)}.`,
         dates
       );
       saveState();
